@@ -4,7 +4,7 @@
 //! （passed / failed / 测试二进制数 / 最近完整真站审计时间）是 `compat-audit.mjs` 单独
 //! 汇总出来的，属于另一条计算路径；两条路径若漂移，用户看到的报告就会与真实执行不符。
 //! 本判据把三份产物锁在一起：
-//! - `docs/兼容性审计.md` 的「三、真站回归」章节（人读的结论）；
+//! - `docs/审计报告/兼容性审计.md` 的「三、真站回归」章节（人读的结论）；
 //! - `_rea/tmp/live-audit-latest.log`（cargo 原始输出的逐二进制 `test result:` 行）；
 //! - `_rea/tmp/live-last-full.json`（审计脚本写下的机器可读清单：at/passed/failed/bins）。
 //!
@@ -137,8 +137,8 @@ fn report_live_section_matches_audit_log() {
     let Some(log) = read_opt("_rea/tmp/live-audit-latest.log") else {
         return;
     };
-    let report = fs::read_to_string(repo_root().join("docs/兼容性审计.md"))
-        .expect("读取 docs/兼容性审计.md 失败");
+    let report = fs::read_to_string(repo_root().join("docs/审计报告/兼容性审计.md"))
+        .expect("读取 docs/审计报告/兼容性审计.md 失败");
     let totals = parse_log_totals(&log);
     let (passed, failed, ignored, bins) = parse_report_result_line(&report);
 
@@ -157,8 +157,8 @@ fn live_last_full_manifest_matches_report() {
     let Some(manifest) = read_opt("_rea/tmp/live-last-full.json") else {
         return;
     };
-    let report = fs::read_to_string(repo_root().join("docs/兼容性审计.md"))
-        .expect("读取 docs/兼容性审计.md 失败");
+    let report = fs::read_to_string(repo_root().join("docs/审计报告/兼容性审计.md"))
+        .expect("读取 docs/审计报告/兼容性审计.md 失败");
     let totals = parse_log_totals(&log);
     let (at, passed, failed, bins) = parse_live_last_full(&manifest);
 

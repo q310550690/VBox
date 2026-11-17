@@ -1,4 +1,4 @@
-//! 判据 11：`docs/站点覆盖报告.md` 的分组统计必须与 `profiles.json` × `sites.json` 实际计数**逐项一致**。
+//! 判据 11：`docs/审计报告/站点覆盖报告.md` 的分组统计必须与 `profiles.json` × `sites.json` 实际计数**逐项一致**。
 //!
 //! 报告由 `_rea/tools/site-coverage.mjs` 生成，但生成物与画像之间此前没有测试锁——画像变更后若忘记
 //! 重跑，报告会「安静地过期」。本测试把报告口径固化进 cargo test。
@@ -26,7 +26,7 @@ fn sites() -> serde_json::Value {
 }
 
 fn report() -> String {
-    read("docs/站点覆盖报告.md")
+    read("docs/审计报告/站点覆盖报告.md")
 }
 
 /// 从 `| 站点（去重后） | 612 |` 这类行里取第一个数字。
@@ -218,7 +218,7 @@ fn native_family_summary_matches_profiles() {
 fn plan_strategy_percentages_match_profiles_and_sites() {
     // 计划 §1.1 的策略分布表长期是手写数字：api 数/站点数/百分比任一改动都可能漏改，
     // 而既有判据只锁「报告计数」，没有锁「计划里的百分比」。此测试重算三方并逐格比对。
-    let doc = read("docs/计划-type3-原生兼容100%.md");
+    let doc = read("docs/type3兼容/type3-实施计划-原生兼容100%.md");
     let sec = section(&doc, "### 1.1 策略分布", "### 1.2");
     let profiles = profiles();
     let sites = sites();

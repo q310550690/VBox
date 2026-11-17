@@ -64,9 +64,9 @@ fn lane_name(lane: DispatchLane) -> &'static str {
     }
 }
 
-/// 解析 `docs/站点覆盖报告.md` 的 `## 五、分派车道分布（附录）` 表。
+/// 解析 `docs/审计报告/站点覆盖报告.md` 的 `## 五、分派车道分布（附录）` 表。
 fn report_lane_counts() -> BTreeMap<String, u64> {
-    let path = repo_root().join("docs/站点覆盖报告.md");
+    let path = repo_root().join("docs/审计报告/站点覆盖报告.md");
     let report = fs::read_to_string(&path)
         .unwrap_or_else(|e| panic!("无法读取 {}：{e}", path.display()));
     let start = report

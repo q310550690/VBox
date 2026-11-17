@@ -6,7 +6,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-const REPORT: &str = "docs/兼容性审计.md";
+const REPORT: &str = "docs/审计报告/兼容性审计.md";
 const TESTS_DIR: &str = "crates/vbox_core/tests";
 const LIVE_LOG: &str = "_rea/tmp/live-audit-latest.log";
 

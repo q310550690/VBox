@@ -64,7 +64,7 @@ fn real_sites() -> Option<Vec<Site>> {
 
 /// 报告「分派车道分布」表：车道 → 站点数。
 fn report_lane_table() -> BTreeMap<String, u64> {
-    let path = root().join("docs/站点覆盖报告.md");
+    let path = root().join("docs/审计报告/站点覆盖报告.md");
     let text = std::fs::read_to_string(&path).expect("读取站点覆盖报告失败");
     let start = text
         .find("## 五、分派车道分布")

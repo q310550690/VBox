@@ -426,7 +426,7 @@ pub fn blocked_reason_hint(reason: &str) -> &'static str {
         "android_app_market_semantics" => "应用市场语义：站点只提供 App 下载/跳转，不是视频源",
         "config_center_semantics" => "配置中心语义：站点用于聚合配置，不是可播放的视频源",
         "ali_signin_utility" => "阿里云盘扫码登录工具类，不是 Spider 视频源",
-        _ => "尚未分类的阻断原因，见 docs/阻断复核.md",
+        _ => "尚未分类的阻断原因，见 docs/审计报告/阻断复核.md",
     }
 }
 pub fn site_error(site: &Site) -> CoreError {

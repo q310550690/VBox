@@ -10,10 +10,10 @@
 //! `--check` 特意不重探网络、只校验报告与清单一致，因此可以纳入。
 //!
 //! 离线可 `--check` 的生成器（4 个）：
-//! - `site-coverage.mjs --check`    → docs/站点覆盖报告.md
-//! - `live-coverage.mjs --check`    → docs/真站回归矩阵.md
-//! - `upstream-audit.mjs --check`   → docs/上游复核.md
-//! - `audit-index.mjs --check`      → docs/审计索引.md
+//! - `site-coverage.mjs --check`    → docs/审计报告/站点覆盖报告.md
+//! - `live-coverage.mjs --check`    → docs/审计报告/真站回归矩阵.md
+//! - `upstream-audit.mjs --check`   → docs/审计报告/上游复核.md
+//! - `audit-index.mjs --check`      → docs/审计报告/审计索引.md
 //!
 //! 无 `--check` 的生成器（2 个，必须显式登记理由，新增自动文档时强制做一次决策）：
 //! - `blocked-recheck.mjs`（网络探测，无 --check）
@@ -69,9 +69,9 @@ fn run_offline_check(tool: &str) {
 #[test]
 fn offline_generators_reproduce_their_reports() {
     let pairs = [
-        ("docs/站点覆盖报告.md", "site-coverage.mjs"),
-        ("docs/真站回归矩阵.md", "live-coverage.mjs"),
-        ("docs/上游复核.md", "upstream-audit.mjs"),
+        ("docs/审计报告/站点覆盖报告.md", "site-coverage.mjs"),
+        ("docs/审计报告/真站回归矩阵.md", "live-coverage.mjs"),
+        ("docs/审计报告/上游复核.md", "upstream-audit.mjs"),
     ];
     for (doc, tool) in pairs {
         assert_header_names_command(doc, &format!("node _rea/tools/{tool} --write"));
@@ -79,10 +79,10 @@ fn offline_generators_reproduce_their_reports() {
     }
 
     // 审计索引是「自指台账」，头部没有机械生成段落，改用它内联声明的校验方式。
-    let index = std::fs::read_to_string(repo_root().join("docs/审计索引.md")).expect("读审计索引");
+    let index = std::fs::read_to_string(repo_root().join("docs/审计报告/审计索引.md")).expect("读审计索引");
     assert!(
         index.contains("校验方式：`node _rea/tools/audit-index.mjs --check`"),
-        "docs/审计索引.md 必须声明 `node _rea/tools/audit-index.mjs --check` 校验方式"
+        "docs/审计报告/审计索引.md 必须声明 `node _rea/tools/audit-index.mjs --check` 校验方式"
     );
     run_offline_check("audit-index.mjs");
 }
@@ -93,8 +93,8 @@ fn offline_generators_reproduce_their_reports() {
 fn every_auto_doc_generator_is_accounted_for() {
     // 不可离线复现的 2 份：登记理由，禁止静默纳入或静默排除。
     let excluded = [
-        ("docs/阻断复核.md", "blocked-recheck.mjs", "需网络探测，且工具无 --check"),
-        ("docs/兼容性审计.md", "compat-audit.mjs", "汇总型生成器，依赖上一轮 live 日志与三个台账"),
+        ("docs/审计报告/阻断复核.md", "blocked-recheck.mjs", "需网络探测，且工具无 --check"),
+        ("docs/审计报告/兼容性审计.md", "compat-audit.mjs", "汇总型生成器，依赖上一轮 live 日志与三个台账"),
     ];
     for (doc, tool, reason) in excluded {
         assert!(

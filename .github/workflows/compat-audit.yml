@@ -114,13 +114,13 @@ jobs:
         with:
           name: compat-audit-${{ github.sha }}
           path: |
-            docs/兼容性审计.md
-            docs/站点覆盖报告.md
-            docs/真站回归矩阵.md
-            docs/上游复核.md
-            docs/阻断复核.md
-            docs/审计索引.md
-            docs/审计快照.json
+            docs/审计报告/兼容性审计.md
+            docs/审计报告/站点覆盖报告.md
+            docs/审计报告/真站回归矩阵.md
+            docs/审计报告/上游复核.md
+            docs/审计报告/阻断复核.md
+            docs/审计报告/审计索引.md
+            docs/审计报告/审计快照.json
             _rea/tmp/audit-full.log
             _rea/tmp/live-audit-latest.log
             _rea/tmp/live-flaky.log

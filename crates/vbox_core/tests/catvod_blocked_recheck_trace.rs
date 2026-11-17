@@ -1,6 +1,6 @@
 //! 判据 74：`site_dead` 阻断复核报告的可追溯性。
 //!
-//! `docs/阻断复核.md` 是「站点是否复活」的唯一人工证据来源；判据 69 只要求
+//! `docs/审计报告/阻断复核.md` 是「站点是否复活」的唯一人工证据来源；判据 69 只要求
 //! 报告里出现 `` `api` `` 行。若报告写错 api、漏掉一个 site_dead 站点，或把
 //! 某个 host 归到别的 api，复核结论就可能被误用（放开一个仍死的站点）。
 //!
@@ -15,7 +15,7 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 
-const REPORT: &str = "docs/阻断复核.md";
+const REPORT: &str = "docs/审计报告/阻断复核.md";
 
 fn root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -161,7 +161,7 @@ fn site_dead_set_matches_recheck_report() {
 
     // 审计报告第 8 节的「N 个 site_dead api」必须与画像计数一致；
     // 该数字曾硬编码为 13（当前 site_dead 仅 3 个），属陈旧快照。
-    let audit_path = root().join("docs/兼容性审计.md");
+    let audit_path = root().join("docs/审计报告/兼容性审计.md");
     if audit_path.exists() {
         let audit = std::fs::read_to_string(&audit_path).expect("读取审计报告");
         let line = audit

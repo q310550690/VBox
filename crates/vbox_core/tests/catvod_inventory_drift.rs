@@ -6,7 +6,7 @@
 //! （新增/下架站点、换 api、换 jar），画像仍会显示「全量已覆盖」，形成假满分。
 //!
 //! `_rea/tools/inventory-drift.mjs --write` 会重抓三个入口并与基线对比，产出
-//! `docs/订阅漂移复核.md`。本判据离线校验：
+//! `docs/审计报告/订阅漂移复核.md`。本判据离线校验：
 //! 1. 报告「基线」列数字 == 磁盘 `sites.json` 的实测值（报告不能建立在过期数据上）；
 //! 2. 报告「本次复核」列与「差异」列自洽（diff == actual - baseline）；
 //! 3. 报告结论与差异行一致（零差异 ⇔「未发现站点 / api / jar 引用漂移」）；
@@ -106,7 +106,7 @@ fn row_value<'a>(rows: &'a [(String, i64, i64, i64)], name: &str) -> &'a (String
 
 #[test]
 fn drift_report_matches_disk_baseline() {
-    let report = read("docs/订阅漂移复核.md");
+    let report = read("docs/审计报告/订阅漂移复核.md");
     let sites = json("_rea/samples/inventory/sites.json");
     let m = metrics(&sites);
 

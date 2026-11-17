@@ -74,7 +74,7 @@ fn count_lines(text: &str, prefix: &str) -> usize {
 
 #[test]
 fn test_inventory_matches_disk() {
-    let plan = fs::read_to_string(root().join("docs/计划-type3-原生兼容100%.md"))
+    let plan = fs::read_to_string(root().join("docs/type3兼容/type3-实施计划-原生兼容100%.md"))
         .expect("读取计划文档失败");
     let rows = parse_rows(&section(&plan, "## 170."));
     let dir = root().join("crates/vbox_core/tests");
@@ -141,7 +141,7 @@ fn test_inventory_reconciles_with_full_log() {
             panic!("读取 {} 失败：{e}", log_path.display());
         }
     };
-    let plan = fs::read_to_string(root().join("docs/计划-type3-原生兼容100%.md"))
+    let plan = fs::read_to_string(root().join("docs/type3兼容/type3-实施计划-原生兼容100%.md"))
         .expect("读取计划文档失败");
     let rows = parse_rows(&section(&plan, "## 170."));
     let sum_tests: usize = rows.iter().map(|r| r.tests).sum();

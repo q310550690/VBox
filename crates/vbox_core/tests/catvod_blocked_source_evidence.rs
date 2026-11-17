@@ -180,7 +180,7 @@ fn blocked_reasons_are_backed_by_declared_variant_evidence() {
     }
     let index = evidence_index();
     let profiles = profiles();
-    let recheck = read_text(&repo_root().join("docs/阻断复核.md"));
+    let recheck = read_text(&repo_root().join("docs/审计报告/阻断复核.md"));
     let apis = profiles["apis"].as_object().expect("apis 必须是对象");
 
     let mut checked = 0usize;

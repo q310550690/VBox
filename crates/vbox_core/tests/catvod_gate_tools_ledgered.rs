@@ -2,8 +2,8 @@
 //!
 //! `audit-index --check` 只能证明「索引与它收录的文件一致」；如果某个门禁工具
 //! 从未被收录，改它不会让索引失效。本判据用**固定清单**堵住这个盲区：
-//! 门禁工具集合 → 逐项断言出现在 `docs/审计索引.md` 表格路径列与
-//! `docs/审计快照.json` 的 entries 中。
+//! 门禁工具集合 → 逐项断言出现在 `docs/审计报告/审计索引.md` 表格路径列与
+//! `docs/审计报告/审计快照.json` 的 entries 中。
 
 use std::fs;
 use std::path::PathBuf;
@@ -26,7 +26,7 @@ const GATE: &[&str] = &[
     "_rea/tools/upstream-audit.mjs",
     "_rea/tools/blocked-recheck.mjs",
     "_rea/tools/inventory-drift.mjs",
-    "docs/订阅漂移复核.md",
+    "docs/审计报告/订阅漂移复核.md",
     "_rea/samples/inventory/gen-profiles.mjs",
     "_rea/samples/inventory/crawl-sites.mjs",
     ".github/workflows/compat-audit.yml",
@@ -36,8 +36,8 @@ const GATE: &[&str] = &[
 
 #[test]
 fn every_gate_tool_is_ledgered() {
-    let index = fs::read_to_string(root().join("docs/审计索引.md")).expect("读取审计索引");
-    let snapshot = fs::read_to_string(root().join("docs/审计快照.json")).expect("读取审计快照");
+    let index = fs::read_to_string(root().join("docs/审计报告/审计索引.md")).expect("读取审计索引");
+    let snapshot = fs::read_to_string(root().join("docs/审计报告/审计快照.json")).expect("读取审计快照");
     let mut missing_index = Vec::new();
     let mut missing_snapshot = Vec::new();
     for tool in GATE {
@@ -56,10 +56,10 @@ fn every_gate_tool_is_ledgered() {
     }
     assert!(
         missing_index.is_empty(),
-        "以下门禁工具未进入 docs/审计索引.md：{missing_index:?}"
+        "以下门禁工具未进入 docs/审计报告/审计索引.md：{missing_index:?}"
     );
     assert!(
         missing_snapshot.is_empty(),
-        "以下门禁工具未进入 docs/审计快照.json：{missing_snapshot:?}"
+        "以下门禁工具未进入 docs/审计报告/审计快照.json：{missing_snapshot:?}"
     );
 }

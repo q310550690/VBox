@@ -17,8 +17,8 @@ use std::path::{Path, PathBuf};
 
 use vbox_core::spider::catvod::{families, registry};
 
-const PLAN_DOC: &str = "docs/计划-type3-原生兼容100%.md";
-const REA_DOC: &str = "docs/计划-type3-REA原生重写.md";
+const PLAN_DOC: &str = "docs/type3兼容/type3-实施计划-原生兼容100%.md";
+const REA_DOC: &str = "docs/type3兼容/type3-路线-REA原生重写.md";
 
 fn repo_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))

@@ -7,7 +7,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-const REPORT: &str = "docs/兼容性审计.md";
+const REPORT: &str = "docs/审计报告/兼容性审计.md";
 
 fn root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join("..")

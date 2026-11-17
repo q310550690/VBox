@@ -1,7 +1,7 @@
 //! 判据 21：每份自动生成报告都必须能追溯到「真实存在且被索引的生成器」。
 //!
 //! 五份报告头部都写着 `> 生成时间：…　|　生成命令：`node _rea/tools/<tool>.mjs --write``，
-//! 但此前没有测试保证：该工具文件还在、命令里带 `--write`、且该工具被 `docs/审计索引.md` 收录。
+//! 但此前没有测试保证：该工具文件还在、命令里带 `--write`、且该工具被 `docs/审计报告/审计索引.md` 收录。
 //! 任一环节断裂（工具改名/删除/漏收录），报告都会变成「无法复现的孤儿」。
 
 use std::fs;
@@ -43,11 +43,11 @@ fn generate_commands(report: &str) -> Vec<String> {
 }
 
 const REPORTS: [&str; 5] = [
-    "docs/兼容性审计.md",
-    "docs/站点覆盖报告.md",
-    "docs/真站回归矩阵.md",
-    "docs/上游复核.md",
-    "docs/阻断复核.md",
+    "docs/审计报告/兼容性审计.md",
+    "docs/审计报告/站点覆盖报告.md",
+    "docs/审计报告/真站回归矩阵.md",
+    "docs/审计报告/上游复核.md",
+    "docs/审计报告/阻断复核.md",
 ];
 
 #[test]
@@ -69,7 +69,7 @@ fn every_report_names_an_existing_generator() {
 
 #[test]
 fn every_report_generator_is_indexed() {
-    let index = read("docs/审计索引.md");
+    let index = read("docs/审计报告/审计索引.md");
     for report in REPORTS {
         let text = read(report);
         let cmd = generate_commands(&text)
@@ -79,7 +79,7 @@ fn every_report_generator_is_indexed() {
         let tool = cmd.split_whitespace().nth(1).expect("生成命令缺少工具路径");
         assert!(
             index.contains(&format!("`{tool}`")),
-            "{report} 的生成器 {tool} 未被 docs/审计索引.md 收录——报告无法被门禁追溯"
+            "{report} 的生成器 {tool} 未被 docs/审计报告/审计索引.md 收录——报告无法被门禁追溯"
         );
     }
 }

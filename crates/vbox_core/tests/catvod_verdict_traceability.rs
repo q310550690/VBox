@@ -18,7 +18,7 @@ fn repo_root() -> PathBuf {
 }
 
 fn report() -> String {
-    let path = repo_root().join("docs/兼容性审计.md");
+    let path = repo_root().join("docs/审计报告/兼容性审计.md");
     fs::read_to_string(&path).unwrap_or_else(|e| panic!("读取 {} 失败: {e}", path.display()))
 }
 

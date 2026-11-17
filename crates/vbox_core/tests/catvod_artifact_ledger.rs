@@ -45,7 +45,7 @@ fn audit_index_and_manifest_verify_from_rust() {
 
 #[test]
 fn audit_snapshot_shape_is_sane() {
-    let path = root().join("docs/审计快照.json");
+    let path = root().join("docs/审计报告/审计快照.json");
     let text = std::fs::read_to_string(&path)
         .unwrap_or_else(|e| panic!("读取 {} 失败：{e}", path.display()));
     let v: Value = serde_json::from_str(&text).expect("审计快照不是合法 JSON");

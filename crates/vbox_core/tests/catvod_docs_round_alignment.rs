@@ -32,7 +32,7 @@ fn round_of(line: &str) -> Option<usize> {
 }
 
 fn plan_rounds() -> Vec<usize> {
-    let text = read("docs/计划-type3-原生兼容100%.md");
+    let text = read("docs/type3兼容/type3-实施计划-原生兼容100%.md");
     text.lines()
         .filter(|l| l.starts_with("## "))
         // 两种标题都承载轮次：早期「## N. 进度补充（… 第 K 轮）」，
@@ -57,7 +57,7 @@ fn plan_rounds() -> Vec<usize> {
 }
 
 fn rea_rounds() -> Vec<String> {
-    let text = read("docs/计划-type3-REA原生重写.md");
+    let text = read("docs/type3兼容/type3-路线-REA原生重写.md");
     text.lines()
         .filter(|l| l.starts_with("## 附录 "))
         .filter_map(|l| round_of(l).map(|k| format!("{k}")))

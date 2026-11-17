@@ -6,7 +6,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-const REPORT: &str = "docs/兼容性审计.md";
+const REPORT: &str = "docs/审计报告/兼容性审计.md";
 const MAX_AGE_SECS: i64 = 24 * 3600;
 
 fn root() -> PathBuf {

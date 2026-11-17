@@ -1,8 +1,8 @@
 //! 判据 22：两份计划文档的「进度节/附录」编号不得断档或重复。
 //!
 //! 约定（第 31 轮起严格执行）：
-//! - `docs/计划-type3-原生兼容100%.md` 的 `## <N>. 进度补充…` 节号从 31 起连续递增；
-//! - `docs/计划-type3-REA原生重写.md` 的 `## 附录 <LETTER>. …` 从 X 起按字母表连续递增。
+//! - `docs/type3兼容/type3-实施计划-原生兼容100%.md` 的 `## <N>. 进度补充…` 节号从 31 起连续递增；
+//! - `docs/type3兼容/type3-路线-REA原生重写.md` 的 `## 附录 <LETTER>. …` 从 X 起按字母表连续递增。
 //! 早期（<31 节 / <X 附录）存在历史写法差异，不在本判据范围。
 
 use std::fs;
@@ -57,7 +57,7 @@ fn appendix_letters(text: &str) -> Vec<String> {
 
 #[test]
 fn plan_progress_sections_are_contiguous() {
-    let text = read("docs/计划-type3-原生兼容100%.md");
+    let text = read("docs/type3兼容/type3-实施计划-原生兼容100%.md");
     let nums = plan_section_numbers(&text);
     assert!(nums.len() >= 60, "进度节数量异常: {}", nums.len());
     let max = *nums.iter().max().expect("没有进度节");
@@ -83,7 +83,7 @@ fn plan_progress_sections_are_contiguous() {
 
 #[test]
 fn rea_appendices_are_contiguous() {
-    let text = read("docs/计划-type3-REA原生重写.md");
+    let text = read("docs/type3兼容/type3-路线-REA原生重写.md");
     let letters = appendix_letters(&text);
     assert!(letters.len() >= 60, "附录数量异常: {}", letters.len());
     let ids: Vec<usize> = letters.iter().map(|l| appendix_index(l)).collect();

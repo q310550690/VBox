@@ -1,4 +1,4 @@
-// 前端共享类型定义：字段与后端 serde 序列化键严格对齐（原 .aspirecode/sdd/v0.1.0/data-model.md 已归档，见 docs/归档摘要-aspirecode-workbuddy.md）
+// 前端共享类型定义：字段与后端 serde 序列化键严格对齐（原 .aspirecode/sdd/v0.1.0/data-model.md 已归档，见 docs/归档/归档摘要-aspirecode-workbuddy-2026-11-06.md）
 // 注意：Site 的源类型字段 JSON 键是 `type`（Rust 字段名是 kind）；Category 的键是 snake_case。
 
 /* ---------------- 订阅 / 站点配置 ---------------- */

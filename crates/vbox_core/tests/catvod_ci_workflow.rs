@@ -54,13 +54,13 @@ fn workflow_triggers_and_uploads_artifacts() {
         "compat-audit.yml 的产物上传必须 `if: always()`，失败时也能取现场"
     );
     for artifact in [
-        "docs/兼容性审计.md",
-        "docs/站点覆盖报告.md",
-        "docs/真站回归矩阵.md",
-        "docs/上游复核.md",
-        "docs/阻断复核.md",
-        "docs/审计索引.md",
-        "docs/审计快照.json",
+        "docs/审计报告/兼容性审计.md",
+        "docs/审计报告/站点覆盖报告.md",
+        "docs/审计报告/真站回归矩阵.md",
+        "docs/审计报告/上游复核.md",
+        "docs/审计报告/阻断复核.md",
+        "docs/审计报告/审计索引.md",
+        "docs/审计报告/审计快照.json",
     ] {
         assert!(w.contains(artifact), "compat-audit.yml 产物未包含 {artifact}");
     }
@@ -85,14 +85,14 @@ fn workflow_pins_node_and_rust() {
 fn workflow_is_tracked_by_audit_ledgers() {
     // CI 工作流本身就是门禁配置：被误删/静默改弱时必须能被台账发现。
     let root = repo_root();
-    let index = fs::read_to_string(root.join("docs/审计索引.md")).expect("读取审计索引失败");
+    let index = fs::read_to_string(root.join("docs/审计报告/审计索引.md")).expect("读取审计索引失败");
     assert!(
         index.contains(".github/workflows/compat-audit.yml"),
-        "docs/审计索引.md 必须收录 .github/workflows/compat-audit.yml（否则删除/改弱工作流不会被 index --check 发现）"
+        "docs/审计报告/审计索引.md 必须收录 .github/workflows/compat-audit.yml（否则删除/改弱工作流不会被 index --check 发现）"
     );
-    let snapshot = fs::read_to_string(root.join("docs/审计快照.json")).expect("读取审计快照失败");
+    let snapshot = fs::read_to_string(root.join("docs/审计报告/审计快照.json")).expect("读取审计快照失败");
     assert!(
         snapshot.contains(".github/workflows/compat-audit.yml"),
-        "docs/审计快照.json 必须收录 .github/workflows/compat-audit.yml（归档应包含全部门禁配置）"
+        "docs/审计报告/审计快照.json 必须收录 .github/workflows/compat-audit.yml（归档应包含全部门禁配置）"
     );
 }

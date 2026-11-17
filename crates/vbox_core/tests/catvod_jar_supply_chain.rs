@@ -2,7 +2,7 @@
 //!
 //! 判据 72 冻结了 26 条引用 / 14 个 URL / 9 个声明 md5 的形状，但没有一份
 //! 「哪些 jar 还没下载、由哪个站点引用、复活后怎么补」的可执行清单。
-//! `docs/jar供应链.md` 内嵌 ```json 机器可读清单，本判据解析它并与
+//! `docs/审计报告/jar供应链.md` 内嵌 ```json 机器可读清单，本判据解析它并与
 //! `sites.json` / `library/index.json` 双向对账，防止文档与数据各自漂移。
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -10,7 +10,7 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 
-const DOC: &str = "docs/jar供应链.md";
+const DOC: &str = "docs/审计报告/jar供应链.md";
 
 fn root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -43,7 +43,7 @@ fn supply_chain_payload_matches_inventory_and_ledger() {
         eprintln!("_rea 不存在，跳过历史证据判据");
         return;
     }
-    let doc = read(DOC).expect("docs/jar供应链.md 必须存在");
+    let doc = read(DOC).expect("docs/审计报告/jar供应链.md 必须存在");
     let p = payload(&doc);
 
     // 站点侧：按 URL 聚合引用数、md5 集合。
@@ -143,7 +143,7 @@ fn supply_chain_documents_absent_recovery() {
         eprintln!("_rea 不存在，跳过历史证据判据");
         return;
     }
-    let doc = read(DOC).expect("docs/jar供应链.md 必须存在");
+    let doc = read(DOC).expect("docs/审计报告/jar供应链.md 必须存在");
     let p = payload(&doc);
 
     // 人类可读的逐 URL 表必须与机器清单条数一致。

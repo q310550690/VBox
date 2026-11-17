@@ -51,7 +51,7 @@ fn family_apis() -> BTreeMap<String, BTreeSet<String>> {
 #[test]
 fn every_family_api_is_traceable_to_jar_test_and_rea() {
     let p = registry::profiles();
-    let rea = read("docs/计划-type3-REA原生重写.md");
+    let rea = read("docs/type3兼容/type3-路线-REA原生重写.md");
     let jar_names: BTreeSet<String> = p.jars.iter().map(|j| j.name.clone()).collect();
     let map = family_apis();
 
@@ -93,7 +93,7 @@ fn every_family_api_is_traceable_to_jar_test_and_rea() {
 #[test]
 fn legacy_rule_engines_are_disjoint_from_families_and_documented() {
     let p = registry::profiles();
-    let rea = read("docs/计划-type3-REA原生重写.md");
+    let rea = read("docs/type3兼容/type3-路线-REA原生重写.md");
 
     // 5 个名字里只有 3 个是画像中的真实 api（XBPQ_upgraded / XYQHikerV2 是分派别名），
     // 但无论是否出现在画像里，都不能被 families 家族接管。

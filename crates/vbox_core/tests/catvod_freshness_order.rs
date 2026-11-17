@@ -89,11 +89,11 @@ fn generated_at(report: &str) -> Option<(String, i64)> {
 }
 
 const REPORTS: [&str; 5] = [
-    "docs/兼容性审计.md",
-    "docs/站点覆盖报告.md",
-    "docs/真站回归矩阵.md",
-    "docs/上游复核.md",
-    "docs/阻断复核.md",
+    "docs/审计报告/兼容性审计.md",
+    "docs/审计报告/站点覆盖报告.md",
+    "docs/审计报告/真站回归矩阵.md",
+    "docs/审计报告/上游复核.md",
+    "docs/审计报告/阻断复核.md",
 ];
 
 #[test]

@@ -117,7 +117,7 @@ fn matrix_rows(text: &str) -> Vec<Row> {
 }
 
 fn read_matrix() -> String {
-    let path = repo_root().join("docs/真站回归矩阵.md");
+    let path = repo_root().join("docs/审计报告/真站回归矩阵.md");
     fs::read_to_string(&path).unwrap_or_else(|e| panic!("读取 {} 失败：{e}", path.display()))
 }
 

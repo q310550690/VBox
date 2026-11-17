@@ -1,4 +1,4 @@
-//! 真站回归矩阵（docs/真站回归矩阵.md）与代码现状的一致性不变量。
+//! 真站回归矩阵（docs/审计报告/真站回归矩阵.md）与代码现状的一致性不变量。
 //!
 //! 矩阵是「37 个原生家族 × 是否有 #[ignore] 真站用例」的静态对账，是兼容性证据链的一部分：
 //! 它一旦与 `families/mod.rs` 或测试文件脱节，就会让「哪些家族有真站验证」的结论失真。
@@ -53,8 +53,8 @@ struct Row {
 }
 
 fn matrix_rows() -> Vec<Row> {
-    let text = fs::read_to_string(repo_root().join("docs/真站回归矩阵.md"))
-        .expect("读 docs/真站回归矩阵.md（先运行 node _rea/tools/live-coverage.mjs --write）");
+    let text = fs::read_to_string(repo_root().join("docs/审计报告/真站回归矩阵.md"))
+        .expect("读 docs/审计报告/真站回归矩阵.md（先运行 node _rea/tools/live-coverage.mjs --write）");
     let mut rows = Vec::new();
     for line in text.lines() {
         // 数据行形如：| `alist` | csp_Alist | 1 | 3 | live-verified | … |

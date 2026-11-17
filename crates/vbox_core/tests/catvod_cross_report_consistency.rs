@@ -1,7 +1,7 @@
 //! 判据 15：四份证据报告 + 画像/站点清单之间的站点/API 计数交叉一致。
 //!
-//! 现状：`profiles.json`（画像）、`sites.json`（站点清单）、`docs/站点覆盖报告.md`、
-//! `docs/兼容性审计.md`、`docs/真站回归矩阵.md`、`docs/上游复核.md` 由不同工具生成。
+//! 现状：`profiles.json`（画像）、`sites.json`（站点清单）、`docs/审计报告/站点覆盖报告.md`、
+//! `docs/审计报告/兼容性审计.md`、`docs/审计报告/真站回归矩阵.md`、`docs/审计报告/上游复核.md` 由不同工具生成。
 //! 任一处的计数漂移都应立刻失败——本测试把关键数字逐项对齐，防止「某一侧悄悄过期」。
 
 use regex::Regex;
@@ -49,10 +49,10 @@ fn api_strategies(p: &Value) -> BTreeMap<String, i64> {
 fn counts_agree_across_profiles_sites_and_reports() {
     let prof = profiles();
     let sites = sites_json();
-    let coverage = read("docs/站点覆盖报告.md");
-    let audit = read("docs/兼容性审计.md");
-    let matrix = read("docs/真站回归矩阵.md");
-    let upstream = read("docs/上游复核.md");
+    let coverage = read("docs/审计报告/站点覆盖报告.md");
+    let audit = read("docs/审计报告/兼容性审计.md");
+    let matrix = read("docs/审计报告/真站回归矩阵.md");
+    let upstream = read("docs/审计报告/上游复核.md");
 
     // —— 官方计数：画像 totals 为唯一真源 ——
     let p_sites = prof["totals"]["sites"].as_i64().unwrap();
@@ -149,10 +149,10 @@ fn report_headers_are_fresh_and_consistent() {
     // 四份证据报告的头部必须含「生成时间」与「生成命令」，且覆盖既有文件；
     // 具体的新鲜度阈值由 `_rea/tools/compat-audit.mjs` 的第十一节判定，这里只做静态检查。
     for rel in [
-        "docs/站点覆盖报告.md",
-        "docs/真站回归矩阵.md",
-        "docs/上游复核.md",
-        "docs/阻断复核.md",
+        "docs/审计报告/站点覆盖报告.md",
+        "docs/审计报告/真站回归矩阵.md",
+        "docs/审计报告/上游复核.md",
+        "docs/审计报告/阻断复核.md",
     ] {
         let text = read(rel);
         let head: String = text.lines().take(8).collect::<Vec<_>>().join("\n");

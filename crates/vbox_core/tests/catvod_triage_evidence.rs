@@ -4,7 +4,7 @@
 //! 若不把「为什么不能原生等价」固化，`100% 判定` 里「站点覆盖」的可信度就无从复核：
 //! 报告声称「剩余项均有阻断理由」，但理由是否真实、是否与画像一致，只有靠判据锁住。
 //!
-//! 本判据解析 `docs/计划-type3-原生兼容100%.md` 的 §154.2 归因矩阵：
+//! 本判据解析 `docs/type3兼容/type3-实施计划-原生兼容100%.md` 的 §154.2 归因矩阵：
 //! - 表行数必须等于画像中 `strategy == "unported"` 的 api 数；
 //! - api 集合必须与画像 unported 集合完全相等（多/少/改名都红）；
 //! - 每行 blockedReason 必须与画像 `blockedReason` 一致；
@@ -28,8 +28,8 @@ fn root() -> PathBuf {
 }
 
 fn plan_text() -> String {
-    fs::read_to_string(root().join("docs/计划-type3-原生兼容100%.md"))
-        .expect("读取 docs/计划-type3-原生兼容100%.md")
+    fs::read_to_string(root().join("docs/type3兼容/type3-实施计划-原生兼容100%.md"))
+        .expect("读取 docs/type3兼容/type3-实施计划-原生兼容100%.md")
 }
 
 fn profiles() -> Value {
@@ -175,8 +175,8 @@ fn residual_triage_matrix_matches_profiles_and_evidence() {
         "§154.4 数量分布应包含 `{dist}`"
     );    // 审计报告必须同步呈现残余归因摘要：报告读者看不到剩余缺口，等于把问题藏起来。
     // 该行由 `_rea/tools/compat-audit.mjs` 生成（第 153 轮加入），此处锁住「报告 ↔ 画像」一致。
-    let mut report = fs::read_to_string(root().join("docs/兼容性审计.md"))
-        .expect("读取 docs/兼容性审计.md");
+    let mut report = fs::read_to_string(root().join("docs/审计报告/兼容性审计.md"))
+        .expect("读取 docs/审计报告/兼容性审计.md");
     if !report.contains("- **残余阻断归因**：") && root().join("_rea/tools/compat-audit.mjs").exists() {
         // 报告可能尚未随本轮生成（例如先跑单测再生成报告）：重新生成一次再读。
         // 仅在本地有 _rea 生成器时重生成；CI/发布环境没有 _rea，报告是入库快照，跳过。
@@ -187,8 +187,8 @@ fn residual_triage_matrix_matches_profiles_and_evidence() {
             .status()
             .expect("运行 compat-audit 生成审计报告");
         assert!(status.success(), "compat-audit --write 执行失败");
-        report = fs::read_to_string(root().join("docs/兼容性审计.md"))
-            .expect("读取 docs/兼容性审计.md（重生成后）");
+        report = fs::read_to_string(root().join("docs/审计报告/兼容性审计.md"))
+            .expect("读取 docs/审计报告/兼容性审计.md（重生成后）");
     }
     let line = report
         .lines()

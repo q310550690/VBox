@@ -45,7 +45,7 @@ fn ignored_test_names(path: &Path) -> Vec<String> {
 
 /// 解析矩阵：家族 → (真站用例数, 状态)；并返回声明的总数。
 fn matrix_rows() -> (BTreeMap<String, (usize, String)>, usize) {
-    let path = repo_root().join("docs/真站回归矩阵.md");
+    let path = repo_root().join("docs/审计报告/真站回归矩阵.md");
     let text = fs::read_to_string(&path).unwrap_or_else(|e| panic!("读取 {} 失败：{e}", path.display()));
     let mut rows = BTreeMap::new();
     let mut declared = None;

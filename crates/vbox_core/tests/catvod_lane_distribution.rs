@@ -1,4 +1,4 @@
-//! 判据 42：`docs/站点覆盖报告.md` 的「分派车道分布」必须与策略画像的站点计数**三方互锁**。
+//! 判据 42：`docs/审计报告/站点覆盖报告.md` 的「分派车道分布」必须与策略画像的站点计数**三方互锁**。
 //!
 //! 为什么需要这条判据：
 //! 第 158 轮发现 11 个 jar 站点（`csp_*`）因 `ext` 是 URL 被误送 Python 车道，用户看到的是
@@ -94,7 +94,7 @@ fn strategy_sites(profiles: &Value) -> BTreeMap<String, u64> {
 
 #[test]
 fn lane_distribution_matches_profiles() {
-    let doc = read("docs/站点覆盖报告.md");
+    let doc = read("docs/审计报告/站点覆盖报告.md");
     let profiles = profiles();
     let section = lane_section(&doc);
     let table = lane_table(section);

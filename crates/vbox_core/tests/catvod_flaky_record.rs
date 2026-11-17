@@ -13,7 +13,7 @@ fn root() -> PathBuf {
 }
 
 fn report_text() -> String {
-    let p = root().join("docs/兼容性审计.md");
+    let p = root().join("docs/审计报告/兼容性审计.md");
     std::fs::read_to_string(&p).unwrap_or_else(|e| panic!("读取 {} 失败：{e}", p.display()))
 }
 

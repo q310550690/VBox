@@ -140,7 +140,7 @@ fn full_log_matches_plan_test_baseline() {
         return;
     }
     let Some(log) = read_full_log() else { return };
-    let plan = fs::read_to_string(repo_root().join("docs/计划-type3-原生兼容100%.md"))
+    let plan = fs::read_to_string(repo_root().join("docs/type3兼容/type3-实施计划-原生兼容100%.md"))
         .expect("读取计划文档失败");
     let (blocks, running, has_doc_tests) = parse_log(&log);
     assert!(!blocks.is_empty(), "全量日志没有任何 test result 行");

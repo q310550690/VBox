@@ -1,7 +1,7 @@
 //! 判据 16：审计报告「判定五条」必须全部为 ✅，且第四节真站回归数字
 //! 必须与 `_rea/tmp/live-audit-latest.log` 重新解析的结果一致。
 //!
-//! 背景：`docs/兼容性审计.md` 是「100% 判定」的最终人读产物。若某条判据实际失败，
+//! 背景：`docs/审计报告/兼容性审计.md` 是「100% 判定」的最终人读产物。若某条判据实际失败，
 //! 报告里可能出现 ❌ 但流程仍被当成通过（例如只看退出码不看报告内容）。
 //! 本测试把「报告结论」与「日志事实」双向锁定。
 
@@ -20,7 +20,7 @@ fn read(rel: &str) -> String {
 
 #[test]
 fn audit_verdict_table_all_pass() {
-    let audit = read("docs/兼容性审计.md");
+    let audit = read("docs/审计报告/兼容性审计.md");
     let section = audit
         .split("## 一、判定五条")
         .nth(1)
@@ -50,7 +50,7 @@ fn audit_verdict_table_all_pass() {
 
 #[test]
 fn live_regression_numbers_match_log() {
-    let audit = read("docs/兼容性审计.md");
+    let audit = read("docs/审计报告/兼容性审计.md");
     let re = Regex::new(
         r"passed \*\*(\d+)\*\* / failed \*\*(\d+)\*\* / ignored (\d+)（(\d+) 个测试二进制）",
     )
