@@ -1,9 +1,11 @@
 <!-- 设置页 · 云盘搜索分区：内置内核状态 + PanSou 可选增强源配置（W14 P1） -->
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { storeToRefs } from 'pinia'
 import * as api from '@/api'
+import { useCloudSourcesStore } from '@/store/cloudSources'
 import { cloudSearchHint, detectCloudSearchCode } from '@/utils/cloudErrors'
-import type { CloudPansouEnv, CloudSourcePriority, CloudSourceStatus } from '@/api/cloud'
+import type { CloudPansouEnv, CloudSourcePriority } from '@/api/cloud'
 import { useUiStore } from '@/store/ui'
 
 const ui = useUiStore()
@@ -15,9 +17,9 @@ function errorText(e: unknown): string {
   return hint.text ? `${hint.text}（${message}）` : message
 }
 
-/** 搜索源状态（内置内核 + PanSou） */
-const statuses = ref<CloudSourceStatus[]>([])
-const loading = ref(false)
+/** 搜索源状态（内置内核 + PanSou）与优先级：统一由 store 管理（W14 §7.3） */
+const sources = useCloudSourcesStore()
+const { loading, priority, savingPriority } = storeToRefs(sources)
 const saving = ref(false)
 const testing = ref(false)
 
@@ -31,9 +33,7 @@ const sourcesPubkey = ref('')
 const savingSources = ref(false)
 const updatingManifest = ref(false)
 
-/** 搜索源优先级（W14 §8.7）：默认内置内核优先 */
-const priority = ref<CloudSourcePriority>('builtin')
-const savingPriority = ref(false)
+
 
 /** PanSou Docker 运行环境（W14 §8.7） */
 const pansouEnv = ref<CloudPansouEnv | null>(null)
@@ -56,42 +56,24 @@ function openInstall() {
   api.pluginOpenUrl(url)
 }
 
-const builtin = computed(() => statuses.value.find((item) => item.kind === 'builtin_kernel'))
-const pansou = computed(() => statuses.value.find((item) => item.kind === 'pan_sou'))
+const builtin = computed(() => sources.builtin)
+const pansou = computed(() => sources.pansou)
 /** 只有 PanSou 就绪时才允许「只使用增强源」 */
-const pansouConfigured = computed(() => pansou.value?.ready === true)
+const pansouConfigured = computed(() => sources.pansouConfigured)
 
 async function load() {
-  if (loading.value) return
-  loading.value = true
   try {
-    const [nextStatuses, nextPriority] = await Promise.all([
-      api.cloudSourceStatus(),
-      api.cloudSourcesPriority(),
-    ])
-    statuses.value = nextStatuses
-    if (
-      nextPriority === 'builtin' ||
-      nextPriority === 'builtin_only' ||
-      nextPriority === 'pansou_only'
-    ) {
-      priority.value = nextPriority
-    }
+    await sources.load(true)
   } catch (e) {
     ui.notify('读取云盘搜索源状态失败：' + api.formatError(e), 'error')
-  } finally {
-    loading.value = false
   }
 }
 
 /** 切换搜索源优先级（W14 §8.7）：失败回退旧值 */
 async function onPriorityChange(value: CloudSourcePriority) {
   if (savingPriority.value || value === priority.value) return
-  const previous = priority.value
-  savingPriority.value = true
   try {
-    statuses.value = await api.cloudSourcePrioritySet(value)
-    priority.value = value
+    await sources.setPriority(value)
     const label =
       value === 'builtin_only'
         ? '只使用内置内核'
@@ -100,10 +82,7 @@ async function onPriorityChange(value: CloudSourcePriority) {
           : '内置内核优先'
     ui.notify(`搜索源优先级已更新：${label}`, 'success')
   } catch (e) {
-    priority.value = previous
     ui.notify('切换搜索源优先级失败：' + api.formatError(e), 'error')
-  } finally {
-    savingPriority.value = false
   }
 }
 
@@ -111,11 +90,11 @@ async function save() {
   if (saving.value) return
   saving.value = true
   try {
-    statuses.value = await api.cloudSourceSet({
+    sources.setStatuses(await api.cloudSourceSet({
       kind: 'pansou',
       url: pansouUrl.value.trim() || null,
       token: pansouToken.value.trim() || null,
-    })
+    }))
     ui.notify(
       pansouUrl.value.trim() ? 'PanSou 增强源已保存' : '已关闭 PanSou 增强源',
       'success',
@@ -146,10 +125,10 @@ async function saveSources() {
   if (savingSources.value) return
   savingSources.value = true
   try {
-    statuses.value = await api.cloudSourcesConfigSet({
+    sources.setStatuses(await api.cloudSourcesConfigSet({
       sourcesUrl: sourcesUrl.value.trim(),
       sourcesPubkey: sourcesPubkey.value.trim(),
-    })
+    }))
     ui.notify('频道清单配置已保存', 'success')
   } catch (e) {
     ui.notify('保存频道清单配置失败：' + api.formatError(e), 'error')

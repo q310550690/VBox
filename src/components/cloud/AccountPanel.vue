@@ -4,7 +4,9 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import SolarIcon from '@/components/SolarIcon.vue'
 import HintBar from '@/components/HintBar.vue'
+import { storeToRefs } from 'pinia'
 import * as api from '@/api'
+import { useCloudAccountsStore } from '@/store/cloudAccounts'
 import type {
   PanAccountStatus,
   PanAccountView,
@@ -40,8 +42,8 @@ const props = defineProps<{
   focusProvider?: string
 }>()
 
-const providers = ref<PanLoginProvider[]>([])
-const accounts = ref<PanAccountView[]>([])
+const cloudAccounts = useCloudAccountsStore()
+const { providers, accounts } = storeToRefs(cloudAccounts)
 const loading = ref(false)
 const error = ref('')
 const highlighted = ref('')
@@ -110,17 +112,13 @@ watch(
 )
 
 async function load() {
-  if (api.demoMode) return
   if (loading.value) return
   loading.value = true
   error.value = ''
   try {
-    const [nextProviders, nextAccounts] = await Promise.all([
-      api.panLoginProviders(),
-      api.panAccountsList(),
-    ])
-    providers.value = nextProviders
-    accounts.value = nextAccounts
+    // 账号状态统一由 store 管理（W14 §7.3）
+    await cloudAccounts.load(true)
+    if (cloudAccounts.error) error.value = cloudAccounts.error
   } catch (e) {
     error.value = api.formatError(e)
   } finally {

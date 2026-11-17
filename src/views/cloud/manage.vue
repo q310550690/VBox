@@ -10,6 +10,7 @@ import HintBar from '@/components/HintBar.vue'
 import * as api from '@/api'
 import type { CloudDriveEntry } from '@/api'
 import { useDownloadsStore } from '@/store/downloads'
+import { useCloudAccountsStore } from '@/store/cloudAccounts'
 import { formatBytes, formatRelativeTime } from '@/utils/format'
 
 defineOptions({ name: 'CloudManageView' })
@@ -27,7 +28,8 @@ const route = useRoute()
 const router = useRouter()
 
 const accountId = computed(() => String(route.params.accountId ?? ''))
-const accounts = ref<Awaited<ReturnType<typeof api.panAccountsList>>>([])
+const cloudAccounts = useCloudAccountsStore()
+const accounts = computed(() => cloudAccounts.accounts)
 const path = ref<{ id: string; name: string }[]>([])
 const entries = ref<CloudDriveEntry[]>([])
 const loading = ref(false)
@@ -40,12 +42,8 @@ const providerName = computed(() => (account.value ? PROVIDER_NAME[account.value
 const parentId = computed(() => path.value[path.value.length - 1]?.id ?? '')
 
 async function loadAccounts(): Promise<void> {
-  if (api.demoMode) return
-  try {
-    accounts.value = await api.panAccountsList()
-  } catch {
-    accounts.value = []
-  }
+  // 账号列表由 store 统一管理（W14 §7.3）
+  await cloudAccounts.load()
 }
 
 async function loadDir(): Promise<void> {

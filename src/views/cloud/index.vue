@@ -13,6 +13,7 @@ import AccountDrawer from '@/components/cloud/AccountDrawer.vue'
 import DoubanCard from '@/views/vod/components/DoubanCard.vue'
 import { proxyImage } from '@/utils/image'
 import * as api from '@/api'
+import { useCloudAccountsStore } from '@/store/cloudAccounts'
 import type { DoubanHome, DoubanItem, PanAccountView } from '@/types'
 
 defineOptions({ name: 'CloudHomeView' })
@@ -20,21 +21,11 @@ defineOptions({ name: 'CloudHomeView' })
 const router = useRouter()
 const route = useRoute()
 
-/** 网盘展示名与图标（与 W13 账号面板的 provider 顺序一致） */
-const PROVIDER_META: Record<string, { name: string; icon: 'cloud-storage' }> = {
-  p115: { name: '115', icon: 'cloud-storage' },
-  quark: { name: '夸克', icon: 'cloud-storage' },
-  xunlei: { name: '迅雷', icon: 'cloud-storage' },
-  ali: { name: '阿里', icon: 'cloud-storage' },
-  uc: { name: 'UC', icon: 'cloud-storage' },
-  pikpak: { name: 'PikPak', icon: 'cloud-storage' },
-}
-
 const DEFAULT_HOT = ['三体', '流浪地球3', '沙丘2', '庆余年2', '4K合集']
 
 const keyword = ref('')
 const hot = ref<string[]>(DEFAULT_HOT)
-const accounts = ref<PanAccountView[]>([])
+const cloudAccounts = useCloudAccountsStore()
 const accountsOpen = ref(false)
 /** 过期胶囊入口：打开弹窗后要聚焦的 provider（W14 §8.2） */
 const accountsFocus = ref('')
@@ -153,27 +144,12 @@ function selectDouban(item: DoubanItem) {
 }
 
 /** 只渲染已登录且凭据有效的网盘；过期也显示（置灰）以便提示重新登录 */
-const pills = computed(() =>
-  accounts.value
-    .filter((item) => item.status === 'connected' || item.status === 'expired')
-    .sort((a, b) => {
-      const order = Object.keys(PROVIDER_META)
-      return order.indexOf(a.provider) - order.indexOf(b.provider)
-    }),
-)
-
-function providerName(provider: string): string {
-  return PROVIDER_META[provider]?.name ?? provider
-}
+const pills = computed(() => cloudAccounts.pills)
+const providerName = (provider: string): string => cloudAccounts.providerName(provider)
 
 async function loadAccounts() {
-  if (api.demoMode) return
-  try {
-    accounts.value = await api.panAccountsList()
-  } catch {
-    // 首页降级为无胶囊，不阻塞搜索
-    accounts.value = []
-  }
+  // 账号状态统一由 store 管理（W14 §7.3）；失败时保持无胶囊，不阻塞搜索
+  await cloudAccounts.load()
 }
 
 async function loadHot() {
@@ -243,7 +219,7 @@ watch(accountsOpen, (open) => {
   // 关闭时刷新胶囊（弹窗里可能刚登录/退出），并清空聚焦状态
   if (!open) {
     accountsFocus.value = ''
-    void loadAccounts()
+    void cloudAccounts.refresh()
   }
 })
 </script>
