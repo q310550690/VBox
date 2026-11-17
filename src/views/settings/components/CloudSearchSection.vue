@@ -3,7 +3,7 @@
 import { computed, onMounted, ref } from 'vue'
 import * as api from '@/api'
 import { cloudSearchHint, detectCloudSearchCode } from '@/utils/cloudErrors'
-import type { CloudPansouEnv, CloudSourceStatus } from '@/api/cloud'
+import type { CloudPansouEnv, CloudSourcePriority, CloudSourceStatus } from '@/api/cloud'
 import { useUiStore } from '@/store/ui'
 
 const ui = useUiStore()
@@ -31,6 +31,10 @@ const sourcesPubkey = ref('')
 const savingSources = ref(false)
 const updatingManifest = ref(false)
 
+/** 搜索源优先级（W14 §8.7）：默认内置内核优先 */
+const priority = ref<CloudSourcePriority>('builtin')
+const savingPriority = ref(false)
+
 /** PanSou Docker 运行环境（W14 §8.7） */
 const pansouEnv = ref<CloudPansouEnv | null>(null)
 const detectingEnv = ref(false)
@@ -54,16 +58,52 @@ function openInstall() {
 
 const builtin = computed(() => statuses.value.find((item) => item.kind === 'builtin_kernel'))
 const pansou = computed(() => statuses.value.find((item) => item.kind === 'pan_sou'))
+/** 只有 PanSou 就绪时才允许「只使用增强源」 */
+const pansouConfigured = computed(() => pansou.value?.ready === true)
 
 async function load() {
   if (loading.value) return
   loading.value = true
   try {
-    statuses.value = await api.cloudSourceStatus()
+    const [nextStatuses, nextPriority] = await Promise.all([
+      api.cloudSourceStatus(),
+      api.cloudSourcesPriority(),
+    ])
+    statuses.value = nextStatuses
+    if (
+      nextPriority === 'builtin' ||
+      nextPriority === 'builtin_only' ||
+      nextPriority === 'pansou_only'
+    ) {
+      priority.value = nextPriority
+    }
   } catch (e) {
     ui.notify('读取云盘搜索源状态失败：' + api.formatError(e), 'error')
   } finally {
     loading.value = false
+  }
+}
+
+/** 切换搜索源优先级（W14 §8.7）：失败回退旧值 */
+async function onPriorityChange(value: CloudSourcePriority) {
+  if (savingPriority.value || value === priority.value) return
+  const previous = priority.value
+  savingPriority.value = true
+  try {
+    statuses.value = await api.cloudSourcePrioritySet(value)
+    priority.value = value
+    const label =
+      value === 'builtin_only'
+        ? '只使用内置内核'
+        : value === 'pansou_only'
+          ? '只使用增强源'
+          : '内置内核优先'
+    ui.notify(`搜索源优先级已更新：${label}`, 'success')
+  } catch (e) {
+    priority.value = previous
+    ui.notify('切换搜索源优先级失败：' + api.formatError(e), 'error')
+  } finally {
+    savingPriority.value = false
   }
 }
 
@@ -368,6 +408,53 @@ onMounted(() => {
         清单需由维护者用 RSA 私钥签名（PKCS#1 v1.5 + SHA-256，签名载荷为移除
         <code>signature</code> 后的紧凑 JSON）；客户端只保存验签通过的原文。
       </p>
+    </div>
+
+    <div class="cloud-manifest">
+      <div class="cloud-manifest-head">
+        <span class="field-label">搜索源优先级</span>
+        <span class="cloud-source-detail">
+          默认「内置内核优先」：两源同时参与、内置结果先合并；也可只保留其中一个源（W14 §8.7）。
+        </span>
+      </div>
+      <div class="cloud-source-row">
+        <div class="cloud-source-info">
+          <el-select
+            v-model="priority"
+            :disabled="loading || savingPriority"
+            aria-label="搜索源优先级"
+            style="max-width: 220px"
+            @change="onPriorityChange"
+          >
+            <el-option
+              label="内置内核优先（默认）"
+              value="builtin"
+            />
+            <el-option
+              label="只使用内置内核"
+              value="builtin_only"
+            />
+            <el-option
+              label="只使用增强源"
+              value="pansou_only"
+              :disabled="!pansouConfigured"
+            />
+          </el-select>
+        </div>
+        <el-tag
+          :type="priority === 'pansou_only' && !pansouConfigured ? 'warning' : 'info'"
+          size="small"
+          effect="plain"
+        >
+          {{
+            priority === 'pansou_only'
+              ? '仅增强源'
+              : priority === 'builtin_only'
+                ? '仅内置'
+                : '内置 + 增强'
+          }}
+        </el-tag>
+      </div>
     </div>
 
     <p class="cloud-source-note">

@@ -160,3 +160,16 @@ export interface CloudPansouEnv {
 export function cloudPansouEnv(): Promise<CloudPansouEnv> {
   return invoke<CloudPansouEnv>('cloud_pansou_env')
 }
+
+/** 搜索源优先级（W14 §8.7） */
+export type CloudSourcePriority = 'builtin' | 'builtin_only' | 'pansou_only'
+
+/** 读取当前搜索源优先级 */
+export function cloudSourcesPriority(): Promise<string> {
+  return invoke<string>('cloud_sources_priority')
+}
+
+/** 设置搜索源优先级，返回更新后的源状态 */
+export function cloudSourcePrioritySet(priority: CloudSourcePriority): Promise<CloudSourceStatus[]> {
+  return invoke<CloudSourceStatus[]>('cloud_sources_priority_set', { priority })
+}

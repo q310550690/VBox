@@ -53,6 +53,16 @@ struct CloudSourcesConfig {
     /// 远端频道清单 RSA 公钥（PEM；与 `sources_url` 同时配置才启用）。
     #[serde(default)]
     sources_pubkey: Option<String>,
+    /// 搜索源优先级（W14 §8.7）：`builtin`（默认）/ `builtin_only` / `pansou_only`。
+    #[serde(default)]
+    priority: Option<String>,
+}
+
+/// 归一化搜索源优先级；无法识别的值按默认 `builtin` 处理（`None`）。
+fn normalize_priority(value: Option<String>) -> Option<String> {
+    value
+        .map(|raw| raw.trim().to_ascii_lowercase().replace('-', "_"))
+        .filter(|raw| matches!(raw.as_str(), "builtin" | "builtin_only" | "pansou_only"))
 }
 
 impl CloudSourcesConfig {
@@ -73,7 +83,17 @@ impl CloudSourcesConfig {
             .sources_pubkey
             .map(|pem| pem.trim().replace("\r\n", "\n"))
             .filter(|pem| !pem.is_empty());
+        self.priority = normalize_priority(self.priority);
         self
+    }
+
+    /// 当前生效的优先级模式（默认 `builtin`）。
+    fn priority_mode(&self) -> &'static str {
+        match self.priority.as_deref() {
+            Some("builtin_only") => "builtin_only",
+            Some("pansou_only") => "pansou_only",
+            _ => "builtin",
+        }
     }
 }
 
@@ -160,14 +180,19 @@ impl CloudState {
                 ),
             ),
         };
+        let mode = guard.config.priority_mode();
         statuses.push(SourceStatus {
             kind: SourceKind::BuiltinKernel,
             ready: !channels.is_empty(),
             version,
-            detail,
+            detail: match mode {
+                "pansou_only" => format!("{detail}（当前未启用：仅使用增强源）"),
+                "builtin_only" => format!("{detail}（当前仅使用内置内核）"),
+                _ => detail,
+            },
         });
         let config = &guard.config;
-        let pansou_status = match pansou_source(config) {
+        let mut pansou_status = match pansou_source(config) {
             Ok(Some(source)) => source.health(),
             Ok(None) => SourceStatus {
                 kind: SourceKind::PanSou,
@@ -182,6 +207,15 @@ impl CloudState {
                 detail: err,
             },
         };
+        if pansou_status.ready {
+            match mode {
+                "builtin_only" => pansou_status
+                    .detail
+                    .push_str("（当前未启用：仅使用内置内核）"),
+                "pansou_only" => pansou_status.detail.push_str("（当前仅使用增强源）"),
+                _ => {}
+            }
+        }
         statuses.push(pansou_status);
         statuses
     }
@@ -202,6 +236,7 @@ impl CloudState {
             pansou_token: token,
             sources_url: current.sources_url,
             sources_pubkey: current.sources_pubkey,
+            priority: current.priority,
         }
         .normalized();
         if let Some(url) = &config.pansou_url {
@@ -236,6 +271,7 @@ impl CloudState {
             pansou_token: current.pansou_token,
             sources_url: sources_url.or(current.sources_url),
             sources_pubkey: sources_pubkey.or(current.sources_pubkey),
+            priority: current.priority,
         }
         .normalized();
         if let Some(url) = &config.sources_url {
@@ -254,6 +290,43 @@ impl CloudState {
         guard.kernel = Arc::new(kernel);
         drop(guard);
         Ok(self.statuses())
+    }
+
+    /// 设置搜索源优先级（W14 §8.7）：
+    /// `builtin`（默认，内置内核优先且增强源参与）、`builtin_only`（仅内置内核）、
+    /// `pansou_only`（仅 PanSou 增强源，需先配置服务地址）。
+    fn set_priority(&self, priority: &str) -> Result<Vec<SourceStatus>, String> {
+        let Some(mode) = normalize_priority(Some(priority.to_string())) else {
+            return Err(format!(
+                "不支持的搜索源优先级 `{priority}`（可选 builtin / builtin_only / pansou_only）"
+            ));
+        };
+        let current = { self.lock().config.clone() };
+        if mode == "pansou_only" && current.pansou_url.is_none() {
+            return Err("未配置 PanSou 增强源地址：请先填写并保存 PanSou 服务地址".to_string());
+        }
+        let config = CloudSourcesConfig {
+            pansou_url: current.pansou_url,
+            pansou_token: current.pansou_token,
+            sources_url: current.sources_url,
+            sources_pubkey: current.sources_pubkey,
+            priority: Some(mode),
+        }
+        .normalized();
+        save_config(&self.config_path, &config)?;
+        let channels = { self.lock().channels.clone() };
+        let kernel = build_kernel(&config, &channels);
+        {
+            let mut guard = self.lock();
+            guard.config = config;
+            guard.kernel = Arc::new(kernel);
+        }
+        Ok(self.statuses())
+    }
+
+    /// 当前搜索源优先级（默认 `builtin`）。
+    fn priority(&self) -> String {
+        self.lock().config.priority_mode().to_string()
     }
 
     /// 拉取并验签远端频道清单，成功后写缓存并重建内核（W14 §11 P3）。
@@ -442,18 +515,28 @@ fn save_manifest(path: &Path, raw: &str) -> Result<(), String> {
 
 fn build_kernel(config: &CloudSourcesConfig, channels: &[String]) -> SearchKernel {
     let mut kernel = SearchKernel::default().with_timeout(KERNEL_TIMEOUT);
-    match TgKernelSource::with_default_client(channels.to_vec()) {
-        Ok(source) => {
-            kernel.add_source(Arc::new(source));
-        }
-        Err(err) => eprintln!("[vbox] 云盘内置搜索源初始化失败：{err}"),
+    let mut mode = config.priority_mode();
+    if mode == "pansou_only" && config.pansou_url.is_none() {
+        // 配置了「仅增强源」但服务地址被清除时回退内置，避免搜索完全不可用。
+        eprintln!("[vbox] 云盘搜索优先级为仅增强源，但未配置 PanSou，回退内置内核");
+        mode = "builtin";
     }
-    match pansou_source(config) {
-        Ok(Some(source)) => {
-            kernel.add_source(Arc::new(source));
+    if matches!(mode, "builtin" | "builtin_only") {
+        match TgKernelSource::with_default_client(channels.to_vec()) {
+            Ok(source) => {
+                kernel.add_source(Arc::new(source));
+            }
+            Err(err) => eprintln!("[vbox] 云盘内置搜索源初始化失败：{err}"),
         }
-        Ok(None) => {}
-        Err(err) => eprintln!("[vbox] 云盘增强搜索源初始化失败：{err}"),
+    }
+    if matches!(mode, "builtin" | "pansou_only") {
+        match pansou_source(config) {
+            Ok(Some(source)) => {
+                kernel.add_source(Arc::new(source));
+            }
+            Ok(None) => {}
+            Err(err) => eprintln!("[vbox] 云盘增强搜索源初始化失败：{err}"),
+        }
     }
     kernel
 }
@@ -562,6 +645,19 @@ pub fn cloud_sources_config_set(
 #[tauri::command]
 pub fn cloud_source_test(state: State<'_, AppState>) -> Result<String, String> {
     state.cloud.test_source()
+}
+
+#[tauri::command]
+pub fn cloud_sources_priority(state: State<'_, AppState>) -> String {
+    state.cloud.priority()
+}
+
+#[tauri::command]
+pub fn cloud_sources_priority_set(
+    state: State<'_, AppState>,
+    priority: String,
+) -> Result<Vec<SourceStatus>, String> {
+    state.cloud.set_priority(&priority)
 }
 
 /// 远端频道清单热更新（W14 §11 P3）：抓取 → RSA 验签 → 缓存 → 重建内核。
@@ -1032,6 +1128,65 @@ mod tests {
         );
         assert_eq!(unconfigured.update_available, None);
         assert!(unconfigured.hint.contains("填写服务地址"));
+    }
+
+    #[test]
+    fn priority_values_are_normalized() {
+        assert_eq!(normalize_priority(None), None);
+        assert_eq!(
+            normalize_priority(Some("  Pansou-Only ".to_string())),
+            Some("pansou_only".to_string())
+        );
+        assert_eq!(
+            normalize_priority(Some("builtin_only".to_string())),
+            Some("builtin_only".to_string())
+        );
+        assert_eq!(normalize_priority(Some("weird".to_string())), None);
+    }
+
+    #[test]
+    fn source_priority_switches_kernel_sources_and_persists() {
+        let dir = state_dir("priority");
+        let state = CloudState::new(&dir);
+        // 默认：内置 + 未配置 PanSou。
+        assert_eq!(state.priority(), "builtin");
+        assert_eq!(state.lock().kernel.source_count(), 1);
+
+        // 配置 PanSou 后两种源都参与。
+        state
+            .set_source("pansou", Some("http://127.0.0.1:8888".to_string()), None)
+            .expect("set pansou");
+        assert_eq!(state.lock().kernel.source_count(), 2);
+
+        // 仅内置内核。
+        state.set_priority("builtin_only").expect("builtin_only");
+        assert_eq!(state.priority(), "builtin_only");
+        assert_eq!(state.lock().kernel.source_count(), 1);
+        assert!(state.statuses()[1].detail.contains("未启用"));
+
+        // 仅增强源。
+        state.set_priority("pansou_only").expect("pansou_only");
+        assert_eq!(state.lock().kernel.source_count(), 1);
+
+        // 默认模式恢复两种源，并验证落盘后重启仍生效。
+        state.set_priority("builtin").expect("builtin");
+        assert_eq!(state.lock().kernel.source_count(), 2);
+        let saved = std::fs::read_to_string(dir.join("cloud-sources.json")).expect("saved config");
+        assert!(
+            saved.contains("\"priority\": \"builtin\"")
+                || saved.contains("\"priority\":\"builtin\"")
+        );
+        let reloaded = CloudState::new(&dir);
+        assert_eq!(reloaded.priority(), "builtin");
+        assert_eq!(reloaded.lock().kernel.source_count(), 2);
+    }
+
+    #[test]
+    fn priority_rejects_pansou_only_without_service() {
+        let state = CloudState::new(&state_dir("priority-empty"));
+        let error = state.set_priority("pansou_only").unwrap_err();
+        assert!(error.contains("未配置 PanSou"), "unexpected: {error}");
+        assert_eq!(state.priority(), "builtin");
     }
 
     #[test]
