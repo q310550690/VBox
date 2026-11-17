@@ -93,7 +93,8 @@ struct CloudInner {
     channels: Vec<String>,
     /// 远端清单版本；`None` 表示正在使用内置清单。
     channels_version: Option<String>,
-    kernel: SearchKernel,
+    /// 内核本身不可变；用 Arc 让搜索在锁外执行，避免 I/O 期间阻塞配置读取/并发搜索。
+    kernel: Arc<SearchKernel>,
 }
 
 impl CloudState {
@@ -104,7 +105,7 @@ impl CloudState {
         let config = load_config(&config_path).unwrap_or_default().normalized();
         let (channels, channels_version) =
             load_remote_channels(&manifest_path, config.sources_pubkey.as_deref());
-        let kernel = build_kernel(&config, &channels);
+        let kernel = Arc::new(build_kernel(&config, &channels));
         Self {
             config_path,
             manifest_path,
@@ -131,8 +132,9 @@ impl CloudState {
     }
 
     fn search(&self, query: &SearchQuery) -> Result<SearchPage, String> {
-        let guard = self.lock();
-        guard.kernel.search_checked(query).map_err(sanitize_error)
+        // 只读地取出内核句柄后立即释放锁：单次搜索最多 8s，不应阻塞状态读取/改配置。
+        let kernel = { self.lock().kernel.clone() };
+        kernel.search_checked(query).map_err(sanitize_error)
     }
 
     fn statuses(&self) -> Vec<SourceStatus> {
@@ -215,7 +217,7 @@ impl CloudState {
         guard.config = config;
         guard.channels = channels;
         guard.channels_version = channels_version;
-        guard.kernel = kernel;
+        guard.kernel = Arc::new(kernel);
         drop(guard);
         Ok(self.statuses())
     }
@@ -249,7 +251,7 @@ impl CloudState {
         guard.config = config;
         guard.channels = channels;
         guard.channels_version = channels_version;
-        guard.kernel = kernel;
+        guard.kernel = Arc::new(kernel);
         drop(guard);
         Ok(self.statuses())
     }
@@ -290,7 +292,7 @@ impl CloudState {
             let mut guard = self.lock();
             guard.channels = channels;
             guard.channels_version = Some(version.clone());
-            guard.kernel = kernel;
+            guard.kernel = Arc::new(kernel);
         }
         Ok(format!(
             "频道清单已更新：{count} 个启用频道（版本 {version}）"

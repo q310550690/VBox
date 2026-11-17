@@ -1,19 +1,23 @@
-//! 搜索编排：缓存 → 多源并行 + 超时降级 → 后处理 → 回写缓存（W14 §4 / §7.2）。
+//! 搜索编排：缓存 → 相同查询 in-flight 合并 → 多源并行 + 超时降级 → 后处理 → 回写缓存
+//! （W14 §4 / §6.6 / §7.2）。
 //!
 //! 并发模型：
 //! - 每个 source 一个 detached OS 线程（`CloudSearchSource: Send + Sync`），结果经 `mpsc` 回传；
 //! - 主线程按 [`SearchKernel::per_source_timeout`] 收结果，超时未回的 source 记入
 //!   `degraded_sources` 并把 `partial` 置 `true`，**不阻塞**整体返回；
 //! - 慢线程自然结束，其结果被丢弃（channel 已关闭时 send 失败即忽略）；
-//! - 降级结果是「部分可用」而不是错误：只有全部 source 都没数据时才返回空页。
+//! - 降级结果是「部分可用」而不是错误：只有全部 source 都没数据时才返回空页；
+//! - **in-flight dedupe**：相同查询并发时只真正执行一次，其余请求等待并复用结果
+//!   （等待超时则退化为独立计算，避免单点卡死）。
 //!
 //! 分页语义：本地分页（[`super::rank`]）为准，向 source 请求时固定取 `page=1`、
 //! `page_size=MAX_PAGE_SIZE` 作为候选池；远端分页（如 PanSou 的 `page` 参数）与本地
 //! 分页叠加会造成候选偏差，当前骨架按「远端第一页 + 本地分页」处理。
 
+use std::collections::HashMap;
 use std::panic::AssertUnwindSafe;
 use std::sync::mpsc;
-use std::sync::Arc;
+use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
 use super::cache::{CacheKey, SearchCache};
@@ -24,10 +28,22 @@ use crate::error::CoreError;
 /// 默认单源等待预算（并行执行，因此整体等待也接近这个值）。
 pub const DEFAULT_SOURCE_TIMEOUT: Duration = Duration::from_millis(1_200);
 
+/// 相同查询并发合并时，跟随者等待领导者结果的额外预算（避免领导者异常时无限等待）。
+const INFLIGHT_EXTRA_WAIT: Duration = Duration::from_secs(5);
+
+/// 一次进行中的搜索（领导者写入结果并通知跟随者）。
+#[derive(Debug, Default)]
+struct Inflight {
+    page: Mutex<Option<SearchPage>>,
+    done: Mutex<bool>,
+    ready: Condvar,
+}
+
 /// 聚合搜索内核。
 pub struct SearchKernel {
     sources: Vec<Arc<dyn CloudSearchSource>>,
-    cache: SearchCache,
+    cache: Arc<SearchCache>,
+    inflight: Mutex<HashMap<CacheKey, Arc<Inflight>>>,
     per_source_timeout: Duration,
 }
 
@@ -35,7 +51,8 @@ impl Default for SearchKernel {
     fn default() -> Self {
         SearchKernel {
             sources: Vec::new(),
-            cache: SearchCache::default(),
+            cache: Arc::new(SearchCache::default()),
+            inflight: Mutex::new(HashMap::new()),
             per_source_timeout: DEFAULT_SOURCE_TIMEOUT,
         }
     }
@@ -64,7 +81,7 @@ impl SearchKernel {
 
     /// 覆盖缓存（容量 / TTL 由调用方决定）。
     pub fn with_cache(mut self, cache: SearchCache) -> Self {
-        self.cache = cache;
+        self.cache = Arc::new(cache);
         self
     }
 
@@ -81,6 +98,11 @@ impl SearchKernel {
     /// 缓存当前条目数（观测 / 测试用）。
     pub fn cache_len(&self) -> usize {
         self.cache.len()
+    }
+
+    /// 缓存统计快照（观测 / 测试用）。
+    pub fn cache_stats(&self) -> super::cache::CacheStats {
+        self.cache.stats()
     }
 
     /// 搜索引擎入口（§7.2 `cloud_search` 的薄封装调用点）。
@@ -112,6 +134,29 @@ impl SearchKernel {
             return Ok(cached);
         }
 
+        let (is_leader, inflight) = self.begin_flight(&key);
+        if !is_leader {
+            if let Some(mut page) = self.wait_flight(&inflight) {
+                page.elapsed_ms = started.elapsed().as_millis() as u64;
+                return Ok(page);
+            }
+            // 领导者超时或异常：退化为独立执行，避免跟随者被卡住。
+            tracing::warn!("云盘搜索等待同查询结果超时，退化为独立执行");
+            let mut page = self.execute(&query);
+            page.elapsed_ms = started.elapsed().as_millis() as u64;
+            self.cache_if_complete(&key, &page);
+            return Ok(page);
+        }
+
+        let mut page = self.execute(&query);
+        page.elapsed_ms = started.elapsed().as_millis() as u64;
+        self.cache_if_complete(&key, &page);
+        self.finish_flight(&key, &inflight, &page);
+        Ok(page)
+    }
+
+    /// 真正执行一次聚合：并发请求所有 source、超时降级、合并去重、本地分页。
+    fn execute(&self, query: &SearchQuery) -> SearchPage {
         let candidates_query = SearchQuery {
             page: 1,
             page_size: SearchQuery::MAX_PAGE_SIZE,
@@ -161,7 +206,7 @@ impl SearchKernel {
         // 按 source 注册顺序整理结果，保证聚合顺序确定（与线程完成顺序无关）。
         let mut outcomes: Vec<Option<Result<SearchPage, CoreError>>> =
             (0..total_sources).map(|_| None).collect();
-        let deadline = started + self.per_source_timeout;
+        let deadline = Instant::now() + self.per_source_timeout;
         while received < total_sources {
             let now = Instant::now();
             if now >= deadline {
@@ -209,16 +254,89 @@ impl SearchKernel {
         // 去重（同名降级项只保留一次，保持出现顺序）。
         dedupe_in_place(&mut degraded_sources);
 
-        let mut page = rank::postprocess(items, &query);
+        let mut page = rank::postprocess(items, query);
         page.partial = partial;
         page.degraded_sources = degraded_sources;
-        page.elapsed_ms = started.elapsed().as_millis() as u64;
+        page
+    }
 
-        // 只有完整结果才写缓存；降级结果缓存 5 分钟会把短时故障放大成持续问题。
-        if !partial {
-            self.cache.put(key, page.clone());
+    /// 只有完整结果才写缓存；降级结果缓存会把短时故障放大成持续问题。
+    fn cache_if_complete(&self, key: &CacheKey, page: &SearchPage) {
+        if !page.partial {
+            self.cache.put(key.clone(), page.clone());
         }
-        Ok(page)
+    }
+
+    /// 注册（或加入）一次进行中的相同查询；返回 `(是否领导者, 状态)`。
+    fn begin_flight(&self, key: &CacheKey) -> (bool, Arc<Inflight>) {
+        let mut inflight = self
+            .inflight
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if let Some(state) = inflight.get(key) {
+            return (false, Arc::clone(state));
+        }
+        let state = Arc::new(Inflight::default());
+        inflight.insert(key.clone(), Arc::clone(&state));
+        (true, state)
+    }
+
+    /// 领导者发布结果并唤醒跟随者。
+    fn finish_flight(&self, key: &CacheKey, inflight: &Arc<Inflight>, page: &SearchPage) {
+        {
+            let mut slot = inflight
+                .page
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            *slot = Some(page.clone());
+        }
+        {
+            let mut done = inflight
+                .done
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            *done = true;
+        }
+        inflight.ready.notify_all();
+
+        let mut states = self
+            .inflight
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if let Some(registered) = states.get(key) {
+            if Arc::ptr_eq(registered, inflight) {
+                states.remove(key);
+            }
+        }
+    }
+
+    /// 跟随者等待领导者结果；超时返回 `None`。
+    fn wait_flight(&self, inflight: &Arc<Inflight>) -> Option<SearchPage> {
+        let wait = self.per_source_timeout + INFLIGHT_EXTRA_WAIT;
+        let deadline = Instant::now() + wait;
+        let mut done = inflight
+            .done
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        while !*done {
+            let remaining = deadline.saturating_duration_since(Instant::now());
+            if remaining.is_zero() {
+                return None;
+            }
+            let (guard, timeout) = inflight
+                .ready
+                .wait_timeout(done, remaining)
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            done = guard;
+            if timeout.timed_out() && !*done {
+                return None;
+            }
+        }
+        let slot = inflight
+            .page
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        slot.clone()
     }
 }
 
@@ -239,6 +357,7 @@ mod tests {
     use super::*;
     use crate::cloudsearch::{SearchItem, SearchProvider, SourceKind, SourceStatus};
     use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Barrier;
 
     fn item(id: &str, title: &str) -> SearchItem {
         SearchItem {
@@ -455,5 +574,70 @@ mod tests {
         let page = kernel.search(&query("电影", 1, 20));
         assert!(page.partial);
         assert_eq!(kernel.cache_len(), 0, "降级结果不应写缓存");
+    }
+
+    #[test]
+    fn dedupes_concurrent_identical_queries() {
+        let source = Arc::new(FakeSource::slow(
+            "slow",
+            Duration::from_millis(300),
+            vec![item("quark:a", "电影 A")],
+        ));
+        let calls = Arc::clone(&source.calls);
+        let kernel = Arc::new(SearchKernel::new(vec![
+            source as Arc<dyn CloudSearchSource>,
+        ]));
+        let barrier = Arc::new(Barrier::new(5));
+
+        let mut handles = Vec::new();
+        for _ in 0..4 {
+            let kernel = Arc::clone(&kernel);
+            let barrier = Arc::clone(&barrier);
+            handles.push(std::thread::spawn(move || {
+                barrier.wait();
+                kernel.search_checked(&query("电影", 1, 20))
+            }));
+        }
+        barrier.wait();
+        for handle in handles {
+            let page = handle.join().expect("线程应正常结束").expect("搜索应成功");
+            assert_eq!(page.total, 1);
+        }
+
+        assert_eq!(
+            calls.load(Ordering::SeqCst),
+            1,
+            "相同查询并发应只真正执行一次"
+        );
+        assert_eq!(kernel.cache_len(), 1);
+    }
+
+    #[test]
+    fn dedupe_does_not_merge_different_queries() {
+        let source = Arc::new(FakeSource::slow(
+            "slow",
+            Duration::from_millis(100),
+            vec![item("quark:a", "电影 A")],
+        ));
+        let calls = Arc::clone(&source.calls);
+        let kernel = Arc::new(SearchKernel::new(vec![
+            source as Arc<dyn CloudSearchSource>,
+        ]));
+        let barrier = Arc::new(Barrier::new(3));
+
+        let mut handles = Vec::new();
+        for keyword in ["电影", "电视剧"] {
+            let kernel = Arc::clone(&kernel);
+            let barrier = Arc::clone(&barrier);
+            handles.push(std::thread::spawn(move || {
+                barrier.wait();
+                kernel.search_checked(&query(keyword, 1, 20))
+            }));
+        }
+        barrier.wait();
+        for handle in handles {
+            handle.join().expect("线程应正常结束").expect("搜索应成功");
+        }
+        assert_eq!(calls.load(Ordering::SeqCst), 2, "不同查询不应合并");
     }
 }
