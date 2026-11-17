@@ -13,6 +13,7 @@ import HintBar from '@/components/HintBar.vue'
 import * as api from '@/api'
 import type { CloudSearchItem, CloudSearchProvider, CloudSortBy } from '@/api'
 import { useCloudSearchStore } from '@/store/cloudSearch'
+import { useCloudSourcesStore } from '@/store/cloudSources'
 import { formatBytes, formatRelativeTime } from '@/utils/format'
 
 defineOptions({ name: 'CloudSearchView' })
@@ -36,15 +37,17 @@ const PROVIDER_LABEL: Record<string, string> = {
   other: '其他',
 }
 
-const FILTERS: { value: CloudSearchProvider | ''; label: string }[] = [
-  { value: '', label: '全部' },
-  { value: 'quark', label: '夸克' },
-  { value: 'aliyun', label: '阿里' },
-  { value: 'p115', label: '115' },
-  { value: 'xunlei', label: '迅雷' },
-  { value: 'pikpak', label: 'PikPak' },
-  { value: 'magnet', label: '磁力' },
+const CORE_FILTERS: CloudSearchProvider[] = [
+  'quark',
+  'aliyun',
+  'p115',
+  'xunlei',
+  'pikpak',
+  'uc',
+  'magnet',
+  'ed2k',
 ]
+const CORE_FILTER_SET = new Set<string>(CORE_FILTERS)
 
 const keyword = computed(() => String(route.params.keyword ?? ''))
 const input = ref(keyword.value)
@@ -65,6 +68,24 @@ function chipCount(value: CloudSearchProvider | ''): number {
   if (value === '') return allCount.value
   return countsByProvider.value.get(value) ?? 0
 }
+
+/** 过滤标签：核心网盘常驻，其余 provider 仅在结果中出现时追加（W14 §8.3 动态 facet） */
+const filters = computed<{ value: CloudSearchProvider | ''; label: string }[]>(() => {
+  const present = new Set((result.value?.providerCounts ?? []).map((row) => row.provider))
+  const extras = (Object.keys(PROVIDER_LABEL) as CloudSearchProvider[]).filter(
+    (key) => !CORE_FILTER_SET.has(key) && present.has(key),
+  )
+  const active = provider.value && !CORE_FILTER_SET.has(provider.value) ? [provider.value] : []
+  const values = [...new Set([...CORE_FILTERS, ...extras, ...active])]
+  return [{ value: '', label: '全部' }, ...values.map((value) => ({ value, label: PROVIDER_LABEL[value] ?? value }))]
+})
+
+const sources = useCloudSourcesStore()
+const sourceLabel = computed(() => {
+  if (sources.priority === 'pansou_only') return 'PanSou 增强源'
+  if (sources.priority === 'builtin_only') return '内置内核'
+  return sources.pansouConfigured ? '内置内核 + PanSou' : '内置内核'
+})
 
 function filterLabel(providerKey: string): string {
   return PROVIDER_LABEL[providerKey] ?? providerKey
@@ -212,6 +233,7 @@ watch(keyword, (word) => {
 onMounted(() => {
   search.initialize(keyword.value)
   void search.run()
+  void sources.load()
 })
 onActivated(() => {
   search.initialize(keyword.value)
@@ -271,7 +293,7 @@ onActivated(() => {
         <template v-if="result.partial">
           · <span class="stats-warn">部分来源超时，已显示 {{ result.items.length }} 条</span>
         </template>
-        · 源 内置内核
+        · 源 {{ sourceLabel }}
         <template v-if="result.elapsedMs">
           · {{ (result.elapsedMs / 1000).toFixed(1) }}s
         </template>
@@ -286,7 +308,7 @@ onActivated(() => {
 
       <div class="filter-chips">
         <button
-          v-for="item in FILTERS"
+          v-for="item in filters"
           :key="item.value"
           class="filter-chip"
           :class="{ 'is-active': provider === item.value }"
