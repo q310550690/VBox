@@ -4,12 +4,14 @@
 import { computed, onActivated, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { storeToRefs } from 'pinia'
 import SolarIcon from '@/components/SolarIcon.vue'
 import PageScroll from '@/components/PageScroll.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import HintBar from '@/components/HintBar.vue'
 import * as api from '@/api'
-import type { CloudSearchItem, CloudSearchPage, CloudSearchProvider, CloudSortBy } from '@/api'
+import type { CloudSearchItem, CloudSearchProvider, CloudSortBy } from '@/api'
+import { useCloudSearchStore } from '@/store/cloudSearch'
 import { formatBytes, formatRelativeTime } from '@/utils/format'
 
 defineOptions({ name: 'CloudSearchView' })
@@ -45,47 +47,20 @@ const FILTERS: { value: CloudSearchProvider | ''; label: string }[] = [
 
 const keyword = computed(() => String(route.params.keyword ?? ''))
 const input = ref(keyword.value)
-const provider = ref<CloudSearchProvider | ''>('')
-const sort = ref<CloudSortBy>('relevance')
-const page = ref(1)
-const pageSize = 20
-
-const pageCount = computed(() => {
-  const value = result.value
-  if (!value || value.total <= 0) return 1
-  return Math.max(1, Math.ceil(value.total / pageSize))
-})
-
-const result = ref<CloudSearchPage | null>(null)
-const loading = ref(false)
-const error = ref('')
 const detail = ref<CloudSearchItem | null>(null)
 
-/** 搜索源不可用：空结果且存在降级/超时来源（内置源依赖 Telegram，可能需要代理） */
-const sourceTrouble = computed(() => {
-  const value = result.value
-  if (!value || value.items.length) return false
-  return value.partial || value.degradedSources.length > 0
-})
-
-/** 去重后、provider 筛选前的分网盘计数（后端 SearchPage.providerCounts）。 */
-const countsByProvider = computed(() => {
-  const map = new Map<string, number>()
-  for (const row of result.value?.providerCounts ?? []) map.set(row.provider, row.count)
-  return map
-})
-
-const allCount = computed(() =>
-  (result.value?.providerCounts ?? []).reduce((sum, row) => sum + row.count, 0),
-)
+// 状态/结果缓存统一放 store（W14 §7.3）：KeepAlive 返回本页不重复请求后端。
+const search = useCloudSearchStore()
+const { provider, sort, page, result, loading, error } = storeToRefs(search)
+const pageCount = computed(() => search.pageCount)
+const countsByProvider = computed(() => search.countsByProvider)
+const allCount = computed(() => search.allCount)
+const sourceTrouble = computed(() => search.sourceTrouble)
 
 function chipCount(value: CloudSearchProvider | ''): number {
   if (value === '') return allCount.value
   return countsByProvider.value.get(value) ?? 0
 }
-
-/** 已按当前筛选条件搜索过的关键词，避免返回本页时重复请求 */
-let lastKey = ''
 
 function filterLabel(providerKey: string): string {
   return PROVIDER_LABEL[providerKey] ?? providerKey
@@ -101,51 +76,28 @@ function titleOf(item: CloudSearchItem): string {
   return item.title || item.shareUrl
 }
 
-function goPage(target: number): void {
-  const next = Math.min(Math.max(1, target), pageCount.value)
-  if (next !== page.value) page.value = next
+function runSearch(force = false): void {
+  void search.run(force)
 }
 
-async function runSearch(force = false): Promise<void> {
-  const key = `${keyword.value}|${provider.value}|${sort.value}|${page.value}`
-  if (!force && key === lastKey && result.value) return
-  lastKey = key
-  loading.value = true
-  error.value = ''
-  try {
-    if (api.demoMode) {
-      result.value = {
-        items: [],
-        total: 0,
-        partial: false,
-        elapsedMs: 0,
-        degradedSources: [],
-        deduped: 0,
-        providerCounts: [],
-      }
-      return
-    }
-    result.value = await api.cloudSearch({
-      keyword: keyword.value,
-      page: page.value,
-      pageSize,
-      providers: provider.value ? [provider.value] : [],
-      sort: sort.value,
-    })
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : String(err)
-    result.value = null
-  } finally {
-    loading.value = false
-  }
+function goPage(target: number): void {
+  search.goPage(target)
+}
+
+function setFilter(value: CloudSearchProvider | ''): void {
+  search.setFilter(value)
+}
+
+function onSortChange(event: Event): void {
+  search.setSort((event.target as HTMLSelectElement).value as CloudSortBy)
 }
 
 function submit(): void {
   const word = input.value.trim()
   if (!word) return
-  page.value = 1
+  search.page = 1
   if (word === keyword.value) {
-    void runSearch(true)
+    void search.run(true)
     return
   }
   void router.push(`/cloud/search/${encodeURIComponent(word)}`)
@@ -196,23 +148,20 @@ async function play(item: CloudSearchItem): Promise<void> {
   await openExternal(item)
 }
 
-watch(
-  () => `${keyword.value}|${provider.value}|${sort.value}`,
-  () => {
-    input.value = keyword.value
-    if (page.value !== 1) {
-      // 页码变化会触发下方 watch(page) 的强制搜索，避免重复请求
-      page.value = 1
-      return
-    }
-    void runSearch(true)
-  },
-)
+watch(keyword, (word) => {
+  input.value = word
+  search.initialize(word)
+  void search.run()
+})
 
-watch(page, () => void runSearch(true))
-
-onMounted(() => void runSearch())
-onActivated(() => void runSearch())
+onMounted(() => {
+  search.initialize(keyword.value)
+  void search.run()
+})
+onActivated(() => {
+  search.initialize(keyword.value)
+  void search.run()
+})
 </script>
 
 <template>
@@ -247,9 +196,10 @@ onActivated(() => void runSearch())
           </button>
         </div>
         <select
-          v-model="sort"
+          :model-value="sort"
           class="search-select"
           aria-label="排序"
+          @change="onSortChange"
         >
           <option value="relevance">相关度</option>
           <option value="time">时间</option>
@@ -287,7 +237,7 @@ onActivated(() => void runSearch())
           class="filter-chip"
           :class="{ 'is-active': provider === item.value }"
           type="button"
-          @click="provider = item.value"
+          @click="setFilter(item.value)"
         >
           {{ item.label }}
           <span
