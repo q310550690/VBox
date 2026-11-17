@@ -1225,3 +1225,8 @@ export function localMediaUrl(path: string): Promise<string> {
 
 // 只在 Tauri 下可用；浏览器演示模式请调用方先判 `demoMode` 再决定是否调用。
 export * from './pan'
+
+/* ---------------- 云盘聚合搜索（W14） ---------------- */
+
+export * from './cloud'
+export * from './drive'

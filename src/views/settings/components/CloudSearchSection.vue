@@ -1,0 +1,236 @@
+<!-- 设置页 · 云盘搜索分区：内置内核状态 + PanSou 可选增强源配置（W14 P1） -->
+<script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
+import * as api from '@/api'
+import type { CloudSourceStatus } from '@/api/cloud'
+import { useUiStore } from '@/store/ui'
+
+const ui = useUiStore()
+
+/** 搜索源状态（内置内核 + PanSou） */
+const statuses = ref<CloudSourceStatus[]>([])
+const loading = ref(false)
+const saving = ref(false)
+const testing = ref(false)
+
+/** PanSou 表单（留空 = 未配置 / 关闭） */
+const pansouUrl = ref('')
+const pansouToken = ref('')
+
+const builtin = computed(() => statuses.value.find((item) => item.kind === 'builtin_kernel'))
+const pansou = computed(() => statuses.value.find((item) => item.kind === 'pan_sou'))
+
+async function load() {
+  if (loading.value) return
+  loading.value = true
+  try {
+    statuses.value = await api.cloudSourceStatus()
+  } catch (e) {
+    ui.notify('读取云盘搜索源状态失败：' + api.formatError(e), 'error')
+  } finally {
+    loading.value = false
+  }
+}
+
+async function save() {
+  if (saving.value) return
+  saving.value = true
+  try {
+    statuses.value = await api.cloudSourceSet({
+      kind: 'pansou',
+      url: pansouUrl.value.trim() || null,
+      token: pansouToken.value.trim() || null,
+    })
+    ui.notify(
+      pansouUrl.value.trim() ? 'PanSou 增强源已保存' : '已关闭 PanSou 增强源',
+      'success',
+    )
+    pansouUrl.value = ''
+    pansouToken.value = ''
+  } catch (e) {
+    ui.notify('保存云盘搜索源失败：' + api.formatError(e), 'error')
+  } finally {
+    saving.value = false
+  }
+}
+
+async function test() {
+  if (testing.value) return
+  testing.value = true
+  try {
+    const message = await api.cloudSourceTest()
+    ui.notify(message, 'success')
+  } catch (e) {
+    ui.notify('搜索源自检失败：' + api.formatError(e), 'error')
+  } finally {
+    testing.value = false
+  }
+}
+
+function disablePansou() {
+  pansouUrl.value = ''
+  pansouToken.value = ''
+  void save()
+}
+
+onMounted(() => {
+  void load()
+})
+</script>
+
+<template>
+  <section
+    class="settings-section"
+    aria-labelledby="settings-cloudsearch"
+  >
+    <header class="section-head">
+      <h2
+        id="settings-cloudsearch"
+        class="section-title"
+      >
+        云盘搜索源
+      </h2>
+      <p class="section-desc">
+        云盘聚合搜索默认使用内置 Telegram 频道内核，零配置可用；内置源依赖 Telegram 网络连通性（部分网络环境需要代理）。
+        PanSou 是可选增强源，需自行部署（Docker 等），VBox 不随包分发。
+      </p>
+    </header>
+
+    <div class="cloud-source-row">
+      <div class="cloud-source-info">
+        <span class="field-label">内置内核</span>
+        <span class="cloud-source-detail">
+          {{ builtin?.detail || '加载中…' }}
+          <template v-if="builtin?.version"> · 清单 {{ builtin.version }}</template>
+        </span>
+      </div>
+      <el-tag
+        :type="builtin?.ready ? 'success' : 'info'"
+        size="small"
+        effect="plain"
+      >
+        {{ builtin?.ready ? '可用' : '不可用' }}
+      </el-tag>
+    </div>
+
+    <div class="cloud-source-row">
+      <div class="cloud-source-info">
+        <span class="field-label">PanSou 增强源</span>
+        <span class="cloud-source-detail">
+          {{ pansou?.detail || '未配置（可选增强源，默认关闭）' }}
+        </span>
+      </div>
+      <el-tag
+        :type="pansou?.ready ? 'success' : 'info'"
+        size="small"
+        effect="plain"
+      >
+        {{ pansou?.ready ? '已连接' : '未启用' }}
+      </el-tag>
+    </div>
+
+    <div class="field-grid">
+      <div class="field">
+        <span class="field-label">服务地址</span>
+        <span class="field-control">
+          <el-input
+            v-model="pansouUrl"
+            placeholder="http://127.0.0.1:8888（留空表示关闭）"
+            :disabled="loading || saving"
+            clearable
+            aria-label="PanSou 服务地址"
+          />
+        </span>
+      </div>
+      <div class="field">
+        <span class="field-label">服务 token</span>
+        <span class="field-control">
+          <el-input
+            v-model="pansouToken"
+            placeholder="可选；Authorization: Bearer"
+            :disabled="loading || saving"
+            show-password
+            clearable
+            aria-label="PanSou 服务 token"
+          />
+        </span>
+      </div>
+    </div>
+
+    <div class="cloud-source-actions">
+      <el-button
+        type="primary"
+        :loading="saving"
+        @click="save"
+      >
+        保存
+      </el-button>
+      <el-button
+        :loading="testing"
+        @click="test"
+      >
+        测试连接
+      </el-button>
+      <el-button
+        v-if="pansou?.ready"
+        :disabled="saving"
+        @click="disablePansou"
+      >
+        关闭增强源
+      </el-button>
+    </div>
+
+    <p class="cloud-source-note">
+      隐私说明：搜索关键词只在请求时发往所选搜索源，不写入日志；服务地址与 token 仅保存在本机
+      <code>cloud-sources.json</code>（不是网盘凭据）。
+    </p>
+  </section>
+</template>
+
+<style scoped>
+.cloud-source-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-lighter);
+}
+
+.cloud-source-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cloud-source-detail {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.field-grid {
+  margin-top: var(--space-4);
+}
+
+.cloud-source-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.cloud-source-note {
+  margin: var(--space-4) 0 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-tertiary);
+}
+
+.cloud-source-note code {
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  font-size: 12px;
+}
+</style>

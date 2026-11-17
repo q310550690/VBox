@@ -22,6 +22,7 @@ import box from '@/assets/solar-linear/solar--box-linear.svg?raw'
 import chatRoundLine from '@/assets/solar-linear/solar--chat-round-line-linear.svg?raw'
 import checkCircle from '@/assets/solar-linear/solar--check-circle-linear.svg?raw'
 import clapperboard from '@/assets/solar-linear/solar--clapperboard-linear.svg?raw'
+import cloudStorage from '@/assets/solar-linear/solar--cloud-storage-linear.svg?raw'
 import cloudUpload from '@/assets/solar-linear/solar--cloud-upload-linear.svg?raw'
 import clockCircle from '@/assets/solar-linear/solar--clock-circle-linear.svg?raw'
 import close from '@/assets/solar-linear/solar--close-linear.svg?raw'
@@ -87,6 +88,7 @@ export const solarIcons = {
   'chat-round-line': chatRoundLine,
   'check-circle': checkCircle,
   clapperboard,
+  'cloud-storage': cloudStorage,
   'cloud-upload': cloudUpload,
   'clock-circle': clockCircle,
   close,

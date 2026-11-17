@@ -40,7 +40,7 @@ const emit = defineEmits<{
 const router = useRouter()
 
 /**
- * 网盘类失败（W13 未登录联动）：提示去「设置 → 网盘账号」登录后重试。
+ * 网盘类失败（W13 未登录联动）：提示去「云盘 → 右上角账号管理」登录后重试。
  * 后端把缺失 Cookie/登录态归为 `catvod.pan.cookie_required`，部分老文案直接带 login_required。
  */
 const panLoginHint = computed(() => {
@@ -49,7 +49,7 @@ const panLoginHint = computed(() => {
 })
 
 function goPanLogin() {
-  void router.push({ path: '/settings', query: { section: 'anchor-pan' } })
+  void router.push({ path: '/cloud', query: { accounts: '1' } })
 }
 
 /* ---------------- 宏观步骤 ---------------- */

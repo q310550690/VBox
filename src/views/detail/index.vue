@@ -176,7 +176,7 @@ watch([parseState, parseError], ([state, message]) => {
     cancelButtonText: '稍后',
     type: 'warning',
   })
-    .then(() => router.push({ path: '/settings', query: { section: 'anchor-pan' } }))
+    .then(() => router.push({ path: '/cloud', query: { accounts: '1' } }))
     .catch(() => undefined)
 })
 

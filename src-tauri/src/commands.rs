@@ -108,6 +108,8 @@ pub struct AppState {
     pub pan_login: vbox_core::pan::login::LoginHub,
     /// 网盘凭据存储（W13 D4）：DPAPI 加密的 credentials.json + 内存 overlay
     pub pan_credentials: Arc<crate::pan_credentials::PanCredentialStore>,
+    /// 云盘聚合搜索（W14 P1）：内置 Telegram 内核 + 可选 PanSou 增强源
+    pub cloud: Arc<crate::commands_cloud::CloudState>,
 }
 
 impl AppState {
@@ -141,6 +143,8 @@ impl AppState {
         if !restored.is_empty() {
             eprintln!("[vbox] 已恢复 {} 个网盘账号凭据", restored.len());
         }
+        // W14 P1：云盘聚合搜索内核（内置 Telegram 频道源；PanSou 增强源按本机配置启用）。
+        let cloud = Arc::new(crate::commands_cloud::CloudState::new(&app_data_dir));
         Self {
             loaded: Mutex::new(None),
             cache_dir,
@@ -152,6 +156,7 @@ impl AppState {
             node_config,
             pan_login,
             pan_credentials,
+            cloud,
         }
     }
 

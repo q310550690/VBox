@@ -24,10 +24,14 @@ import { rememberNavRoute } from './navMemory'
 
 import VodLayout from '@/layouts/VodLayout.vue'
 import LiveLayout from '@/layouts/LiveLayout.vue'
+import CloudLayout from '@/layouts/CloudLayout.vue'
 import SearchLayout from '@/layouts/SearchLayout.vue'
 import HistoryLayout from '@/layouts/HistoryLayout.vue'
 import FavoritesLayout from '@/layouts/FavoritesLayout.vue'
 import VodView from '@/views/vod/index.vue'
+import CloudHomeView from '@/views/cloud/index.vue'
+import CloudSearchView from '@/views/cloud/search.vue'
+import CloudManageView from '@/views/cloud/manage.vue'
 import DetailView from '@/views/detail/index.vue'
 import LocalPlayerView from '@/views/local-player/index.vue'
 import SearchView from '@/views/search/index.vue'
@@ -70,6 +74,31 @@ const routes: RouteRecordRaw[] = [
             meta: { title: '详情', nav: 'vod', back: '/vod/search' },
           },
         ],
+      },
+    ],
+  },
+  {
+    path: '/cloud',
+    component: CloudLayout,
+    meta: { nav: 'cloud' },
+    children: [
+      {
+        path: '',
+        name: 'cloud',
+        component: CloudHomeView,
+        meta: { title: '云盘', nav: 'cloud' },
+      },
+      {
+        path: 'search/:keyword',
+        name: 'cloud-search',
+        component: CloudSearchView,
+        meta: { title: '云盘搜索', nav: 'cloud', back: '/cloud' },
+      },
+      {
+        path: 'manage/:accountId',
+        name: 'cloud-manage',
+        component: CloudManageView,
+        meta: { title: '云盘管理', nav: 'cloud', back: '/cloud' },
       },
     ],
   },

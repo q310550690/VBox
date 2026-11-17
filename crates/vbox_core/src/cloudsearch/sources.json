@@ -1,0 +1,16 @@
+{
+  "version": "2026.11.17",
+  "updated_at": 0,
+  "channels": [
+    { "handle": "yunpan_channel", "enabled": true },
+    { "handle": "aliyunpan_share", "enabled": true },
+    { "handle": "quark_share", "enabled": true },
+    { "handle": "baidu_share", "enabled": true },
+    { "handle": "tianyi_pan", "enabled": true },
+    { "handle": "xunlei_share", "enabled": true },
+    { "handle": "pikpak_channel", "enabled": true },
+    { "handle": "uc_share", "enabled": true },
+    { "handle": "res_115", "enabled": true },
+    { "handle": "legacy_channel", "enabled": false }
+  ]
+}

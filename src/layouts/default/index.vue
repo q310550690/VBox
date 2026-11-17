@@ -21,7 +21,7 @@ function isEditableFocus(): boolean {
   return tag === 'input' || tag === 'textarea' || tag === 'select' || el.isContentEditable
 }
 
-/** 全局快捷键：/ 搜索；Alt+1..4 一级菜单；Alt+, 设置（输入框内 Alt 组合键仍生效） */
+/** 全局快捷键：/ 搜索；Alt+1..5 一级菜单（含云盘）；Alt+, 设置（输入框内 Alt 组合键仍生效） */
 function onKeydown(event: KeyboardEvent) {
   if (event.defaultPrevented || event.repeat) return
 
@@ -38,9 +38,10 @@ function onKeydown(event: KeyboardEvent) {
     currentNav === nav ? fallback : navTarget(nav, fallback)
   const targets: Record<string, string> = {
     Digit1: linkTo('vod', '/vod'),
-    Digit2: linkTo('live', '/live'),
-    Digit3: linkTo('history', '/history'),
-    Digit4: linkTo('downloads', '/downloads'),
+    Digit2: linkTo('cloud', '/cloud'),
+    Digit3: linkTo('live', '/live'),
+    Digit4: linkTo('history', '/history'),
+    Digit5: linkTo('downloads', '/downloads'),
     Comma: linkTo('settings', '/settings'),
   }
   const target = targets[event.code]
@@ -75,6 +76,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
             <KeepAlive
               :include="[
                 'VodLayout',
+                'CloudLayout',
                 'LiveLayout',
                 'HistoryLayout',
                 'FavoritesLayout',

@@ -1,6 +1,7 @@
 // VBox 桌面端 Tauri 应用主体
 mod capture;
 mod commands;
+mod commands_cloud;
 mod commands_pan;
 mod download;
 mod embedded_tools;
@@ -325,6 +326,12 @@ pub fn run() {
             ffmpeg_prefs::ffmpeg_pick,
             ffmpeg_prefs::ffmpeg_open_download,
             // W13：网盘账号登录（协议登录 + 网页兜底 + 账号管理）
+            commands_cloud::cloud_search,
+            commands_cloud::cloud_hot_searches,
+            commands_cloud::cloud_source_status,
+            commands_cloud::cloud_source_set,
+            commands_cloud::cloud_source_test,
+            commands_cloud::cloud_sources_update,
             commands_pan::login_start,
             commands_pan::login_poll,
             commands_pan::login_cancel,

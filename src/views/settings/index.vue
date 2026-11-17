@@ -1,11 +1,12 @@
 <!-- 设置页：订阅 / 运行环境 / 播放与缓存 / 搜索与历史 / 网络与日志 / 外观 / 关于（分组卡片 + 吸顶分区导航） -->
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import StatusTabs from '@/components/StatusTabs.vue'
 import PageScroll from '@/components/PageScroll.vue'
 import AboutSection from './components/AboutSection.vue'
 import AppearanceSection from './components/AppearanceSection.vue'
+import CloudSearchSection from './components/CloudSearchSection.vue'
 import DownloadSection from './components/DownloadSection.vue'
 import FfmpegSection from './components/FfmpegSection.vue'
 import HistorySection from './components/HistorySection.vue'
@@ -13,7 +14,6 @@ import LogsSection from './components/LogsSection.vue'
 import NetworkSection from './components/NetworkSection.vue'
 import NodeSection from './components/NodeSection.vue'
 import PlaybackCacheSection from './components/PlaybackCacheSection.vue'
-import PanAccountsSection from './components/PanAccountsSection.vue'
 import PlaybackSection from './components/PlaybackSection.vue'
 import PluginSection from './components/PluginSection.vue'
 import PythonSection from './components/PythonSection.vue'
@@ -32,7 +32,7 @@ const SECTION_TABS: { value: string; label: string }[] = [
   { value: 'anchor-runtime', label: '运行环境' },
   { value: 'anchor-playback', label: '播放与缓存' },
   { value: 'anchor-plugins', label: '插件' },
-  { value: 'anchor-pan', label: '网盘账号' },
+  { value: 'anchor-cloudsearch', label: '云盘搜索' },
   { value: 'anchor-search', label: '搜索与历史' },
   { value: 'anchor-network', label: '网络与日志' },
   { value: 'anchor-appearance', label: '外观' },
@@ -43,6 +43,16 @@ const SECTION_TABS: { value: string; label: string }[] = [
 const activeSection = ref<string>(SECTION_TABS[0].value)
 
 const route = useRoute()
+
+/** 分区锚点直达：/settings?section=anchor-cloudsearch（供云盘搜索空态等入口跳转） */
+function applySectionQuery() {
+  const section = route.query.section
+  if (typeof section !== 'string' || !SECTION_TABS.some((item) => item.value === section)) return
+  activeSection.value = section
+  requestAnimationFrame(() => {
+    document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+}
 
 function onSectionChange(anchor: string) {
   activeSection.value = anchor
@@ -70,16 +80,10 @@ onMounted(() => {
       ?.closest<HTMLElement>('.page-scroll')
       ?.querySelector<HTMLElement>('.el-scrollbar__wrap') ?? null
   scrollEl?.addEventListener('scroll', syncActiveSection, { passive: true })
-
-  // 外部入口带 ?section=anchor-pan 进入时（如解析失败的「去登录网盘账号」），滚到对应分区
-  const section = String(route.query.section ?? '')
-  if (section && SECTION_TABS.some((item) => item.value === section)) {
-    activeSection.value = section
-    window.requestAnimationFrame(() => {
-      document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    })
-  }
+  applySectionQuery()
 })
+
+watch(() => route.query.section, applySectionQuery)
 
 onBeforeUnmount(() => {
   scrollEl?.removeEventListener('scroll', syncActiveSection)
@@ -140,12 +144,12 @@ onBeforeUnmount(() => {
       <PluginSection />
     </div>
 
-    <!-- 网盘账号：115/夸克/迅雷协议登录 + 网页授权兜底 -->
+    <!-- 云盘搜索源：内置内核状态 / PanSou 可选增强源（W14） -->
     <div
-      id="anchor-pan"
+      id="anchor-cloudsearch"
       class="settings-card panel"
     >
-      <PanAccountsSection />
+      <CloudSearchSection />
     </div>
 
     <!-- 搜索与历史：搜索 / 历史记录 合并 -->

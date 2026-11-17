@@ -28,6 +28,7 @@ const collapsed = true as const
 
 const navItems: NavItem[] = [
   { nav: 'vod', to: '/vod', label: '点播', icon: 'clapperboard' },
+  { nav: 'cloud', to: '/cloud', label: '云盘', icon: 'cloud-storage' },
   { nav: 'live', to: '/live', label: '直播', icon: 'videocamera' },
   { nav: 'favorites', to: '/favorites', label: '收藏', icon: 'star' },
   { nav: 'history', to: '/history', label: '历史记录', icon: 'clock-circle' },
