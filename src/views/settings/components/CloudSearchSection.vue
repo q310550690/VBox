@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import * as api from '@/api'
-import type { CloudSourceStatus } from '@/api/cloud'
+import type { CloudPansouEnv, CloudSourceStatus } from '@/api/cloud'
 import { useUiStore } from '@/store/ui'
 
 const ui = useUiStore()
@@ -22,6 +22,27 @@ const sourcesUrl = ref('')
 const sourcesPubkey = ref('')
 const savingSources = ref(false)
 const updatingManifest = ref(false)
+
+/** PanSou Docker 运行环境（W14 §8.7） */
+const pansouEnv = ref<CloudPansouEnv | null>(null)
+const detectingEnv = ref(false)
+
+async function loadEnv() {
+  if (detectingEnv.value) return
+  detectingEnv.value = true
+  try {
+    pansouEnv.value = await api.cloudPansouEnv()
+  } catch (e) {
+    ui.notify('检测 Docker 环境失败：' + api.formatError(e), 'error')
+  } finally {
+    detectingEnv.value = false
+  }
+}
+
+function openInstall() {
+  const url = pansouEnv.value?.installUrl || 'https://docs.docker.com/desktop/'
+  api.pluginOpenUrl(url)
+}
 
 const builtin = computed(() => statuses.value.find((item) => item.kind === 'builtin_kernel'))
 const pansou = computed(() => statuses.value.find((item) => item.kind === 'pan_sou'))
@@ -112,6 +133,7 @@ function disablePansou() {
 
 onMounted(() => {
   void load()
+  void loadEnv()
 })
 </script>
 
@@ -215,6 +237,74 @@ onMounted(() => {
       >
         关闭增强源
       </el-button>
+    </div>
+
+    <div
+      v-if="pansouEnv"
+      class="cloud-manifest"
+    >
+      <div class="cloud-manifest-head">
+        <span class="field-label">Docker 运行环境</span>
+        <span class="cloud-source-detail">
+          PanSou 官方目前仅提供 Docker 镜像，无三平台单文件发行版；VBox 不随包分发、不自动启动容器。
+        </span>
+      </div>
+      <div class="cloud-source-row">
+        <div class="cloud-source-info">
+          <span class="cloud-source-detail">
+            <template v-if="!pansouEnv.dockerInstalled">未检测到 Docker</template>
+            <template v-else>
+              Docker {{ pansouEnv.dockerVersion || '已安装' }} ·
+              {{ pansouEnv.daemonRunning ? '守护进程运行中' : '守护进程未运行' }} ·
+              镜像
+              {{
+                pansouEnv.imagePresent
+                  ? '已就绪'
+                  : '未拉取'
+              }}
+              <template v-if="pansouEnv.updateAvailable"> · 有新版本</template>
+            </template>
+          </span>
+          <span class="cloud-source-detail">{{ pansouEnv.hint }}</span>
+          <span
+            v-if="pansouEnv.imageDigest"
+            class="cloud-source-detail"
+          >
+            本地镜像 {{ pansouEnv.imageDigest.slice(0, 19) }}…
+          </span>
+        </div>
+        <el-tag
+          :type="pansouEnv.daemonRunning && pansouEnv.imagePresent ? 'success' : 'info'"
+          size="small"
+          effect="plain"
+        >
+          {{ pansouEnv.daemonRunning && pansouEnv.imagePresent ? '就绪' : '待配置' }}
+        </el-tag>
+      </div>
+      <div class="cloud-source-actions">
+        <el-button
+          :loading="detectingEnv"
+          @click="loadEnv"
+        >
+          重新检测
+        </el-button>
+        <el-button
+          v-if="!pansouEnv.dockerInstalled"
+          @click="openInstall"
+        >
+          安装说明
+        </el-button>
+        <el-button
+          v-else-if="!pansouEnv.imagePresent"
+          @click="api.pluginOpenUrl(pansouEnv.upstream)"
+        >
+          打开上游
+        </el-button>
+      </div>
+      <p class="cloud-source-note">
+        镜像 <code>{{ pansouEnv.image }}</code>；更新方式：<code>docker pull</code> 后重启容器。
+        远程 PanSou 服务由服务端自行维护，客户端只做连通性检测。
+      </p>
     </div>
 
     <div class="cloud-manifest">

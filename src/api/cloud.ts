@@ -130,3 +130,24 @@ export function cloudResolvePlay(
     password: password ?? null,
   })
 }
+
+/** PanSou Docker 运行环境检测结果（W14 §8.7；不含路径/凭据） */
+export interface CloudPansouEnv {
+  dockerInstalled: boolean
+  dockerVersion: string | null
+  daemonRunning: boolean
+  imagePresent: boolean
+  imageDigest: string | null
+  remoteDigest: string | null
+  updateAvailable: boolean | null
+  pansouConfigured: boolean
+  hint: string
+  upstream: string
+  image: string
+  installUrl: string
+}
+
+/** 检测 PanSou 的 Docker 运行环境（只读，不启动/修改容器） */
+export function cloudPansouEnv(): Promise<CloudPansouEnv> {
+  return invoke<CloudPansouEnv>('cloud_pansou_env')
+}

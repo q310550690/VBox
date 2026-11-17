@@ -4,7 +4,8 @@
 //! - `cloud_search`：聚合搜索（内置 Telegram 内核 + 可选 PanSou 增强源）；
 //! - `cloud_hot_searches`：首页热搜词（优先豆瓣首页磁盘缓存，失败回退内置词表）；
 //! - `cloud_source_status` / `cloud_source_set` / `cloud_source_test` / `cloud_sources_update`：
-//!   搜索源状态与配置（设置页「云盘搜索源」用）。
+//!   搜索源状态与配置（设置页「云盘搜索源」用）；
+//! - `cloud_pansou_env`：PanSou Docker 运行环境检测（W14 §8.7：Docker 检测与镜像更新提示）。
 //!
 //! 安全 / 隐私边界（W14 §11.2）：
 //! - 搜索关键词只在进程内参与请求，不写日志；源错误日志只带源名，不带错误详情（URL 可能含关键词）；
@@ -566,6 +567,200 @@ pub fn cloud_sources_update(
     state.cloud.update_sources(url)
 }
 
+/* ---------------- PanSou Docker 运行环境检测（W14 §8.7 / P3） ---------------- */
+
+/// PanSou 官方镜像（W14 §8.7）。
+const PANSOU_IMAGE: &str = "ghcr.io/fish2018/pansou:latest";
+/// PanSou 上游仓库（设置页展示）。
+const PANSOU_UPSTREAM: &str = "https://github.com/fish2018/pansou";
+/// Docker Desktop 安装说明（设置页展示）。
+const DOCKER_INSTALL_URL: &str = "https://docs.docker.com/desktop/";
+
+/// PanSou 运行环境检测结果（返回前端；不含路径/凭据）。
+#[derive(Debug, Clone, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PansouEnv {
+    /// `docker` CLI 是否可用。
+    pub docker_installed: bool,
+    /// Docker 客户端版本（解析失败为 None）。
+    pub docker_version: Option<String>,
+    /// Docker 守护进程是否在运行（Docker Desktop 是否已启动）。
+    pub daemon_running: bool,
+    /// 本机是否已有 PanSou 镜像。
+    pub image_present: bool,
+    /// 本机镜像 digest（RepoDigests）。
+    pub image_digest: Option<String>,
+    /// 远端 digest（需要网络；不可用时为 None）。
+    pub remote_digest: Option<String>,
+    /// 有远端 digest 时是否与本地不同。
+    pub update_available: Option<bool>,
+    /// 是否已在设置中配置 PanSou 地址。
+    pub pansou_configured: bool,
+    /// 面向用户的提示（可直接展示）。
+    pub hint: String,
+    /// 上游仓库地址。
+    pub upstream: String,
+    /// 镜像地址。
+    pub image: String,
+    /// Docker 安装说明地址。
+    pub install_url: String,
+}
+
+impl PansouEnv {
+    fn new(
+        docker_installed: bool,
+        docker_version: Option<String>,
+        daemon_running: bool,
+        image_present: bool,
+        image_digest: Option<String>,
+        remote_digest: Option<String>,
+        pansou_configured: bool,
+    ) -> Self {
+        let update_available = match (&image_digest, &remote_digest) {
+            (Some(local), Some(remote)) => Some(local != remote),
+            _ => None,
+        };
+        let hint = if !docker_installed {
+            format!(
+                "未检测到 Docker：PanSou 官方仅提供 Docker 镜像（{PANSOU_IMAGE}），可安装 Docker Desktop 后运行。"
+            )
+        } else if !daemon_running {
+            "已安装 Docker 但守护进程未运行：请启动 Docker Desktop 后重新检测。".to_string()
+        } else if !image_present {
+            format!("Docker 已就绪，尚未拉取镜像：docker pull {PANSOU_IMAGE}")
+        } else if update_available == Some(true) {
+            format!("检测到镜像有新版本：docker pull {PANSOU_IMAGE} 后重启容器。")
+        } else if pansou_configured {
+            "PanSou 镜像已就绪，且已配置服务地址。".to_string()
+        } else {
+            format!(
+                "PanSou 镜像已就绪；启动容器后在设置中填写服务地址（默认 http://127.0.0.1:8888）。"
+            )
+        };
+        Self {
+            docker_installed,
+            docker_version,
+            daemon_running,
+            image_present,
+            image_digest,
+            remote_digest,
+            update_available,
+            pansou_configured,
+            hint,
+            upstream: PANSOU_UPSTREAM.to_string(),
+            image: PANSOU_IMAGE.to_string(),
+            install_url: DOCKER_INSTALL_URL.to_string(),
+        }
+    }
+}
+
+/// 运行一个外部命令，成功（exit=0）时返回 trim 后的 stdout；不在错误信息中回显命令行。
+fn run_quiet(program: &str, args: &[&str]) -> Option<String> {
+    let output = std::process::Command::new(program)
+        .args(args)
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if text.is_empty() {
+        None
+    } else {
+        Some(text)
+    }
+}
+
+/// 解析 `docker --version`（例如 `Docker version 27.3.1, build ...`）。
+fn parse_docker_version(text: &str) -> Option<String> {
+    let text = text.trim();
+    let rest = text.strip_prefix("Docker version ")?;
+    let version = rest.split(',').next().unwrap_or(rest).trim();
+    if version.is_empty() {
+        None
+    } else {
+        Some(version.to_string())
+    }
+}
+
+/// 解析 `docker image inspect ... --format {{index .RepoDigests 0}}` 的输出。
+fn parse_repo_digest(text: &str) -> Option<String> {
+    let text = text.trim();
+    if text.is_empty() || text == "<no value>" {
+        return None;
+    }
+    // 形如 `ghcr.io/fish2018/pansou@sha256:...`。
+    let digest = text.rsplit('@').next().unwrap_or(text).trim();
+    if digest.starts_with("sha256:") {
+        Some(digest.to_string())
+    } else {
+        None
+    }
+}
+
+impl CloudState {
+    /// 采集 PanSou Docker 运行环境（只读；命令失败按未安装/未运行降级）。
+    fn pansou_env(&self) -> PansouEnv {
+        let docker_version = run_quiet("docker", &["--version"]);
+        let docker_installed = docker_version.is_some();
+        let mut daemon_running = false;
+        let mut image_present = false;
+        let mut image_digest = None;
+        let mut remote_digest = None;
+        if docker_installed {
+            daemon_running =
+                run_quiet("docker", &["version", "--format", "{{.Server.Version}}"]).is_some();
+            if daemon_running {
+                image_digest = run_quiet(
+                    "docker",
+                    &[
+                        "image",
+                        "inspect",
+                        PANSOU_IMAGE,
+                        "--format",
+                        "{{index .RepoDigests 0}}",
+                    ],
+                )
+                .and_then(|text| parse_repo_digest(&text));
+                image_present = image_digest.is_some()
+                    || run_quiet("docker", &["image", "inspect", PANSOU_IMAGE]).is_some();
+                // 远端 digest：需要访问 ghcr.io；网络不可用时静默降级。
+                remote_digest = run_quiet("docker", &["manifest", "inspect", PANSOU_IMAGE])
+                    .and_then(|text| parse_remote_manifest_digest(&text));
+            }
+        }
+        let pansou_configured = self.lock().config.pansou_url.is_some();
+        PansouEnv::new(
+            docker_installed,
+            docker_version.and_then(|text| parse_docker_version(&text)),
+            daemon_running,
+            image_present,
+            image_digest,
+            remote_digest,
+            pansou_configured,
+        )
+    }
+}
+
+/// 从 `docker manifest inspect` 的 JSON 里取 digest（兼容单 manifest 与 list）。
+fn parse_remote_manifest_digest(text: &str) -> Option<String> {
+    let value: serde_json::Value = serde_json::from_str(text.trim()).ok()?;
+    if let Some(digest) = value.get("digest").and_then(|v| v.as_str()) {
+        return Some(digest.to_string());
+    }
+    let manifests = value.get("manifests")?.as_array()?;
+    manifests
+        .iter()
+        .find_map(|item| item.get("digest").and_then(|v| v.as_str()))
+        .map(|digest| digest.to_string())
+}
+
+/// PanSou Docker 运行环境检测（设置页「云盘搜索源」用；只读，不启动/修改任何容器）。
+#[tauri::command]
+pub fn cloud_pansou_env(state: State<'_, AppState>) -> PansouEnv {
+    state.cloud.pansou_env()
+}
+
 /* ---------------- 只读云盘管理（W14 P2 / §9） ---------------- */
 
 /// 列云盘目录（`parent_id` 为空 = 根目录）。
@@ -741,6 +936,94 @@ mod tests {
             saved.contains("127.0.0.1:8888"),
             "清空清单配置不应影响 PanSou"
         );
+    }
+
+    #[test]
+    fn parses_docker_version_and_digests() {
+        assert_eq!(
+            parse_docker_version("Docker version 27.3.1, build abcdef"),
+            Some("27.3.1".to_string())
+        );
+        assert_eq!(parse_docker_version("docker version 1.0"), None);
+        assert_eq!(
+            parse_repo_digest("ghcr.io/fish2018/pansou@sha256:deadbeef"),
+            Some("sha256:deadbeef".to_string())
+        );
+        assert_eq!(parse_repo_digest("<no value>"), None);
+        assert_eq!(
+            parse_remote_manifest_digest(r#"{"digest":"sha256:aaa"}"#),
+            Some("sha256:aaa".to_string())
+        );
+        assert_eq!(
+            parse_remote_manifest_digest(r#"{"manifests":[{"digest":"sha256:bbb"}]}"#),
+            Some("sha256:bbb".to_string())
+        );
+        assert_eq!(parse_remote_manifest_digest("not-json"), None);
+    }
+
+    #[test]
+    fn pansou_env_hints_follow_state() {
+        let missing = PansouEnv::new(false, None, false, false, None, None, false);
+        assert!(!missing.docker_installed);
+        assert!(missing.hint.contains("未检测到 Docker"));
+
+        let stopped = PansouEnv::new(
+            true,
+            Some("27.3.1".to_string()),
+            false,
+            false,
+            None,
+            None,
+            false,
+        );
+        assert!(stopped.hint.contains("守护进程未运行"));
+
+        let no_image = PansouEnv::new(
+            true,
+            Some("27.3.1".to_string()),
+            true,
+            false,
+            None,
+            None,
+            false,
+        );
+        assert!(no_image.hint.contains("docker pull"));
+
+        let outdated = PansouEnv::new(
+            true,
+            Some("27.3.1".to_string()),
+            true,
+            true,
+            Some("sha256:old".to_string()),
+            Some("sha256:new".to_string()),
+            true,
+        );
+        assert_eq!(outdated.update_available, Some(true));
+        assert!(outdated.hint.contains("新版本"));
+
+        let ready = PansouEnv::new(
+            true,
+            Some("27.3.1".to_string()),
+            true,
+            true,
+            Some("sha256:same".to_string()),
+            Some("sha256:same".to_string()),
+            true,
+        );
+        assert_eq!(ready.update_available, Some(false));
+        assert!(ready.hint.contains("已配置服务地址"));
+
+        let unconfigured = PansouEnv::new(
+            true,
+            Some("27.3.1".to_string()),
+            true,
+            true,
+            None,
+            None,
+            false,
+        );
+        assert_eq!(unconfigured.update_available, None);
+        assert!(unconfigured.hint.contains("填写服务地址"));
     }
 
     #[test]

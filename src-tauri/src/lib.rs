@@ -331,6 +331,7 @@ pub fn run() {
             commands_cloud::cloud_source_status,
             commands_cloud::cloud_source_set,
             commands_cloud::cloud_source_test,
+            commands_cloud::cloud_pansou_env,
             commands_cloud::cloud_sources_config_set,
             commands_cloud::cloud_sources_update,
             commands_cloud::drive_list,
