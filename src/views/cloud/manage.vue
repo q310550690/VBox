@@ -152,17 +152,16 @@ onActivated(() => void loadDir())
   <PageScroll>
     <div class="cloud-manage-page">
       <header class="manage-top">
-        <button
+        <el-button
+          circle
           class="back-btn"
-          type="button"
           aria-label="返回云盘首页"
           @click="router.push('/cloud')"
         >
-          <SolarIcon
-            name="alt-arrow-left"
-            :size="18"
-          />
-        </button>
+          <template #icon>
+            <SolarIcon name="arrow-left" />
+          </template>
+        </el-button>
         <h1 class="manage-title">
           我的云盘
         </h1>
@@ -320,16 +319,7 @@ onActivated(() => void loadDir())
 }
 
 .back-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface);
-  color: var(--text-muted);
-  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .manage-title {

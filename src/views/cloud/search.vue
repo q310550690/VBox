@@ -223,17 +223,16 @@ onActivated(() => {
   <PageScroll>
     <div class="cloud-search-page">
       <header class="search-top">
-        <button
+        <el-button
+          circle
           class="back-btn"
-          type="button"
           aria-label="返回"
           @click="router.push('/cloud')"
         >
-          <SolarIcon
-            name="alt-arrow-left"
-            :size="18"
-          />
-        </button>
+          <template #icon>
+            <SolarIcon name="arrow-left" />
+          </template>
+        </el-button>
         <div class="search-box">
           <input
             v-model="input"
@@ -660,20 +659,7 @@ onActivated(() => {
 }
 
 .back-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface);
-  color: var(--text-muted);
-  cursor: pointer;
-}
-
-.back-btn:hover {
-  color: var(--text);
+  flex-shrink: 0;
 }
 
 .search-box {
