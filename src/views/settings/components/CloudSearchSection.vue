@@ -2,10 +2,18 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import * as api from '@/api'
+import { cloudSearchHint, detectCloudSearchCode } from '@/utils/cloudErrors'
 import type { CloudPansouEnv, CloudSourceStatus } from '@/api/cloud'
 import { useUiStore } from '@/store/ui'
 
 const ui = useUiStore()
+
+/** 云盘搜索错误码 → 动作提示（W14 §6.8） */
+function errorText(e: unknown): string {
+  const message = api.formatError(e)
+  const hint = cloudSearchHint(detectCloudSearchCode(message))
+  return hint.text ? `${hint.text}（${message}）` : message
+}
 
 /** 搜索源状态（内置内核 + PanSou） */
 const statuses = ref<CloudSourceStatus[]>([])
@@ -88,7 +96,7 @@ async function test() {
     const message = await api.cloudSourceTest()
     ui.notify(message, 'success')
   } catch (e) {
-    ui.notify('搜索源自检失败：' + api.formatError(e), 'error')
+    ui.notify('搜索源自检失败：' + errorText(e), 'error')
   } finally {
     testing.value = false
   }
@@ -119,7 +127,7 @@ async function updateManifest() {
     ui.notify(message, 'success')
     await load()
   } catch (e) {
-    ui.notify('更新频道清单失败：' + api.formatError(e), 'error')
+    ui.notify('更新频道清单失败：' + errorText(e), 'error')
   } finally {
     updatingManifest.value = false
   }

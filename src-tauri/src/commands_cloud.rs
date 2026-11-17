@@ -134,11 +134,7 @@ impl CloudState {
     fn search(&self, query: &SearchQuery) -> Result<SearchPage, String> {
         // 只读地取出内核句柄后立即释放锁：单次搜索最多 8s，不应阻塞状态读取/改配置。
         let kernel = { self.lock().kernel.clone() };
-        kernel.search_checked(query).map_err(|error| {
-            // W14 §6.8：错误消息前缀携带 code，前端据此给出「去配置 / 重试」动作提示。
-            let code = vbox_core::cloudsearch::code_of_error(&error);
-            format!("{code}：{}", sanitize_error(error))
-        })
+        kernel.search_checked(query).map_err(search_error_message)
     }
 
     fn statuses(&self) -> Vec<SourceStatus> {
@@ -328,7 +324,7 @@ impl CloudState {
                         page.items.len(),
                         channels.len()
                     )),
-                    Err(error) => Err(format!("PanSou 连接失败：{}", sanitize_error(error))),
+                    Err(error) => Err(format!("PanSou 连接失败：{}", search_error_message(error))),
                 }
             }
         }
@@ -463,6 +459,12 @@ fn build_kernel(config: &CloudSourcesConfig, channels: &[String]) -> SearchKerne
 }
 
 /// 错误信息脱敏：底层 HTTP 错误常带完整 URL（可能含关键词），这里只保留错误类别。
+/// 云盘搜索错误：`{code}：{脱敏消息}`（W14 §6.8，前端据此给「去配置 / 重试」）。
+fn search_error_message(error: vbox_core::error::CoreError) -> String {
+    let code = vbox_core::cloudsearch::code_of_error(&error);
+    format!("{code}：{}", sanitize_error(error))
+}
+
 fn sanitize_error(error: vbox_core::error::CoreError) -> String {
     use vbox_core::error::CoreError;
     match error {

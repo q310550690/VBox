@@ -141,6 +141,14 @@ function copyLink(item: CloudSearchItem): void {
     .catch(() => ElMessage.error('复制失败，请手动选择链接'))
 }
 
+function copyPassword(item: CloudSearchItem): void {
+  if (!item.password) return
+  void navigator.clipboard
+    .writeText(item.password)
+    .then(() => ElMessage.success('提取码已复制'))
+    .catch(() => ElMessage.error('复制失败，请手动输入'))
+}
+
 async function openExternal(item: CloudSearchItem): Promise<void> {
   if (api.demoMode) return
   try {
@@ -388,7 +396,15 @@ onActivated(() => {
             </div>
             <div class="result-link">
               {{ item.shareUrl }}
-              <span v-if="item.password">提取码 {{ item.password }}</span>
+              <button
+                v-if="item.password"
+                class="password-chip"
+                type="button"
+                title="复制提取码"
+                @click="copyPassword(item)"
+              >
+                提取码 {{ item.password }}
+              </button>
             </div>
           </div>
           <div class="result-actions">
@@ -481,7 +497,19 @@ onActivated(() => {
           <span class="detail-label">网盘</span><span>{{ filterLabel(detail.provider) }}</span>
           <span class="detail-label">大小</span><span>{{ detail.size ? formatBytes(detail.size) : '—' }}</span>
           <span class="detail-label">分享链接</span><span class="detail-link">{{ detail.shareUrl }}</span>
-          <span class="detail-label">提取码</span><span>{{ detail.password || '—' }}</span>
+          <span class="detail-label">提取码</span>
+          <span>
+            <button
+              v-if="detail.password"
+              class="password-chip"
+              type="button"
+              title="复制提取码"
+              @click="copyPassword(detail)"
+            >
+              {{ detail.password }}
+            </button>
+            <template v-else>—</template>
+          </span>
           <span class="detail-label">来源</span><span>{{ detail.sources.join(' · ') || '—' }}</span>
           <span class="detail-label">时间</span><span>{{ formatTime(detail.publishedAt) || '—' }}</span>
           <span class="detail-label">状态</span>
@@ -823,6 +851,21 @@ onActivated(() => {
   border-radius: var(--radius-pill);
   background: var(--accent-weak);
   color: var(--accent);
+}
+
+.password-chip {
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.password-chip:hover {
+  border-color: var(--accent);
+  color: var(--text);
 }
 
 .result-sources {
