@@ -11,13 +11,18 @@
 //! - `quark`：`GET https://drive.quark.cn/1/clouddrive/file/sort?pr=ucpro&fr=pc&pdir_fid=<dir>`
 //! - `uc`：同夸克，接口根 `https://pc-api.uc.cn/1/clouddrive/`、查询串 `pr=UCBrowser&fr=pc`
 //! - `xunlei`：`GET https://api-pan.xunlei.com/drive/v1/files?parent_id=<dir>`
+//! - `pikpak`：同迅雷，接口根 `https://api-drive.mypikpak.com/drive/v1/`
+//! - `ali`：个人盘 Bearer token，`POST v2/user/get` → `adrive/v3/file/list`（条目 id 编码 `<drive_id>|<file_id>`）
 //!
-//! 已知限制（W14 P2 范围）：
+//! 已知限制（W14 P2+ 范围）：
 //! - 115 个人盘下载直链需要 pickcode 加密流程（RSA + `downurl` 接口），暂未接入；
-//! - 阿里云盘 / PikPak 的网页登录 Cookie 不含 access token，暂不支持只读浏览；
-//! - 列表只取第一页（上限 200/100 条），翻页留待后续按需扩展。
+//! - 阿里云盘个人盘需要 OAuth access token（可在账号管理「手动凭据」录入 token）；
+//! - PikPak/迅雷个人盘 token 可从网页授权 Cookie 的 `access_token` 自动提取；
+//! - 列表只取一页（上限 200/100 条），翻页留待后续按需扩展。
 
+pub mod ali;
 pub mod p115;
+pub mod pikpak;
 pub mod quark;
 pub mod xunlei;
 
@@ -35,9 +40,13 @@ pub const QUARK_BASE: &str = "https://drive.quark.cn/1/clouddrive/";
 pub const UC_BASE: &str = "https://pc-api.uc.cn/1/clouddrive/";
 /// 迅雷 drive 接口根。
 pub const XUNLEI_BASE: &str = "https://api-pan.xunlei.com/drive/v1/";
+/// PikPak drive 接口根。
+pub const PIKPAK_BASE: &str = "https://api-drive.mypikpak.com/drive/v1/";
+/// 阿里云盘开放接口根（个人盘 Bearer token）。
+pub const ALI_BASE: &str = "https://api.aliyundrive.com/";
 
 /// 支持只读浏览的 provider。
-pub const BROWSABLE: &[&str] = &["p115", "quark", "uc", "xunlei"];
+pub const BROWSABLE: &[&str] = &["p115", "quark", "uc", "xunlei", "pikpak", "ali"];
 
 /// 该 provider 是否支持只读云盘浏览。
 pub fn is_browsable(provider: &str) -> bool {
@@ -109,7 +118,11 @@ impl DriveClient {
             client,
             base,
             cookie: cred.cookie.clone().filter(|s| !s.trim().is_empty()),
-            token: cred.token.clone().filter(|s| !s.trim().is_empty()),
+            token: cred
+                .token
+                .clone()
+                .filter(|s| !s.trim().is_empty())
+                .or_else(|| token_from_cookie(cred.cookie.as_deref())),
         };
         this.ensure_ready()?;
         Ok(this)
@@ -128,12 +141,16 @@ impl DriveClient {
         if default_base(&provider).is_none() {
             return Err(unsupported(&provider));
         }
+        let cookie = cookie.filter(|s| !s.trim().is_empty());
+        let token = token
+            .filter(|s| !s.trim().is_empty())
+            .or_else(|| token_from_cookie(cookie.as_deref()));
         let this = Self {
             provider,
             client,
             base: base.to_string(),
-            cookie: cookie.filter(|s| !s.trim().is_empty()),
-            token: token.filter(|s| !s.trim().is_empty()),
+            cookie,
+            token,
         };
         this.ensure_ready()?;
         Ok(this)
@@ -163,11 +180,12 @@ impl DriveClient {
                     )));
                 }
             }
-            "xunlei" => {
+            "xunlei" | "pikpak" | "ali" => {
                 if self.token.is_none() {
-                    return Err(CoreError::Config(
-                        "迅雷需要登录 token：请在云盘首页右上角「账号管理」重新登录".into(),
-                    ));
+                    return Err(CoreError::Config(format!(
+                        "{} 需要登录 token：请在云盘首页右上角「账号管理」重新登录（或在「手动凭据」录入 token）",
+                        display_name(&self.provider)
+                    )));
                 }
             }
             other => return Err(unsupported(other)),
@@ -197,6 +215,8 @@ impl DriveRead for DriveClient {
                 parent_id,
             ),
             "xunlei" => xunlei::list(&self.client, &self.base, self.token(), parent_id),
+            "pikpak" => pikpak::list(&self.client, &self.base, self.token(), parent_id),
+            "ali" => ali::list(&self.client, &self.base, self.token(), parent_id),
             other => Err(unsupported(other)),
         }
     }
@@ -220,6 +240,8 @@ impl DriveRead for DriveClient {
                 entry_id,
             ),
             "xunlei" => xunlei::download_url(&self.client, &self.base, self.token(), entry_id),
+            "pikpak" => pikpak::download_url(&self.client, &self.base, self.token(), entry_id),
+            "ali" => ali::download_url(&self.client, &self.base, self.token(), entry_id),
             "p115" => Err(CoreError::Config(
                 "115 个人盘下载直链需要 pickcode 加密流程，W14 P2 暂未接入".into(),
             )),
@@ -234,6 +256,8 @@ fn default_base(provider: &str) -> Option<&'static str> {
         "quark" => Some(QUARK_BASE),
         "uc" => Some(UC_BASE),
         "xunlei" => Some(XUNLEI_BASE),
+        "pikpak" => Some(PIKPAK_BASE),
+        "ali" => Some(ALI_BASE),
         _ => None,
     }
 }
@@ -248,6 +272,24 @@ fn display_name(provider: &str) -> &'static str {
         "pikpak" => "PikPak",
         _ => "该网盘",
     }
+}
+
+/// 从网页授权 Cookie 串中提取 `access_token`（迅雷/PikPak 网页登录会种到 Cookie）。
+pub fn token_from_cookie(cookie: Option<&str>) -> Option<String> {
+    let cookie = cookie?;
+    cookie.split(';').find_map(|part| {
+        let (name, value) = part.trim().split_once('=')?;
+        if name.trim().eq_ignore_ascii_case("access_token") {
+            let value = value.trim();
+            if value.is_empty() {
+                None
+            } else {
+                Some(value.to_string())
+            }
+        } else {
+            None
+        }
+    })
 }
 
 fn unsupported(provider: &str) -> CoreError {
@@ -401,6 +443,47 @@ mod tests {
     }
 
     #[test]
+    fn pikpak_uses_shared_drive_protocol_and_cookie_token_fallback() {
+        let seen = Arc::new(Mutex::new(Vec::<String>::new()));
+        let seen2 = seen.clone();
+        let (base, _h) = spawn_json_server(move |req| {
+            seen2.lock().unwrap().push(format!(
+                "{} {}",
+                req.url(),
+                header_of(req, "authorization").unwrap_or_default()
+            ));
+            if req.url().starts_with("/files/f1") {
+                r#"{"file":{"id":"f1","links":{"application/octet-stream":{"url":"https://dl/pk/1"}}}}"#
+                    .to_string()
+            } else {
+                r#"{"files":[{"id":"f1","name":"a.mp4","kind":"file","size":7},{"id":"d1","name":"dir","kind":"folder"}]}"#
+                    .to_string()
+            }
+        });
+        let client = DriveClient::with_parts(
+            "pikpak",
+            test_client(),
+            &base,
+            Some("access_token=pk-tok; other=x".into()),
+            None,
+        )
+        .unwrap();
+        let entries = client.list(None).unwrap();
+        assert_eq!(entries.len(), 2);
+        assert_eq!(client.download_url("f1").unwrap(), "https://dl/pk/1");
+        let calls = seen.lock().unwrap();
+        assert!(calls[0].contains("Bearer pk-tok"));
+        assert!(!calls[0].contains("parent_id="));
+
+        assert_eq!(
+            token_from_cookie(Some("a=1; ACCESS_TOKEN=up")),
+            Some("up".into())
+        );
+        assert_eq!(token_from_cookie(Some("a=1")), None);
+        assert_eq!(token_from_cookie(None), None);
+    }
+
+    #[test]
     fn unsupported_provider_and_missing_credential_are_config_errors() {
         let client = test_client();
         let ali = DriveClient::with_parts(
@@ -411,8 +494,16 @@ mod tests {
             None,
         )
         .err()
-        .expect("ali 应不支持");
-        assert!(matches!(ali, CoreError::Config(msg) if msg.contains("阿里")));
+        .expect("ali 缺 token 应报错");
+        assert!(
+            matches!(ali, CoreError::Config(msg) if msg.contains("阿里") && msg.contains("token"))
+        );
+
+        let unknown =
+            DriveClient::with_parts("weird", client.clone(), "http://127.0.0.1:1/", None, None)
+                .err()
+                .expect("未知 provider 应不支持");
+        assert!(matches!(unknown, CoreError::Config(msg) if msg.contains("未知")));
 
         let no_cookie =
             DriveClient::with_parts("quark", client.clone(), "http://127.0.0.1:1/", None, None)
@@ -447,6 +538,13 @@ mod tests {
         let mut cred = Credential::new("ali");
         cred.cookie = Some("c".into());
         assert!(DriveClient::from_credential(&cred).is_err());
+
+        let mut cred = Credential::new("ali");
+        cred.token = Some("tok".into());
+        assert_eq!(
+            DriveClient::from_credential(&cred).unwrap().provider(),
+            "ali"
+        );
 
         let mut cred = Credential::new("xunlei");
         cred.token = Some("t".into());

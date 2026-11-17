@@ -1,5 +1,5 @@
 <!-- 云盘管理（W14 §8.6）：只读浏览已登录网盘的目录。
-     drive_list 尚未接入时显示占位提示；后续接入后无需改页面骨架。 -->
+     drive_list 已接入（W14 P2+）；未登录/不支持/凭据失效时显示后端错误提示。 -->
 <script setup lang="ts">
 import { computed, onActivated, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'

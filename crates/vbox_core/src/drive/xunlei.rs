@@ -5,8 +5,8 @@
 //!   头 `Authorization: Bearer <access_token>`；响应 `{files:[...],next_page_token}`。
 //! - 直链：`GET {base}files/<id>` → 文件对象里的 `links` / `medias` / `web_content_link`。
 //!
-//! PikPak 与迅雷同构（`https://api-drive.mypikpak.com/drive/v1/`），但个人 token 登录
-//! 尚未接入，暂不开放。
+//! PikPak 与迅雷同构（`https://api-drive.mypikpak.com/drive/v1/`），由
+//! [`crate::drive::pikpak`] 复用本模块。
 
 use serde_json::Value;
 
