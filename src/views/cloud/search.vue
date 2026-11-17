@@ -103,6 +103,18 @@ function isDead(item: CloudSearchItem): boolean {
   return search.deadLinkSet.has(item.shareUrl)
 }
 
+/** 详情浮层「状态」：本地只标记过失效，未失效不代表已验证可解析 */
+function statusOf(item: CloudSearchItem): string {
+  return isDead(item) ? '分享失效' : '可解析（未验证）'
+}
+
+/** 转存按 provider 灰度：目前没有 provider 通过风控评估，按钮统一置灰「暂不支持」 */
+const TRANSFER_ENABLED: ReadonlySet<string> = new Set<string>()
+
+function transferAllowed(providerKey: string): boolean {
+  return TRANSFER_ENABLED.has(providerKey)
+}
+
 function submit(): void {
   const word = input.value.trim()
   if (!word) return
@@ -417,6 +429,8 @@ onActivated(() => {
           <span class="detail-label">提取码</span><span>{{ detail.password || '—' }}</span>
           <span class="detail-label">来源</span><span>{{ detail.sources.join(' · ') || '—' }}</span>
           <span class="detail-label">时间</span><span>{{ formatTime(detail.publishedAt) || '—' }}</span>
+          <span class="detail-label">状态</span>
+          <span :class="isDead(detail) ? 'detail-status is-dead' : 'detail-status'">{{ statusOf(detail) }}</span>
         </div>
         <template #footer>
           <el-button @click="detail && copyLink(detail)">
@@ -425,6 +439,14 @@ onActivated(() => {
           <el-button @click="detail && openExternal(detail)">
             打开原页
           </el-button>
+          <span
+            class="transfer-wrap"
+            :title="detail && transferAllowed(detail.provider) ? '转存到我的网盘' : '转存功能按 provider 灰度，当前暂不支持'"
+          >
+            <el-button :disabled="!detail || !transferAllowed(detail.provider)">
+              转存到我的网盘
+            </el-button>
+          </span>
           <el-button
             type="primary"
             :disabled="!detail?.playable || (!!detail && playingId === detail.id)"
@@ -480,6 +502,19 @@ onActivated(() => {
   border: 1px solid var(--border);
   background: var(--surface);
   color: inherit;
+}
+
+.detail-status {
+  color: var(--accent);
+}
+
+.detail-status.is-dead {
+  color: var(--warning);
+}
+
+.transfer-wrap {
+  display: inline-flex;
+  margin-left: 12px;
 }
 
 .dead-tag {

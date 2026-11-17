@@ -1,7 +1,7 @@
 <!-- 云盘管理（W14 §8.6）：只读浏览已登录网盘的目录。
      drive_list 已接入（W14 P2+）；未登录/不支持/凭据失效时显示后端错误提示。 -->
 <script setup lang="ts">
-import { computed, onActivated, onMounted, ref } from 'vue'
+import { computed, onActivated, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import SolarIcon from '@/components/SolarIcon.vue'
 import PageScroll from '@/components/PageScroll.vue'
@@ -71,6 +71,24 @@ function jumpTo(index: number): void {
   path.value = index < 0 ? [] : path.value.slice(0, index + 1)
   void loadDir()
 }
+
+function goUp(): void {
+  if (!path.value.length) return
+  jumpTo(path.value.length - 2)
+}
+
+/** 切换账号：回到根目录并重新加载（accounts 里的 account_id 才是有效凭据键） */
+function onAccountChange(event: Event): void {
+  const next = (event.target as HTMLSelectElement).value
+  if (!next || next === accountId.value) return
+  path.value = []
+  void router.replace(`/cloud/manage/${encodeURIComponent(next)}`)
+}
+
+watch(accountId, () => {
+  path.value = []
+  void loadDir()
+})
 
 function formatTime(ts?: number | null): string {
   if (!ts) return '—'
@@ -148,8 +166,34 @@ onActivated(() => void loadDir())
         <h1 class="manage-title">
           我的云盘
         </h1>
-        <span class="manage-provider">{{ providerName }}</span>
+        <select
+          v-if="accounts.length > 1"
+          class="provider-select"
+          :value="accountId"
+          aria-label="切换云盘账号"
+          @change="onAccountChange"
+        >
+          <option
+            v-for="item in accounts"
+            :key="item.account_id"
+            :value="item.account_id"
+          >
+            {{ PROVIDER_NAME[item.provider] ?? item.provider }}{{ item.display_name ? `（${item.display_name}）` : '' }}
+          </option>
+        </select>
+        <span
+          v-else
+          class="manage-provider"
+        >{{ providerName }}</span>
         <div class="manage-path">
+          <button
+            v-if="path.length"
+            class="path-item"
+            type="button"
+            @click="goUp"
+          >
+            ↑ 上级
+          </button>
           <button
             class="path-item"
             type="button"
@@ -301,6 +345,21 @@ onActivated(() => void loadDir())
   background: var(--accent-weak);
   color: var(--accent);
   font-size: 12px;
+}
+
+.provider-select {
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.manage-note {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-faint);
 }
 
 .manage-path {
