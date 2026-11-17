@@ -254,6 +254,8 @@ mod tests {
             partial: false,
             elapsed_ms: 0,
             degraded_sources: vec![],
+            deduped: 0,
+            provider_counts: vec![],
         }
     }
 

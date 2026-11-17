@@ -68,6 +68,22 @@ const sourceTrouble = computed(() => {
   return value.partial || value.degradedSources.length > 0
 })
 
+/** 去重后、provider 筛选前的分网盘计数（后端 SearchPage.providerCounts）。 */
+const countsByProvider = computed(() => {
+  const map = new Map<string, number>()
+  for (const row of result.value?.providerCounts ?? []) map.set(row.provider, row.count)
+  return map
+})
+
+const allCount = computed(() =>
+  (result.value?.providerCounts ?? []).reduce((sum, row) => sum + row.count, 0),
+)
+
+function chipCount(value: CloudSearchProvider | ''): number {
+  if (value === '') return allCount.value
+  return countsByProvider.value.get(value) ?? 0
+}
+
 /** 已按当前筛选条件搜索过的关键词，避免返回本页时重复请求 */
 let lastKey = ''
 
@@ -98,7 +114,15 @@ async function runSearch(force = false): Promise<void> {
   error.value = ''
   try {
     if (api.demoMode) {
-      result.value = { items: [], total: 0, partial: false, elapsedMs: 0, degradedSources: [] }
+      result.value = {
+        items: [],
+        total: 0,
+        partial: false,
+        elapsedMs: 0,
+        degradedSources: [],
+        deduped: 0,
+        providerCounts: [],
+      }
       return
     }
     result.value = await api.cloudSearch({
@@ -237,6 +261,9 @@ onActivated(() => void runSearch())
         class="search-stats"
       >
         共 {{ result.total }} 条
+        <template v-if="result.deduped">
+          · 去重 {{ result.deduped }}
+        </template>
         <template v-if="result.partial">
           · <span class="stats-warn">部分来源超时，已显示 {{ result.items.length }} 条</span>
         </template>
@@ -263,6 +290,10 @@ onActivated(() => void runSearch())
           @click="provider = item.value"
         >
           {{ item.label }}
+          <span
+            v-if="chipCount(item.value)"
+            class="filter-count"
+          >{{ chipCount(item.value) }}</span>
         </button>
       </div>
 
@@ -543,6 +574,12 @@ onActivated(() => void runSearch())
   color: var(--text-muted);
   font-size: 12px;
   cursor: pointer;
+}
+
+.filter-count {
+  margin-left: 4px;
+  font-size: 11px;
+  opacity: 0.72;
 }
 
 .filter-chips {

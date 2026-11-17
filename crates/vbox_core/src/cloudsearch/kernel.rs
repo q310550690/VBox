@@ -423,6 +423,8 @@ mod tests {
                 partial: false,
                 elapsed_ms: 0,
                 degraded_sources: Vec::new(),
+                deduped: 0,
+                provider_counts: Vec::new(),
             })
         }
 

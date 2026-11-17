@@ -40,12 +40,21 @@ export interface CloudSearchItem {
   playable: boolean
 }
 
+export interface CloudProviderCount {
+  provider: CloudSearchProvider
+  count: number
+}
+
 export interface CloudSearchPage {
   items: CloudSearchItem[]
   total: number
   partial: boolean
   elapsedMs: number
   degradedSources: string[]
+  /** 跨频道去重合并掉的重复条数 */
+  deduped: number
+  /** 去重后、provider 筛选前的分网盘计数 */
+  providerCounts: CloudProviderCount[]
 }
 
 export interface CloudSourceStatus {

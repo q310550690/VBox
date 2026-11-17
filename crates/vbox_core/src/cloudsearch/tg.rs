@@ -525,6 +525,8 @@ impl CloudSearchSource for TgKernelSource {
                                 partial: false,
                                 elapsed_ms: 0,
                                 degraded_sources: Vec::new(),
+                                deduped: 0,
+                                provider_counts: Vec::new(),
                             },
                         );
                         items.append(&mut channel_items);
@@ -566,6 +568,8 @@ impl CloudSearchSource for TgKernelSource {
             partial: !degraded_sources.is_empty(),
             elapsed_ms: started.elapsed().as_millis() as u64,
             degraded_sources,
+            deduped: 0,
+            provider_counts: Vec::new(),
         })
     }
 

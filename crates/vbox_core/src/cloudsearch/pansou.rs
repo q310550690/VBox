@@ -110,6 +110,8 @@ impl CloudSearchSource for PanSouSource {
             partial: false,
             elapsed_ms: started.elapsed().as_millis() as u64,
             degraded_sources: Vec::new(),
+            deduped: 0,
+            provider_counts: Vec::new(),
         })
     }
 

@@ -17,8 +17,13 @@ use super::{SearchItem, SearchPage, SearchQuery, SortBy};
 ///   按关键词命中评分降序，再按 `published_at` 降序、`title` 升序保证稳定；
 /// - `total` 是「去重 + 过滤后」的总数，`items` 是当前页切片。
 pub fn postprocess(items: Vec<SearchItem>, q: &SearchQuery) -> SearchPage {
+    let raw_len = items.len();
     let mut merged = merge_duplicates(items);
+    let deduped = raw_len.saturating_sub(merged.len());
     merged.retain(|item| !item.title.trim().is_empty());
+
+    // 过滤标签的计数在 provider 筛选前统计，代表该关键词下各网盘的真实条数。
+    let provider_counts = count_by_provider(&merged);
 
     if !q.providers.is_empty() {
         merged.retain(|item| q.providers.contains(&item.provider));
@@ -41,7 +46,34 @@ pub fn postprocess(items: Vec<SearchItem>, q: &SearchQuery) -> SearchPage {
         partial: false,
         elapsed_ms: 0,
         degraded_sources: Vec::new(),
+        deduped,
+        provider_counts,
     }
+}
+
+/// 按 provider 统计条数，按数量降序、同数量按 [`SearchProvider::ALL`] 顺序。
+fn count_by_provider(items: &[SearchItem]) -> Vec<super::ProviderCount> {
+    use std::collections::HashMap;
+    let mut counts: HashMap<super::SearchProvider, usize> = HashMap::new();
+    for item in items {
+        *counts.entry(item.provider).or_insert(0) += 1;
+    }
+    let mut rows: Vec<super::ProviderCount> = counts
+        .into_iter()
+        .map(|(provider, count)| super::ProviderCount { provider, count })
+        .collect();
+    let order = |provider: super::SearchProvider| {
+        super::SearchProvider::ALL
+            .iter()
+            .position(|candidate| *candidate == provider)
+            .unwrap_or(usize::MAX)
+    };
+    rows.sort_by(|a, b| {
+        b.count
+            .cmp(&a.count)
+            .then_with(|| order(a.provider).cmp(&order(b.provider)))
+    });
+    rows
 }
 
 /// 按 `id` 合并重复项；保持首次出现的相对顺序（后续排序再决定最终顺序）。
@@ -378,5 +410,60 @@ mod tests {
     fn compare_time_desc_ordering() {
         assert_eq!(compare_time_desc(Some(2), Some(1)), Ordering::Less);
         assert_eq!(compare_time_desc(None, Some(1)), Ordering::Greater);
+    }
+
+    #[test]
+    fn reports_deduped_count_and_provider_counts() {
+        let page = postprocess(
+            vec![
+                item("quark:a", "甲", SearchProvider::Quark),
+                item("quark:a", "甲 更长标题", SearchProvider::Quark),
+                item("p115:b", "乙", SearchProvider::P115),
+                item("other:c", "丙", SearchProvider::Other),
+            ],
+            &query("电影", 1, 20),
+        );
+        assert_eq!(page.deduped, 1, "跨频道同 id 合并计 1 条去重");
+        assert_eq!(page.total, 3);
+        let counts: Vec<(SearchProvider, usize)> = page
+            .provider_counts
+            .iter()
+            .map(|row| (row.provider, row.count))
+            .collect();
+        assert_eq!(
+            counts,
+            vec![
+                (SearchProvider::Quark, 1),
+                (SearchProvider::P115, 1),
+                (SearchProvider::Other, 1)
+            ],
+            "同数量按枚举顺序，且计数参与去重但不含重复项"
+        );
+    }
+
+    #[test]
+    fn provider_counts_are_before_provider_filter() {
+        let mut q = query("电影", 1, 20);
+        q.providers = vec![SearchProvider::Quark];
+        let page = postprocess(
+            vec![
+                item("quark:a", "甲", SearchProvider::Quark),
+                item("p115:b", "乙", SearchProvider::P115),
+                item("pikpak:c", "   ", SearchProvider::PikPak),
+            ],
+            &q,
+        );
+        assert_eq!(page.total, 1, "筛选后仅剩夸克");
+        assert_eq!(page.deduped, 0);
+        let counts: Vec<(SearchProvider, usize)> = page
+            .provider_counts
+            .iter()
+            .map(|row| (row.provider, row.count))
+            .collect();
+        assert_eq!(
+            counts,
+            vec![(SearchProvider::Quark, 1), (SearchProvider::P115, 1)],
+            "计数在筛选前统计，空标题已剔除"
+        );
     }
 }

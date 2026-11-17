@@ -213,6 +213,14 @@ pub struct SearchItem {
     pub playable: bool,
 }
 
+/// 分网盘计数（§8.3 过滤标签上的数字；去重后、provider 筛选前统计）。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderCount {
+    pub provider: SearchProvider,
+    pub count: usize,
+}
+
 /// 一页搜索结果（§7.1）。`total` 是去重 / 过滤后的可见总数，`items` 已按请求分页切片。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -223,6 +231,12 @@ pub struct SearchPage {
     pub partial: bool,
     pub elapsed_ms: u64,
     pub degraded_sources: Vec<String>,
+    /// 跨频道去重时合并掉的重复条数（§8.3「去重 N」）。
+    #[serde(default)]
+    pub deduped: usize,
+    /// 去重后、provider 筛选前的分网盘计数（按数量降序，同数量按枚举顺序）。
+    #[serde(default)]
+    pub provider_counts: Vec<ProviderCount>,
 }
 
 impl SearchPage {
@@ -234,6 +248,8 @@ impl SearchPage {
             partial: false,
             elapsed_ms: 0,
             degraded_sources: Vec::new(),
+            deduped: 0,
+            provider_counts: Vec::new(),
         }
     }
 }
