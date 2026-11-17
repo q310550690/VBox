@@ -4,6 +4,7 @@
 import { computed, onActivated, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import SolarIcon from '@/components/SolarIcon.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import PageScroll from '@/components/PageScroll.vue'
 import HintBar from '@/components/HintBar.vue'
 import * as api from '@/api'
@@ -150,7 +151,7 @@ onActivated(() => void loadDir())
 
 <template>
   <PageScroll>
-    <div class="cloud-manage-page">
+    <div class="page cloud-manage-page">
       <header class="manage-top">
         <el-button
           circle
@@ -293,22 +294,26 @@ onActivated(() => void loadDir())
         </div>
       </div>
 
-      <div
+      <EmptyState
         v-else-if="!error"
-        class="manage-empty"
+        title="这个目录还没有文件"
+        desc="只读浏览：可进入子文件夹；文件支持播放/下载（依赖当前账号权限）。"
       >
-        目录为空
-      </div>
+        <template #icon>
+          <SolarIcon
+            name="folder-open"
+            :size="34"
+          />
+        </template>
+      </EmptyState>
     </div>
   </PageScroll>
 </template>
 
 <style scoped>
+/* 与其它内容页统一：内边距与块间距由全局 .page 提供 */
 .cloud-manage-page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-5) var(--space-6);
+  min-height: 100%;
 }
 
 .manage-top {
@@ -324,9 +329,10 @@ onActivated(() => void loadDir())
 
 .manage-title {
   margin: 0;
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 600;
   color: var(--text);
+  letter-spacing: 0.2px;
 }
 
 .manage-provider {
@@ -388,12 +394,6 @@ onActivated(() => void loadDir())
 }
 
 .manage-loading,
-.manage-empty {
-  padding: var(--space-5) 0;
-  color: var(--text-muted);
-  font-size: 13px;
-  text-align: center;
-}
 
 .manage-table {
   display: flex;

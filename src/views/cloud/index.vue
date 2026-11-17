@@ -250,7 +250,7 @@ watch(accountsOpen, (open) => {
 
 <template>
   <PageScroll>
-    <div class="cloud-page">
+    <div class="page cloud-page">
       <!-- 整页模糊封面背景：跟随自动轮播选中的豆瓣条目 -->
       <div
         class="cloud-bg"
@@ -399,10 +399,11 @@ watch(accountsOpen, (open) => {
           </div>
         </section>
 
-        <HintBar v-if="api.demoMode">
-          浏览器演示模式：云盘搜索与账号登录只在桌面端（Tauri）可用。
-        </HintBar>
       </div>
+
+      <HintBar v-if="api.demoMode">
+        浏览器演示模式：云盘搜索与账号登录只在桌面端（Tauri）可用。
+      </HintBar>
 
       <AccountDrawer
         v-model="accountsOpen"
@@ -413,13 +414,10 @@ watch(accountsOpen, (open) => {
 </template>
 
 <style scoped>
+/* 页面容器沿用全局 .page 的内边距与块间距，这里只负责模糊背景定位 */
 .cloud-page {
   position: relative;
-  display: flex;
-  flex-direction: column;
   min-height: 100%;
-  padding: var(--space-5) var(--space-6);
-  gap: var(--space-4);
   overflow: hidden;
 }
 
@@ -535,8 +533,8 @@ watch(accountsOpen, (open) => {
   align-items: center;
   justify-content: flex-start;
   gap: var(--space-4);
-  padding-top: 5vh;
-  padding-bottom: var(--space-5);
+  padding-top: var(--space-2);
+  padding-bottom: var(--space-2);
 }
 
 .cloud-hero {
@@ -545,9 +543,10 @@ watch(accountsOpen, (open) => {
 
 .cloud-title {
   margin: 0 0 6px;
-  font-size: 28px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 600;
   color: var(--text);
+  letter-spacing: 0.2px;
 }
 
 .cloud-sub {
@@ -561,9 +560,9 @@ watch(accountsOpen, (open) => {
   align-items: center;
   gap: var(--space-2);
   width: min(680px, 82vw);
-  padding: 6px 6px 6px 14px;
+  padding: 4px 4px 4px 12px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--surface);
   transition: border-color 0.15s ease;
 }
@@ -594,11 +593,11 @@ watch(accountsOpen, (open) => {
 
 .cloud-search-btn {
   flex: 0 0 auto;
-  padding: 6px 18px;
+  padding: 5px 16px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--accent);
-  color: #fff;
+  color: var(--text-on-accent);
   font-size: 13px;
   cursor: pointer;
 }
@@ -673,8 +672,8 @@ watch(accountsOpen, (open) => {
 
 .douban-slide {
   position: relative;
-  flex: 0 0 136px;
-  width: 136px;
+  flex: 0 0 158px;
+  width: 158px;
   opacity: 0.72;
   scroll-snap-align: center;
   transition:

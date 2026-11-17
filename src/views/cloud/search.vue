@@ -221,7 +221,7 @@ onActivated(() => {
 
 <template>
   <PageScroll>
-    <div class="cloud-search-page">
+    <div class="page cloud-search-page">
       <header class="search-top">
         <el-button
           circle
@@ -441,7 +441,7 @@ onActivated(() => {
       />
 
       <div
-        v-if="result"
+        v-if="result && result.items.length"
         class="search-pager"
       >
         <label class="page-size">
@@ -645,11 +645,9 @@ onActivated(() => {
   font-size: 11px;
 }
 
+/* 与其它内容页统一：内边距与块间距由全局 .page 提供 */
 .cloud-search-page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-5) var(--space-6);
+  min-height: 100%;
 }
 
 .search-top {
