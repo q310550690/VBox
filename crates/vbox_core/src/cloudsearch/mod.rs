@@ -15,6 +15,7 @@
 pub mod cache;
 pub mod detect;
 pub mod kernel;
+pub mod manifest;
 pub mod pansou;
 pub mod rank;
 pub mod tg;

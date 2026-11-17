@@ -17,6 +17,12 @@ const testing = ref(false)
 const pansouUrl = ref('')
 const pansouToken = ref('')
 
+/** 远端频道清单（高级，默认关闭）：清单地址 + RSA 公钥 PEM */
+const sourcesUrl = ref('')
+const sourcesPubkey = ref('')
+const savingSources = ref(false)
+const updatingManifest = ref(false)
+
 const builtin = computed(() => statuses.value.find((item) => item.kind === 'builtin_kernel'))
 const pansou = computed(() => statuses.value.find((item) => item.kind === 'pan_sou'))
 
@@ -64,6 +70,37 @@ async function test() {
     ui.notify('搜索源自检失败：' + api.formatError(e), 'error')
   } finally {
     testing.value = false
+  }
+}
+
+async function saveSources() {
+  if (savingSources.value) return
+  savingSources.value = true
+  try {
+    statuses.value = await api.cloudSourcesConfigSet({
+      sourcesUrl: sourcesUrl.value.trim(),
+      sourcesPubkey: sourcesPubkey.value.trim(),
+    })
+    ui.notify('频道清单配置已保存', 'success')
+  } catch (e) {
+    ui.notify('保存频道清单配置失败：' + api.formatError(e), 'error')
+  } finally {
+    savingSources.value = false
+  }
+}
+
+async function updateManifest() {
+  if (updatingManifest.value) return
+  updatingManifest.value = true
+  try {
+    const typed = sourcesUrl.value.trim()
+    const message = await api.cloudSourcesUpdate(typed || undefined)
+    ui.notify(message, 'success')
+    await load()
+  } catch (e) {
+    ui.notify('更新频道清单失败：' + api.formatError(e), 'error')
+  } finally {
+    updatingManifest.value = false
   }
 }
 
@@ -180,6 +217,61 @@ onMounted(() => {
       </el-button>
     </div>
 
+    <div class="cloud-manifest">
+      <div class="cloud-manifest-head">
+        <span class="field-label">频道清单（高级）</span>
+        <span class="cloud-source-detail">
+          内置 Telegram 频道可能失效；可配置远端签名清单热更新（默认关闭，校验失败自动回退内置清单）。
+        </span>
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <span class="field-label">清单地址</span>
+          <span class="field-control">
+            <el-input
+              v-model="sourcesUrl"
+              placeholder="https://example.com/sources.json（留空表示不使用）"
+              :disabled="loading || savingSources"
+              clearable
+              aria-label="远端频道清单地址"
+            />
+          </span>
+        </div>
+        <div class="field">
+          <span class="field-label">RSA 公钥（PEM）</span>
+          <span class="field-control">
+            <el-input
+              v-model="sourcesPubkey"
+              type="textarea"
+              :rows="3"
+              placeholder="-----BEGIN PUBLIC KEY-----"
+              :disabled="loading || savingSources"
+              aria-label="远端频道清单公钥"
+            />
+          </span>
+        </div>
+      </div>
+      <div class="cloud-source-actions">
+        <el-button
+          type="primary"
+          :loading="savingSources"
+          @click="saveSources"
+        >
+          保存清单配置
+        </el-button>
+        <el-button
+          :loading="updatingManifest"
+          @click="updateManifest"
+        >
+          立即更新频道清单
+        </el-button>
+      </div>
+      <p class="cloud-source-note">
+        清单需由维护者用 RSA 私钥签名（PKCS#1 v1.5 + SHA-256，签名载荷为移除
+        <code>signature</code> 后的紧凑 JSON）；客户端只保存验签通过的原文。
+      </p>
+    </div>
+
     <p class="cloud-source-note">
       隐私说明：搜索关键词只在请求时发往所选搜索源，不写入日志；服务地址与 token 仅保存在本机
       <code>cloud-sources.json</code>（不是网盘凭据）。
@@ -225,6 +317,19 @@ onMounted(() => {
   font-size: 12px;
   line-height: 1.7;
   color: var(--text-tertiary);
+}
+
+.cloud-manifest {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-lighter);
+}
+
+.cloud-manifest-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: var(--space-2);
 }
 
 .cloud-source-note code {

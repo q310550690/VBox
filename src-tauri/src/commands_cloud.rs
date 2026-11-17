@@ -11,6 +11,7 @@
 //! - PanSou 服务地址 / token 存本机 `cloud-sources.json`（不是网盘凭据，不经过 DPAPI）；
 //! - 返回值不含任何本机路径 / 凭据。
 
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -19,9 +20,12 @@ use serde::{Deserialize, Serialize};
 use tauri::State;
 
 use vbox_core::cloudsearch::{
-    CloudSearchSource, SearchPage, SearchProvider, SearchQuery, SortBy, SourceKind, SourceStatus,
-    builtin_channels, builtin_sources_json, kernel::SearchKernel, pansou::PanSouSource,
+    builtin_channels, builtin_sources_json,
+    kernel::SearchKernel,
+    manifest::{channels_from_manifest, verify_sources_manifest, MAX_MANIFEST_BYTES},
+    pansou::PanSouSource,
     tg::TgKernelSource,
+    CloudSearchSource, SearchPage, SearchProvider, SearchQuery, SortBy, SourceKind, SourceStatus,
 };
 
 use crate::commands::AppState;
@@ -42,6 +46,12 @@ struct CloudSourcesConfig {
     /// PanSou 服务 token（可选；`Authorization: Bearer`）。
     #[serde(default)]
     pansou_token: Option<String>,
+    /// 远端频道清单地址（可选；配置后配合公钥启用签名清单热更新）。
+    #[serde(default)]
+    sources_url: Option<String>,
+    /// 远端频道清单 RSA 公钥（PEM；与 `sources_url` 同时配置才启用）。
+    #[serde(default)]
+    sources_pubkey: Option<String>,
 }
 
 impl CloudSourcesConfig {
@@ -54,6 +64,14 @@ impl CloudSourcesConfig {
             .pansou_token
             .map(|token| token.trim().to_string())
             .filter(|token| !token.is_empty());
+        self.sources_url = self
+            .sources_url
+            .map(|url| url.trim().trim_end_matches('/').to_string())
+            .filter(|url| !url.is_empty());
+        self.sources_pubkey = self
+            .sources_pubkey
+            .map(|pem| pem.trim().replace("\r\n", "\n"))
+            .filter(|pem| !pem.is_empty());
         self
     }
 }
@@ -61,6 +79,8 @@ impl CloudSourcesConfig {
 /// 云盘搜索运行时状态：内核 + 源配置（配置变更时重建内核）。
 pub struct CloudState {
     config_path: PathBuf,
+    /// 远端频道清单缓存（验签通过后的原文；用于下次启动直接加载）。
+    manifest_path: PathBuf,
     /// 豆瓣首页磁盘缓存（热搜词优先取这里，避免为了搜索页再打豆瓣接口）。
     douban_cache: PathBuf,
     inner: Mutex<CloudInner>,
@@ -68,19 +88,32 @@ pub struct CloudState {
 
 struct CloudInner {
     config: CloudSourcesConfig,
+    /// 当前实际使用的频道 handle（内置或远端签名清单）。
+    channels: Vec<String>,
+    /// 远端清单版本；`None` 表示正在使用内置清单。
+    channels_version: Option<String>,
     kernel: SearchKernel,
 }
 
 impl CloudState {
     pub fn new(app_data_dir: &Path) -> Self {
         let config_path = app_data_dir.join("cloud-sources.json");
+        let manifest_path = app_data_dir.join("cloud-sources-manifest.json");
         let douban_cache = app_data_dir.join("douban-home.json");
         let config = load_config(&config_path).unwrap_or_default().normalized();
-        let kernel = build_kernel(&config);
+        let (channels, channels_version) =
+            load_remote_channels(&manifest_path, config.sources_pubkey.as_deref());
+        let kernel = build_kernel(&config, &channels);
         Self {
             config_path,
+            manifest_path,
             douban_cache,
-            inner: Mutex::new(CloudInner { config, kernel }),
+            inner: Mutex::new(CloudInner {
+                config,
+                channels,
+                channels_version,
+                kernel,
+            }),
         }
     }
 
@@ -103,21 +136,32 @@ impl CloudState {
 
     fn statuses(&self) -> Vec<SourceStatus> {
         let guard = self.lock();
-        let channels = builtin_channels();
+        let channels = &guard.channels;
+        let remote_version = guard.channels_version.clone();
         let mut statuses = Vec::with_capacity(2);
+        let (version, detail) = match &remote_version {
+            Some(version) => (
+                version.clone(),
+                format!("远端签名频道清单 {} 个（版本 {version}）", channels.len()),
+            ),
+            None => (
+                builtin_version(),
+                format!(
+                    "内置 Telegram 频道 {} 个（{}）",
+                    channels.len(),
+                    if channels.is_empty() {
+                        "清单为空"
+                    } else {
+                        "无需配置"
+                    }
+                ),
+            ),
+        };
         statuses.push(SourceStatus {
             kind: SourceKind::BuiltinKernel,
             ready: !channels.is_empty(),
-            version: builtin_version(),
-            detail: format!(
-                "内置 Telegram 频道 {} 个（{}）",
-                channels.len(),
-                if channels.is_empty() {
-                    "清单为空"
-                } else {
-                    "无需配置"
-                }
-            ),
+            version,
+            detail,
         });
         let config = &guard.config;
         let pansou_status = match pansou_source(config) {
@@ -149,9 +193,12 @@ impl CloudState {
         if !matches!(kind.as_str(), "pansou" | "pan_sou") {
             return Err(format!("暂不支持配置搜索源 `{kind}`（当前仅支持 pansou）"));
         }
+        let current = { self.lock().config.clone() };
         let config = CloudSourcesConfig {
             pansou_url: url,
             pansou_token: token,
+            sources_url: current.sources_url,
+            sources_pubkey: current.sources_pubkey,
         }
         .normalized();
         if let Some(url) = &config.pansou_url {
@@ -160,12 +207,93 @@ impl CloudState {
             }
         }
         save_config(&self.config_path, &config)?;
-        let kernel = build_kernel(&config);
+        let (channels, channels_version) =
+            load_remote_channels(&self.manifest_path, config.sources_pubkey.as_deref());
+        let kernel = build_kernel(&config, &channels);
         let mut guard = self.lock();
         guard.config = config;
+        guard.channels = channels;
+        guard.channels_version = channels_version;
         guard.kernel = kernel;
         drop(guard);
         Ok(self.statuses())
+    }
+
+    /// 单独保存远端频道清单配置（URL / 公钥），不影响 PanSou 配置。
+    ///
+    /// `None` 保留原值；`Some("")` 清空。
+    fn set_sources_config(
+        &self,
+        sources_url: Option<String>,
+        sources_pubkey: Option<String>,
+    ) -> Result<Vec<SourceStatus>, String> {
+        let current = { self.lock().config.clone() };
+        let config = CloudSourcesConfig {
+            pansou_url: current.pansou_url,
+            pansou_token: current.pansou_token,
+            sources_url: sources_url.or(current.sources_url),
+            sources_pubkey: sources_pubkey.or(current.sources_pubkey),
+        }
+        .normalized();
+        if let Some(url) = &config.sources_url {
+            if !(url.starts_with("http://") || url.starts_with("https://")) {
+                return Err("频道清单地址必须以 http:// 或 https:// 开头".to_string());
+            }
+        }
+        save_config(&self.config_path, &config)?;
+        let (channels, channels_version) =
+            load_remote_channels(&self.manifest_path, config.sources_pubkey.as_deref());
+        let kernel = build_kernel(&config, &channels);
+        let mut guard = self.lock();
+        guard.config = config;
+        guard.channels = channels;
+        guard.channels_version = channels_version;
+        guard.kernel = kernel;
+        drop(guard);
+        Ok(self.statuses())
+    }
+
+    /// 拉取并验签远端频道清单，成功后写缓存并重建内核（W14 §11 P3）。
+    fn update_sources(&self, url: Option<String>) -> Result<String, String> {
+        let config = { self.lock().config.clone() };
+        let target = url
+            .map(|url| url.trim().to_string())
+            .filter(|url| !url.is_empty())
+            .or_else(|| config.sources_url.clone())
+            .ok_or_else(|| {
+                "未配置频道清单地址：请在设置 → 云盘搜索中填写清单 URL 与公钥".to_string()
+            })?;
+        if !(target.starts_with("http://") || target.starts_with("https://")) {
+            return Err("频道清单地址必须以 http:// 或 https:// 开头".to_string());
+        }
+        let public_key = config
+            .sources_pubkey
+            .clone()
+            .filter(|pem| !pem.trim().is_empty())
+            .ok_or_else(|| {
+                "未配置频道清单公钥：请在设置 → 云盘搜索中粘贴 RSA 公钥（PEM）".to_string()
+            })?;
+
+        let raw = fetch_manifest(&target)?;
+        let manifest = verify_sources_manifest(&raw, &public_key)
+            .map_err(|err| format!("频道清单校验失败：{err}"))?;
+        let channels = channels_from_manifest(&manifest);
+        if channels.is_empty() {
+            return Err("远端频道清单没有启用频道".to_string());
+        }
+        save_manifest(&self.manifest_path, &raw)?;
+        let kernel = build_kernel(&config, &channels);
+        let version = manifest.version.clone();
+        let count = channels.len();
+        {
+            let mut guard = self.lock();
+            guard.channels = channels;
+            guard.channels_version = Some(version.clone());
+            guard.kernel = kernel;
+        }
+        Ok(format!(
+            "频道清单已更新：{count} 个启用频道（版本 {version}）"
+        ))
     }
 
     /// 连通性自检：PanSou 已配置时真的发一次最小搜索；未配置时只报告内置源状态。
@@ -173,7 +301,7 @@ impl CloudState {
         let guard = self.lock();
         let config = guard.config.clone();
         drop(guard);
-        let channels = builtin_channels();
+        let channels = { self.lock().channels.clone() };
         match pansou_source(&config)? {
             None => Ok(format!(
                 "内置内核：{} 个 Telegram 频道（未配置增强源）",
@@ -209,7 +337,8 @@ fn save_config(path: &Path, config: &CloudSourcesConfig) -> Result<(), String> {
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent).map_err(|err| format!("创建配置目录失败：{err}"))?;
     }
-    let text = serde_json::to_string_pretty(config).map_err(|err| format!("序列化配置失败：{err}"))?;
+    let text =
+        serde_json::to_string_pretty(config).map_err(|err| format!("序列化配置失败：{err}"))?;
     std::fs::write(path, text).map_err(|err| format!("写入搜索源配置失败：{err}"))
 }
 
@@ -234,9 +363,83 @@ fn pansou_source(config: &CloudSourcesConfig) -> Result<Option<PanSouSource>, St
         .map_err(|err| format!("PanSou 源初始化失败：{err}"))
 }
 
-fn build_kernel(config: &CloudSourcesConfig) -> SearchKernel {
+/// 读取远端清单缓存并验签；未配置公钥 / 缓存缺失 / 校验失败时回退内置清单。
+fn load_remote_channels(path: &Path, public_key: Option<&str>) -> (Vec<String>, Option<String>) {
+    let builtin = builtin_channels();
+    let Some(public_key) = public_key.filter(|pem| !pem.trim().is_empty()) else {
+        return (builtin, None);
+    };
+    let Ok(raw) = std::fs::read_to_string(path) else {
+        return (builtin, None);
+    };
+    match verify_sources_manifest(&raw, public_key) {
+        Ok(manifest) => {
+            let channels = channels_from_manifest(&manifest);
+            if channels.is_empty() {
+                eprintln!("[vbox] 远端频道清单没有启用频道，回退内置清单");
+                return (builtin, None);
+            }
+            (channels, Some(manifest.version))
+        }
+        Err(err) => {
+            // 错误信息不含 URL / 清单内容，仅类别 + 可读原因。
+            eprintln!("[vbox] 远端频道清单校验失败，回退内置清单：{err}");
+            (builtin, None)
+        }
+    }
+}
+
+/// 抓取远端清单原文（12s 超时、256KiB 上限；失败信息不回显 URL）。
+fn fetch_manifest(url: &str) -> Result<String, String> {
+    let client = reqwest::blocking::Client::builder()
+        .timeout(Duration::from_secs(12))
+        .user_agent(concat!(
+            "VBox/",
+            env!("CARGO_PKG_VERSION"),
+            " cloudsearch-manifest"
+        ))
+        .build()
+        .map_err(|_| "创建频道清单请求失败".to_string())?;
+    let response = client
+        .get(url)
+        .send()
+        .map_err(|_| "频道清单请求失败（请检查网络后重试）".to_string())?;
+    if !response.status().is_success() {
+        return Err(format!(
+            "频道清单请求失败（HTTP {}）",
+            response.status().as_u16()
+        ));
+    }
+    if let Some(length) = response.content_length() {
+        if length as usize > MAX_MANIFEST_BYTES {
+            return Err(format!(
+                "远端频道清单过大（上限 {MAX_MANIFEST_BYTES} 字节）"
+            ));
+        }
+    }
+    let mut buffer = Vec::new();
+    response
+        .take(MAX_MANIFEST_BYTES as u64 + 1)
+        .read_to_end(&mut buffer)
+        .map_err(|_| "频道清单读取失败".to_string())?;
+    if buffer.len() > MAX_MANIFEST_BYTES {
+        return Err(format!(
+            "远端频道清单过大（上限 {MAX_MANIFEST_BYTES} 字节）"
+        ));
+    }
+    String::from_utf8(buffer).map_err(|_| "频道清单不是合法 UTF-8".to_string())
+}
+
+fn save_manifest(path: &Path, raw: &str) -> Result<(), String> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|err| format!("创建清单缓存目录失败：{err}"))?;
+    }
+    std::fs::write(path, raw).map_err(|err| format!("写入频道清单缓存失败：{err}"))
+}
+
+fn build_kernel(config: &CloudSourcesConfig, channels: &[String]) -> SearchKernel {
     let mut kernel = SearchKernel::default().with_timeout(KERNEL_TIMEOUT);
-    match TgKernelSource::with_default_client(builtin_channels()) {
+    match TgKernelSource::with_default_client(channels.to_vec()) {
         Ok(source) => {
             kernel.add_source(Arc::new(source));
         }
@@ -336,16 +539,31 @@ pub fn cloud_source_set(
     state.cloud.set_source(&kind, url, token)
 }
 
+/// 保存远端频道清单配置（列表 URL + RSA 公钥 PEM），不影响 PanSou 设置。
+#[tauri::command]
+pub fn cloud_sources_config_set(
+    state: State<'_, AppState>,
+    sources_url: Option<String>,
+    sources_pubkey: Option<String>,
+) -> Result<Vec<SourceStatus>, String> {
+    state.cloud.set_sources_config(sources_url, sources_pubkey)
+}
+
 /// 搜索源自检（PanSou 已配置时发一次最小搜索）。
 #[tauri::command]
 pub fn cloud_source_test(state: State<'_, AppState>) -> Result<String, String> {
     state.cloud.test_source()
 }
 
-/// 远端频道清单热更新（P3 接入；当前使用编译期内置清单）。
+/// 远端频道清单热更新（W14 §11 P3）：抓取 → RSA 验签 → 缓存 → 重建内核。
+///
+/// `url` 为空时使用设置页保存的清单地址；必须已配置 RSA 公钥（PEM）。
 #[tauri::command]
-pub fn cloud_sources_update(_state: State<'_, AppState>) -> Result<String, String> {
-    Err("远端频道清单热更新将在 W14 P3 接入，当前使用内置清单".to_string())
+pub fn cloud_sources_update(
+    state: State<'_, AppState>,
+    url: Option<String>,
+) -> Result<String, String> {
+    state.cloud.update_sources(url)
 }
 
 /* ---------------- 只读云盘管理（W14 P2 / §9） ---------------- */
@@ -385,9 +603,12 @@ fn drive_client(
     if account_id.is_empty() {
         return Err("缺少 account_id".to_string());
     }
-    let cred = state.pan_credentials.credential(account_id)?.ok_or_else(|| {
-        format!("未找到账号 {account_id}：请在云盘首页右上角「账号管理」重新登录")
-    })?;
+    let cred = state
+        .pan_credentials
+        .credential(account_id)?
+        .ok_or_else(|| {
+            format!("未找到账号 {account_id}：请在云盘首页右上角「账号管理」重新登录")
+        })?;
     vbox_core::drive::DriveClient::from_credential(&cred).map_err(sanitize_drive_error)
 }
 
@@ -456,7 +677,57 @@ mod tests {
     fn source_set_rejects_unknown_kind_and_bad_url() {
         let state = CloudState::new(&state_dir("reject"));
         assert!(state.set_source("pd", None, None).is_err());
-        assert!(state.set_source("pansou", Some("ftp://x".to_string()), None).is_err());
+        assert!(state
+            .set_source("pansou", Some("ftp://x".to_string()), None)
+            .is_err());
+    }
+
+    #[test]
+    fn sources_update_requires_url_and_public_key() {
+        let state = CloudState::new(&state_dir("sources"));
+        let err = state.update_sources(None).expect_err("缺少 URL 应失败");
+        assert!(err.contains("未配置频道清单地址"), "{err}");
+        // 只配置 URL、没有公钥时，也应给出明确指引（且不访问网络）。
+        assert!(state
+            .set_sources_config(Some("http://127.0.0.1:9/manifest.json".to_string()), None)
+            .is_ok());
+        let err = state.update_sources(None).expect_err("缺少公钥应失败");
+        assert!(err.contains("未配置频道清单公钥"), "{err}");
+        // 非 http(s) 地址直接拒绝。
+        let err = state
+            .update_sources(Some("ftp://example.com/m.json".to_string()))
+            .expect_err("非 http 地址应失败");
+        assert!(err.contains("http://"), "{err}");
+    }
+
+    #[test]
+    fn sources_settings_are_persisted_and_cleared() {
+        let dir = state_dir("sources-config");
+        let state = CloudState::new(&dir);
+        // 先保存一份 PanSou 配置，确认写频道清单配置不会把它清掉。
+        state
+            .set_source("pansou", Some("http://127.0.0.1:8888".to_string()), None)
+            .expect("set pansou");
+        state
+            .set_sources_config(
+                Some("https://example.com/sources.json".to_string()),
+                Some("-----BEGIN PUBLIC KEY-----\nxx\n-----END PUBLIC KEY-----".to_string()),
+            )
+            .expect("save sources settings");
+        let saved = std::fs::read_to_string(dir.join("cloud-sources.json")).expect("config");
+        assert!(saved.contains("https://example.com/sources.json"));
+        assert!(saved.contains("sourcesPubkey"));
+        assert!(saved.contains("127.0.0.1:8888"), "PanSou 配置应被保留");
+        // 清空：传空字符串应删除对应字段。
+        state
+            .set_sources_config(Some(String::new()), Some(String::new()))
+            .expect("clear sources settings");
+        let saved = std::fs::read_to_string(dir.join("cloud-sources.json")).expect("config");
+        assert!(!saved.contains("example.com"));
+        assert!(
+            saved.contains("127.0.0.1:8888"),
+            "清空清单配置不应影响 PanSou"
+        );
     }
 
     #[test]

@@ -76,7 +76,7 @@ export function cloudSourceStatus(): Promise<CloudSourceStatus[]> {
   return invoke<CloudSourceStatus[]>('cloud_source_status')
 }
 
-/** 配置搜索源（仅 PanSou；`url` 传空表示关闭） */
+/** 配置搜索源（仅 PanSou；`url` 传空字符串表示关闭） */
 export function cloudSourceSet(payload: {
   kind: 'pansou'
   url?: string | null
@@ -84,8 +84,19 @@ export function cloudSourceSet(payload: {
 }): Promise<CloudSourceStatus[]> {
   return invoke<CloudSourceStatus[]>('cloud_source_set', {
     kind: payload.kind,
-    url: payload.url ?? null,
-    token: payload.token ?? null,
+    url: payload.url ?? '',
+    token: payload.token ?? '',
+  })
+}
+
+/** 保存远端频道清单配置（列表地址 + RSA 公钥 PEM；传空字符串清空，不影响 PanSou） */
+export function cloudSourcesConfigSet(payload: {
+  sourcesUrl?: string | null
+  sourcesPubkey?: string | null
+}): Promise<CloudSourceStatus[]> {
+  return invoke<CloudSourceStatus[]>('cloud_sources_config_set', {
+    sourcesUrl: payload.sourcesUrl ?? '',
+    sourcesPubkey: payload.sourcesPubkey ?? '',
   })
 }
 
@@ -94,7 +105,9 @@ export function cloudSourceTest(): Promise<string> {
   return invoke<string>('cloud_source_test')
 }
 
-/** 远端频道清单热更新（P3 接入；当前返回明确错误） */
-export function cloudSourcesUpdate(): Promise<string> {
-  return invoke<string>('cloud_sources_update')
+/** 远端频道清单热更新：抓取 → RSA 验签 → 缓存 → 重建内核（W14 §11 P3） */
+export function cloudSourcesUpdate(url?: string | null): Promise<string> {
+  return invoke<string>('cloud_sources_update', {
+    url: url && url.trim() ? url.trim() : null,
+  })
 }
