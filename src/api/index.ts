@@ -1220,3 +1220,8 @@ export async function windowBackdrop(): Promise<boolean> {
 export function localMediaUrl(path: string): Promise<string> {
   return core.localMediaUrl(path)
 }
+
+/* ---------------- 网盘账号登录（W13） ---------------- */
+
+// 只在 Tauri 下可用；浏览器演示模式请调用方先判 `demoMode` 再决定是否调用。
+export * from './pan'

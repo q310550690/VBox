@@ -312,7 +312,7 @@ fn name_of(manifest: &Manifest, url: &str) -> Option<String> {
 
 /// 构造 115 客户端（接口根可用 ext JSON `p115_base` 覆盖，便于 mock）。
 fn client(cfg: &TvConfig, site: &Site) -> Result<(P115Client, PanConfig)> {
-    let conf = PanConfig::parse(&site.ext_string());
+    let conf = PanConfig::parse(&site.ext_string()).with_overlay();
     let base = hooks(site).web_base.unwrap_or_else(|| WEB_BASE.to_string());
     let http = client_for(&cfg.http)?;
     Ok((

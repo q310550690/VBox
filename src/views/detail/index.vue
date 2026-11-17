@@ -6,6 +6,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessageBox } from 'element-plus'
 import * as api from '@/api'
 import SolarIcon from '@/components/SolarIcon.vue'
 import PlayerPane from '@/components/PlayerPane.vue'
@@ -26,6 +27,7 @@ import { useFavoritesStore } from '@/store/favorites'
 import { useHistoryStore } from '@/store/history'
 import { useUiStore } from '@/store/ui'
 import { clearResolveCache, getResolveCache, resolveCacheKey, setResolveCache } from '@/utils/resolveCache'
+import { detectCatvodErrorCode } from '@/utils/catvodErrors'
 import { lineLabelAt } from '@/utils/episodeLines'
 import { evictDetailView } from '@/layouts/vodDetailCache'
 import type { DownloadFileInfo, Episode, VideoDetail } from '@/types'
@@ -159,6 +161,24 @@ const {
   close: closeParse,
   reopen: reopenParse,
 } = useParseProgress()
+
+/** 网盘未登录：解析失败后弹一次「去登录」引导（W13 错误联动；同一错误文案只弹一次） */
+let panPromptedFor = ''
+watch([parseState, parseError], ([state, message]) => {
+  if (state !== 'error' || !message || message === panPromptedFor) return
+  const needsLogin =
+    detectCatvodErrorCode(message) === 'catvod.pan.cookie_required' ||
+    /login_required|需要登录/.test(message)
+  if (!needsLogin) return
+  panPromptedFor = message
+  void ElMessageBox.confirm('该资源需要登录网盘账号才能播放。是否现在去登录？', '需要登录网盘', {
+    confirmButtonText: '去登录',
+    cancelButtonText: '稍后',
+    type: 'warning',
+  })
+    .then(() => router.push({ path: '/settings', query: { section: 'anchor-pan' } }))
+    .catch(() => undefined)
+})
 
 /** 选集右侧「解析过程」：在显示 / 隐藏之间切换（面板内联在和选集并排的右列） */
 function onToggleParseLog() {

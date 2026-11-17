@@ -505,7 +505,7 @@ fn load_pan_config(site: &Site) -> PanConfig {
     for seg in site.ext_string().split("$$$") {
         let seg = seg.trim();
         if seg.starts_with('{') {
-            return PanConfig::parse(seg);
+            return PanConfig::parse(seg).with_overlay();
         }
     }
     PanConfig::default()

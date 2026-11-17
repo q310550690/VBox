@@ -1007,3 +1007,52 @@ export interface DailyStat {
   ok: number
   fail: number
 }
+
+/* ---------------- 网盘账号登录（W13） ---------------- */
+
+/** 二维码 / 设备码票据（后端安全视图：内部 uid/sign/device_code 不下发前端） */
+export interface PanQrTicket {
+  ticket_id: string
+  /** qr_code = 二维码内容；device_code = 设备码（content 为验证地址） */
+  kind: 'qr_code' | 'device_code'
+  /** 二维码要编码的 URL，或设备码验证地址 */
+  content: string
+  /** 二维码图片地址（115 官方接口；夸克/迅雷为空串） */
+  image_url: string
+  /** 有效期（秒） */
+  expires_in: number
+  /** 过期时刻（Unix 秒；0 表示未知） */
+  expires_at: number
+}
+
+/** 账号状态（W14 账号卡片徽标） */
+export type PanAccountStatus = 'connected' | 'expired' | 'not_logged_in'
+
+/** 账号摘要：凭据只留在后端，这里只有掩码与状态 */
+export interface PanAccountView {
+  account_id: string
+  provider: string
+  display_name: string | null
+  /** 账号标识掩码（u***88 / 138****678） */
+  masked_id: string | null
+  status: PanAccountStatus
+  /** 最后更新时间（Unix 秒） */
+  updated_at: number
+}
+
+/** 登录轮询结果（成功时已落盘加密凭据，只回账号摘要） */
+export type PanLoginPollResult =
+  | { state: 'waiting' }
+  | { state: 'scanned' }
+  | { state: 'success'; account: PanAccountView }
+  | { state: 'expired' }
+  | { state: 'failure'; message: string }
+
+/** 单个 provider 的登录能力 */
+export interface PanLoginProvider {
+  provider: string
+  /** 支持协议登录（login_start / login_poll） */
+  protocol: boolean
+  /** 有网页登录兜底（open_web_login） */
+  webLogin: boolean
+}

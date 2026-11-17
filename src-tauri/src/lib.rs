@@ -1,6 +1,7 @@
 // VBox 桌面端 Tauri 应用主体
 mod capture;
 mod commands;
+mod commands_pan;
 mod download;
 mod embedded_tools;
 mod enhance;
@@ -14,6 +15,7 @@ mod logs;
 #[cfg(target_os = "macos")]
 mod macos_video;
 mod menu;
+mod pan_credentials;
 mod playback_cache;
 mod player;
 mod player_prefs;
@@ -322,6 +324,18 @@ pub fn run() {
             ffmpeg_prefs::ffmpeg_provision,
             ffmpeg_prefs::ffmpeg_pick,
             ffmpeg_prefs::ffmpeg_open_download,
+            // W13：网盘账号登录（协议登录 + 网页兜底 + 账号管理）
+            commands_pan::login_start,
+            commands_pan::login_poll,
+            commands_pan::login_cancel,
+            commands_pan::login_manual,
+            commands_pan::accounts_list,
+            commands_pan::credentials_list,
+            commands_pan::account_remove,
+            commands_pan::credentials_clear,
+            commands_pan::credentials_verify,
+            commands_pan::login_providers,
+            commands_pan::open_web_login,
         ])
         .build(tauri::generate_context!())
         .expect("启动 VBox 失败")

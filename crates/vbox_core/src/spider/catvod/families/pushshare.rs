@@ -302,7 +302,7 @@ fn load_manifest(cfg: &TvConfig, site: &Site) -> Result<Vec<Entry>> {
 }
 
 fn pan_conf(site: &Site) -> PanConfig {
-    PanConfig::parse(&site.ext_string())
+    PanConfig::parse(&site.ext_string()).with_overlay()
 }
 
 fn base_with_slash(raw: &str) -> String {
@@ -427,7 +427,15 @@ fn xunlei_browse(
 ) -> Result<Vec<PanEntry>> {
     let hooks = hooks(site);
     let client = client_for(&cfg.http)?;
-    let token = hooks.token.as_deref().unwrap_or("");
+    // ext 未给 token 时回落到登录 overlay（W13：三家扫码登录后的凭据注入）。
+    let token_owned = hooks.token.clone().or_else(|| {
+        if pikpak {
+            crate::pan::login::overlay_token(crate::pan::login::PIKPAK)
+        } else {
+            crate::pan::login::overlay_token(crate::pan::login::XUNLEI)
+        }
+    });
+    let token = token_owned.as_deref().unwrap_or("");
     if pikpak {
         let api_base = pick_base(hooks.pikpak_base.as_deref(), "", PIKPAK_API_BASE);
         let auth_base = pick_base(hooks.pikpak_auth_base.as_deref(), "", PIKPAK_AUTH_BASE);
@@ -702,9 +710,14 @@ fn resolve_direct_url(cfg: &TvConfig, site: &Site, target: &Target, fid: &str) -
         Target::Xunlei(share) => {
             let api_base = pick_base(hooks.xunlei_base.as_deref(), "", XUNLEI_API_BASE);
             let auth_base = pick_base(hooks.xunlei_auth_base.as_deref(), "", XUNLEI_AUTH_BASE);
+            let token = hooks
+                .token
+                .clone()
+                .or_else(|| crate::pan::login::overlay_token(crate::pan::login::XUNLEI))
+                .unwrap_or_default();
             let drive = XunleiDrive::with_bases(
                 client,
-                hooks.token.as_deref().unwrap_or(""),
+                &token,
                 &api_base,
                 &auth_base,
                 "迅雷",
@@ -722,12 +735,12 @@ fn resolve_direct_url(cfg: &TvConfig, site: &Site, target: &Target, fid: &str) -
         Target::PikPak(share) => {
             let api_base = pick_base(hooks.pikpak_base.as_deref(), "", PIKPAK_API_BASE);
             let auth_base = pick_base(hooks.pikpak_auth_base.as_deref(), "", PIKPAK_AUTH_BASE);
-            let drive = PikPakClient::with_base(
-                client,
-                hooks.token.as_deref().unwrap_or(""),
-                &api_base,
-                &auth_base,
-            );
+            let token = hooks
+                .token
+                .clone()
+                .or_else(|| crate::pan::login::overlay_token(crate::pan::login::PIKPAK))
+                .unwrap_or_default();
+            let drive = PikPakClient::with_base(client, &token, &api_base, &auth_base);
             let token = drive.share_token(&share.share_id, &share.passcode)?;
             let pass_code_token = token
                 .get("pass_code_token")

@@ -155,7 +155,7 @@ fn search_base(site: &Site) -> String {
 }
 
 fn pan_config(site: &Site) -> PanConfig {
-    let mut conf = PanConfig::parse(&site.ext_string());
+    let mut conf = PanConfig::parse(&site.ext_string()).with_overlay();
     let extra = ext_conf(site);
     if !extra.ali_base.is_empty() {
         conf.ali_base = normalize_base(&extra.ali_base);

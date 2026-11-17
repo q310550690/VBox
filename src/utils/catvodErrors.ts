@@ -97,7 +97,7 @@ export const CATVOD_ERROR_COPY: Record<string, CatvodErrorCopy> = {
   },
   'catvod.pan.cookie_required': {
     title: '网盘需要登录 Cookie',
-    action: '在站点 ext 中配置对应网盘的 Cookie 后重试',
+    action: '在设置 → 网盘账号登录，或在站点 ext 中配置对应网盘的 Cookie 后重试',
     retryable: false,
   },
   'catvod.live.fetch': {

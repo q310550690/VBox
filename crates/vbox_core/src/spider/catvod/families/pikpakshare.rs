@@ -319,7 +319,11 @@ fn name_of(manifest: &Manifest, url: &str) -> Option<String> {
 /// 构造 PikPak 客户端（接口根可用 ext JSON `pikpak_base`/`pikpak_auth_base` 覆盖，便于 mock）。
 fn client(cfg: &TvConfig, site: &Site) -> Result<PikPakClient> {
     let h = hooks(site);
-    let token = h.token.unwrap_or_default();
+    // ext 未给 token 时回落到登录 overlay（W13）。
+    let token = h
+        .token
+        .or_else(|| crate::pan::login::overlay_token(crate::pan::login::PIKPAK))
+        .unwrap_or_default();
     let http = client_for(&cfg.http)?;
     match (h.api_base, h.auth_base) {
         (Some(api), Some(auth)) => Ok(PikPakClient::with_base(http, &token, &api, &auth)),

@@ -194,9 +194,9 @@ fn pan_config(site: &Site) -> PanConfig {
     let ext = site.ext_string();
     let seg0 = ext.split("$$$").next().unwrap_or("").trim();
     if seg0.starts_with('{') {
-        PanConfig::parse(seg0)
+        PanConfig::parse(seg0).with_overlay()
     } else {
-        PanConfig::default()
+        PanConfig::default().with_overlay()
     }
 }
 

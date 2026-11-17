@@ -9,6 +9,7 @@
 //! 后续按同样结构补 Thunder 家族与 YD。
 
 pub mod ali;
+pub mod login;
 pub mod p115;
 pub mod pikpak;
 pub mod quark;
@@ -222,6 +223,34 @@ impl PanConfig {
         } else {
             self.cookie.trim()
         }
+    }
+
+    /// 用登录 overlay 填充 ext 未提供的凭据（ext 显式配置优先，W13 §3 / W14 §9）。
+    ///
+    /// 只补空字段，不覆盖 ext；overlay 里对应 provider 无凭据或已过期时保持原样。
+    pub fn with_overlay(mut self) -> Self {
+        use crate::pan::login;
+        if self.p115_cookie.trim().is_empty() {
+            if let Some(c) = login::overlay_cookie(login::P115) {
+                self.p115_cookie = c;
+            }
+        }
+        if self.quark_cookie.trim().is_empty() {
+            if let Some(c) = login::overlay_cookie(login::QUARK) {
+                self.quark_cookie = c;
+            }
+        }
+        if self.uc_cookie.trim().is_empty() {
+            if let Some(c) = login::overlay_cookie(login::UC) {
+                self.uc_cookie = c;
+            }
+        }
+        if self.ali_cookie.trim().is_empty() {
+            if let Some(c) = login::overlay_cookie(login::ALI) {
+                self.ali_cookie = c;
+            }
+        }
+        self
     }
 }
 

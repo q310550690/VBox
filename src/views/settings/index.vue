@@ -1,6 +1,7 @@
 <!-- 设置页：订阅 / 运行环境 / 播放与缓存 / 搜索与历史 / 网络与日志 / 外观 / 关于（分组卡片 + 吸顶分区导航） -->
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import StatusTabs from '@/components/StatusTabs.vue'
 import PageScroll from '@/components/PageScroll.vue'
 import AboutSection from './components/AboutSection.vue'
@@ -12,6 +13,7 @@ import LogsSection from './components/LogsSection.vue'
 import NetworkSection from './components/NetworkSection.vue'
 import NodeSection from './components/NodeSection.vue'
 import PlaybackCacheSection from './components/PlaybackCacheSection.vue'
+import PanAccountsSection from './components/PanAccountsSection.vue'
 import PlaybackSection from './components/PlaybackSection.vue'
 import PluginSection from './components/PluginSection.vue'
 import PythonSection from './components/PythonSection.vue'
@@ -30,6 +32,7 @@ const SECTION_TABS: { value: string; label: string }[] = [
   { value: 'anchor-runtime', label: '运行环境' },
   { value: 'anchor-playback', label: '播放与缓存' },
   { value: 'anchor-plugins', label: '插件' },
+  { value: 'anchor-pan', label: '网盘账号' },
   { value: 'anchor-search', label: '搜索与历史' },
   { value: 'anchor-network', label: '网络与日志' },
   { value: 'anchor-appearance', label: '外观' },
@@ -38,6 +41,8 @@ const SECTION_TABS: { value: string; label: string }[] = [
 
 /** 当前高亮的分区 tab */
 const activeSection = ref<string>(SECTION_TABS[0].value)
+
+const route = useRoute()
 
 function onSectionChange(anchor: string) {
   activeSection.value = anchor
@@ -65,6 +70,15 @@ onMounted(() => {
       ?.closest<HTMLElement>('.page-scroll')
       ?.querySelector<HTMLElement>('.el-scrollbar__wrap') ?? null
   scrollEl?.addEventListener('scroll', syncActiveSection, { passive: true })
+
+  // 外部入口带 ?section=anchor-pan 进入时（如解析失败的「去登录网盘账号」），滚到对应分区
+  const section = String(route.query.section ?? '')
+  if (section && SECTION_TABS.some((item) => item.value === section)) {
+    activeSection.value = section
+    window.requestAnimationFrame(() => {
+      document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
 })
 
 onBeforeUnmount(() => {
@@ -124,6 +138,14 @@ onBeforeUnmount(() => {
       class="settings-card panel"
     >
       <PluginSection />
+    </div>
+
+    <!-- 网盘账号：115/夸克/迅雷协议登录 + 网页授权兜底 -->
+    <div
+      id="anchor-pan"
+      class="settings-card panel"
+    >
+      <PanAccountsSection />
     </div>
 
     <!-- 搜索与历史：搜索 / 历史记录 合并 -->

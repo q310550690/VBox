@@ -104,6 +104,10 @@ pub struct AppState {
     pub python_config: PathBuf,
     /// Node 解释器配置文件（<app_data_dir>/node.json）
     pub node_config: PathBuf,
+    /// 网盘登录会话（W13）：provider → LoginFlow 注册表 + 按 ticket_id 的会话表
+    pub pan_login: vbox_core::pan::login::LoginHub,
+    /// 网盘凭据存储（W13 D4）：DPAPI 加密的 credentials.json + 内存 overlay
+    pub pan_credentials: Arc<crate::pan_credentials::PanCredentialStore>,
 }
 
 impl AppState {
@@ -124,6 +128,19 @@ impl AppState {
                 vbox_core::node::set_preferred(cfg.path.as_deref());
             }
         }
+        // W13：网盘登录 provider（115/夸克/迅雷走协议登录；阿里/UC/PikPak 走前端 WebView 兜底）。
+        let pan_login = vbox_core::pan::login::default_hub().unwrap_or_else(|err| {
+            eprintln!("[vbox] 网盘登录 provider 初始化失败（登录面板不可用）: {err}");
+            vbox_core::pan::login::LoginHub::new()
+        });
+        // W13 D4：本机加密凭据存储；启动时把最近凭据恢复进内存 overlay，供既有网盘引擎直接复用。
+        let pan_credentials = Arc::new(crate::pan_credentials::PanCredentialStore::new(
+            &app_data_dir,
+        ));
+        let restored = pan_credentials.restore_overlay();
+        if !restored.is_empty() {
+            eprintln!("[vbox] 已恢复 {} 个网盘账号凭据", restored.len());
+        }
         Self {
             loaded: Mutex::new(None),
             cache_dir,
@@ -133,6 +150,8 @@ impl AppState {
             parse_cancel: Mutex::new(None),
             python_config,
             node_config,
+            pan_login,
+            pan_credentials,
         }
     }
 

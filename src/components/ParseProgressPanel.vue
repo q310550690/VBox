@@ -5,8 +5,10 @@
      - 事件只做展示：解析日志追加、自动滚底、最多保留 80 条（组合式函数内裁剪） -->
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import type { ScrollbarInstance } from 'element-plus'
 import SolarIcon from '@/components/SolarIcon.vue'
+import { detectCatvodErrorCode } from '@/utils/catvodErrors'
 import type { SolarIconName } from '@/icons/solar'
 import type { ParseRunState, ParseStep } from '@/composables/useParseProgress'
 
@@ -34,6 +36,21 @@ const emit = defineEmits<{
   (e: 'retry'): void
   (e: 'close'): void
 }>()
+
+const router = useRouter()
+
+/**
+ * 网盘类失败（W13 未登录联动）：提示去「设置 → 网盘账号」登录后重试。
+ * 后端把缺失 Cookie/登录态归为 `catvod.pan.cookie_required`，部分老文案直接带 login_required。
+ */
+const panLoginHint = computed(() => {
+  const text = props.errorMessage || ''
+  return detectCatvodErrorCode(text) === 'catvod.pan.cookie_required' || /login_required|需要登录/.test(text)
+})
+
+function goPanLogin() {
+  void router.push({ path: '/settings', query: { section: 'anchor-pan' } })
+}
 
 /* ---------------- 宏观步骤 ---------------- */
 
@@ -304,10 +321,20 @@ function handleCancel() {
         </div>
       </el-scrollbar>
 
-      <!-- 失败原因（后端 error detail 或页面 catch 文案） -->
-      <p v-if="state === 'error' && errorMessage" class="error-text ellipsis-2" :title="errorMessage">
-        {{ errorMessage }}
-      </p>
+      <!-- 失败原因（后端 error detail 或页面 catch 文案）；网盘未登录时给「去登录」入口 -->
+      <div v-if="state === 'error' && errorMessage" class="error-block">
+        <p class="error-text ellipsis-2" :title="errorMessage">
+          {{ errorMessage }}
+        </p>
+        <el-button
+          v-if="panLoginHint"
+          size="small"
+          type="primary"
+          @click="goPanLogin"
+        >
+          去登录网盘账号
+        </el-button>
+      </div>
     </aside>
 </template>
 
@@ -690,6 +717,13 @@ function handleCancel() {
 }
 
 /* ---------------- 失败原因 / 操作 ---------------- */
+
+.error-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
 
 .error-text {
   margin: 0;
