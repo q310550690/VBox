@@ -43,6 +43,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
+    env:
+      # 私有文档仓库的 read token。未配置时跳过依赖 docs/ 的步骤：
+      # 公开仓库的 fork/外部贡献者没有该 secret，不应因此把 CI 判红。
+      VBOX_DOCS_TOKEN: ${{ secrets.VBOX_DOCS_TOKEN }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -50,11 +55,23 @@ jobs:
       # 文档维护在私有仓库 VBox-docs，检出到 docs/ 供判据与审计工具读取。
       # 需要在仓库设置里配置 secret：VBOX_DOCS_TOKEN（对该私有仓库有 read 权限的 PAT）。
       - name: Checkout docs (private)
+        if: env.VBOX_DOCS_TOKEN != ''
         uses: actions/checkout@v4
         with:
           repository: q310550690/VBox-docs
-          token: ${{ secrets.VBOX_DOCS_TOKEN }}
+          token: ${{ env.VBOX_DOCS_TOKEN }}
           path: docs
+
+      - name: 检查内部审计资源
+        id: internal
+        run: |
+          if [ -f _rea/tools/audit-all.mjs ] && [ -n "${VBOX_DOCS_TOKEN:-}" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=内部审计跳过::公开仓库不含 _rea/ 审计工具或未配置 VBOX_DOCS_TOKEN，跳过审计步骤；维护者在私有环境运行 node _rea/tools/audit-all.mjs"
+
+          fi
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -76,6 +93,7 @@ jobs:
             ${{ runner.os }}-cargo-compat-audit-
 
       - name: 审计工具语法检查
+        if: steps.internal.outputs.available == 'true'
         run: |
           set -euo pipefail
           for f in _rea/tools/*.mjs _rea/tools/lib/*.mjs; do
@@ -83,9 +101,11 @@ jobs:
           done
 
       - name: cargo test -p vbox_core
+        if: steps.internal.outputs.available == 'true'
         run: cargo test -p vbox_core
 
       - name: 审计（跳过真站）+ 10 类门禁注入自检
+        if: steps.internal.outputs.available == 'true'
         run: node _rea/tools/audit-all.mjs --skip-live --selftest
 
       - name: 上传审计产物
