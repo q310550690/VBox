@@ -113,7 +113,7 @@ function resume() {
 }
 
 async function loadDouban() {
-  if (api.demoMode) return
+  // 浏览器演示模式也展示 mock 豆瓣数据，便于预览首页视觉
   doubanLoading.value = true
   try {
     // 优先展示后端缓存，避免首页白屏；随后再拉一次（后端 10 分钟缓存）

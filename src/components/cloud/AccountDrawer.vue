@@ -34,7 +34,7 @@ const emit = defineEmits<{
 
 <style scoped>
 .pan-account-dialog :deep(.el-dialog__body) {
-  max-height: 68vh;
+  max-height: 62vh;
   overflow-y: auto;
   padding-top: 4px;
 }
