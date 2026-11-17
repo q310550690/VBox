@@ -1,0 +1,213 @@
+{
+  "schema": 1,
+  "api": "csp_Ysj",
+  "kind": "html",
+  "class": "com.github.catvod.spider.Ysj",
+  "jar": "dffec63f-pg.jar",
+  "jar_sha256": "0e622ce7b053bedfd476705c2883b608344117c6beac9b3e0dfbea3868c17e2b",
+  "evidence": [
+    {
+      "method": "homeContent",
+      "file": "_rea/decompiled/dffec63f-pg/deobf/com/github/catvod/spider/Ysj.java",
+      "lines": "132-167"
+    },
+    {
+      "method": "categoryContent",
+      "file": "_rea/decompiled/dffec63f-pg/deobf/com/github/catvod/spider/Ysj.java",
+      "lines": "46-80"
+    },
+    {
+      "method": "detailContent",
+      "file": "_rea/decompiled/dffec63f-pg/deobf/com/github/catvod/spider/Ysj.java",
+      "lines": "81-131"
+    },
+    {
+      "method": "searchContent",
+      "file": "_rea/decompiled/dffec63f-pg/deobf/com/github/catvod/spider/Ysj.java",
+      "lines": "177-190"
+    },
+    {
+      "method": "playerContent",
+      "file": "_rea/decompiled/dffec63f-pg/deobf/com/github/catvod/spider/Ysj.java",
+      "lines": "168-176"
+    }
+  ],
+  "base": {
+    "default": "https://www.dmmiku.com",
+    "ext": "whole"
+  },
+  "headers": {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+  },
+  "endpoints": {
+    "categories": {
+      "path": "/index.php/vod/show/id/20.html",
+      "dedupe": true,
+      "rows": ["div#hl02 a"],
+      "fields": {
+        "id": {
+          "self": true,
+          "attr": "href",
+          "segment": 5,
+          "tail_non_empty": true,
+          "non_empty": true
+        },
+        "name": { "self": true, "replace": { "BD": "" }, "trim": true, "non_empty": true }
+      },
+      "filters": [
+        { "field": "id", "if_empty": true },
+        { "field": "id", "exclude_contains": ".html" },
+        { "field": "name", "if_empty": true }
+      ]
+    },
+    "list": {
+      "path": "/index.php/vod/show",
+      "segments": [
+        { "template": "/class/{cat}", "if_var": "cat" },
+        { "template": "/id/20" },
+        { "template": "/page/{page}", "if_gt": { "var": "page", "value": 1 } },
+        { "template": ".html" }
+      ],
+      "rows": ["li.vodlist_item"],
+      "fields": {
+        "id": {
+          "sel": ["a.vodlist_thumb", "a"],
+          "attr": "href",
+          "segment": 5,
+          "tail_non_empty": true,
+          "non_empty": true
+        },
+        "name": {
+          "sel": ["a.vodlist_thumb", "a"],
+          "attr": "title",
+          "non_empty": true,
+          "fallback": {
+            "sel": ["a.vodlist_thumb", "a"],
+            "non_empty": true
+          }
+        },
+        "cover": {
+          "sel": ["a.vodlist_thumb", "a"],
+          "attr": "data-original",
+          "join_base": true,
+          "non_empty": true
+        },
+        "remark": {
+          "sel": ["span.pic_text"],
+          "clean_private_use": true,
+          "non_empty": true
+        }
+      }
+    },
+    "detail": {
+      "path": "/index.php/vod/detail/id",
+      "segments": [{ "template": "/{id}.html" }],
+      "rules": [
+        {
+          "prefixes": ["http://", "https://"],
+          "url": "{id}"
+        },
+        {
+          "suffixes": [".html"],
+          "url": "{base}/index.php/vod/detail/id/{id}"
+        }
+      ],
+      "fields": {
+        "name": { "sel": ["h2.title"], "clean_private_use": true },
+        "cover": {
+          "sel": ["a.vodlist_thumb"],
+          "attr": "data-original",
+          "join_base": true,
+          "non_empty": true
+        },
+        "desc": {
+          "sel": ["div.content_desc > span"],
+          "trim": true,
+          "non_empty": true,
+          "fallback": {
+            "sel": ["div.content_desc"],
+            "trim": true,
+            "non_empty": true
+          }
+        }
+      },
+      "meta_scope": "li.data",
+      "meta_anchor": "a",
+      "meta": [
+        { "field": "year", "href_contains": "/vod/search/year/" },
+        { "field": "area", "href_contains": "/vod/search/area/" },
+        { "field": "actor", "href_contains": "/vod/search/actor/", "first_only": true },
+        { "field": "actor", "label": "主演", "cut": "/\n" },
+        { "field": "director", "label": "导演", "cut": "/\n" }
+      ],
+      "require": [
+        {
+          "target": "name_and_episodes",
+          "error": "详情页缺少标题与播放列表"
+        }
+      ],
+      "groups": {
+        "tabs": "div.play_source_tab > a",
+        "lists": "ul.content_playlist",
+        "item": "a",
+        "url_attr": "href",
+        "url_strip_prefix": "/index.php/vod/play/id/",
+        "name_fallback": "线路{index}"
+      }
+    },
+    "search": {
+      "path": "/index.php/vod/search.html",
+      "params": [
+        { "key": "wd", "value": "{kw}", "encode": "alnum" },
+        { "key": "submit", "value": "" }
+      ],
+      "empty_marker": "很抱歉，暂无相关视频",
+      "rows": ["li.searchlist_item"],
+      "fields": {
+        "id": {
+          "sel": ["a.vodlist_thumb", "a"],
+          "attr": "href",
+          "segment": 5,
+          "tail_non_empty": true,
+          "non_empty": true
+        },
+        "name": {
+          "sel": ["a.vodlist_thumb", "a"],
+          "attr": "title",
+          "non_empty": true,
+          "fallback": {
+            "sel": ["a.vodlist_thumb", "a"],
+            "non_empty": true
+          }
+        },
+        "cover": {
+          "sel": ["a.vodlist_thumb", "a"],
+          "attr": "data-original",
+          "join_base": true,
+          "non_empty": true
+        },
+        "remark": {
+          "sel": ["span.pic_text"],
+          "clean_private_use": true,
+          "non_empty": true
+        }
+      }
+    },
+    "play": {
+      "parse": 1,
+      "rules": [
+        {
+          "prefixes": ["http://", "https://"],
+          "url": "{id}",
+          "header": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+          }
+        }
+      ],
+      "url": "{base}/index.php/vod/play/id/{id}",
+      "header": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+      }
+    }
+  }
+}

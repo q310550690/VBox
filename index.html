@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="apple-touch-icon" href="/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VBox</title>
+    <!--
+      首屏主题引导脚本：在 CSS/JS 加载前根据本地偏好设置 html 的 class，
+      避免亮暗切换时先白后黑（FOUC）。data 结构与 src/store/ui.ts 保持一致：
+      localStorage['vbox.ui'] = { mode: 'system' | 'light' | 'dark', hue: '<主题色>' }
+    -->
+    <script>
+      ;(function () {
+        try {
+          var DARK_THEME = {
+            'coral-rose': 'crimson',
+            'autumn-field': 'ember',
+            sandalwood: 'gold',
+            'ink-green': 'forest',
+            'frost-moon': 'night-blue',
+            'ocean-blue': 'sapphire',
+            'lavender-mist': 'twilight-purple',
+          }
+          var raw = localStorage.getItem('vbox.ui')
+          var ui = raw ? JSON.parse(raw) || {} : {}
+          var mode = ui.mode === 'light' || ui.mode === 'dark' ? ui.mode : 'system'
+          var hue = DARK_THEME[ui.hue] ? ui.hue : 'ink-green'
+          var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+          var resolved = mode === 'system' ? (prefersDark ? 'dark' : 'light') : mode
+          var theme = resolved === 'dark' ? DARK_THEME[hue] : hue
+          // 亚克力：Windows 桌面端默认开启「侧边与标题栏」，其余环境默认关闭（与 src/store/ui.ts 一致）
+          var isTauri = typeof window.__TAURI_INTERNALS__ !== 'undefined'
+          var isWindows = /Windows/i.test(navigator.userAgent || '')
+          var defaultAcrylic = isTauri && isWindows
+          var acrylic = typeof ui.acrylic === 'boolean' ? ui.acrylic : defaultAcrylic
+          var acrylicContent = acrylic && ui.acrylicContent === true
+          document.documentElement.className =
+            (resolved === 'dark' ? 'dark ' : '') +
+            'theme-' + theme +
+            (acrylic ? ' acrylic-on' : '') +
+            (acrylicContent ? ' acrylic-on-content' : '')
+          // 仅用于首屏底色兜底（随后由主题样式接管并清除）
+          document.documentElement.style.backgroundColor = resolved === 'dark' ? '#161A24' : '#F4F6EF'
+        } catch (e) {
+          document.documentElement.className = 'theme-ink-green acrylic-on'
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

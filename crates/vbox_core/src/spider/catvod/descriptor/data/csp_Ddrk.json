@@ -1,0 +1,260 @@
+{
+  "schema": 1,
+  "api": "csp_Ddrk",
+  "kind": "html",
+  "class": "com.github.catvod.spider.Ddrk",
+  "jar": "ddaf13d7-0206.jpg",
+  "jar_sha256": "253450a7500979f6bbe9b4a5cf19aadb8bd372845db1c3d629ea3fd2293154e1",
+  "evidence": [
+    {
+      "method": "homeContent",
+      "file": "_rea/tmp/Ddrk-bad.java",
+      "lines": "399-507",
+      "note": "ddaf13d7-0206 的 deobf 里 homeContent 被 jadx 跳过（260-267 为 throw stub），用 jadx --show-bad-code 恢复；首页 li.menu-item a：name 取 title 属性（空则退回文本）并跳过 热映中/全部，id 从 href 的 /category/<slug> 提取。"
+    },
+    {
+      "method": "categoryContent",
+      "file": "_rea/tmp/Ddrk-bad.java",
+      "lines": "65-212",
+      "note": "列表 div.post-box-container：id 取 .post-box-title a 的 href 末段；标题按首个 ( 或空白切成 name/remark；封面取 .post-box-image 的 style 里第一个 http(s) URL。"
+    },
+    {
+      "method": "detailContent",
+      "file": "_rea/tmp/Ddrk-bad.java",
+      "lines": "213-398",
+      "note": "详情 h1.post-title / div.abstract 正则取年份、地区、演员、导演、简介；分集需解析 .wp-playlist-script 内嵌 JSON 的 tracks，再按 .post-page-numbers 二次请求各季页面。schema v1 无内嵌 JSON 解析、无二次请求与叠加分季原语，故 family_fallback=true 回退手写。"
+    },
+    {
+      "method": "searchContent",
+      "file": "_rea/tmp/Ddrk-bad.java",
+      "lines": "531-563",
+      "note": "搜索 remark 由 time 文本与 .cat-links 文本两节点拼接（format!(\"time cats\")），cover 为站点固定常量；FieldSpec 无多节点拼接与纯常量字段，故 family_fallback=true 回退手写。"
+    },
+    {
+      "method": "playerContent",
+      "file": "_rea/tmp/Ddrk-bad.java",
+      "lines": "508-530",
+      "note": "播放 id 需按 '|' 拆成「视频接口|字幕」，再 GET 接口 JSON 取 url 字段；schema v1 无 id 内分隔拆段与抓 JSON 取字段原语（proxy 的 URL 只能由变量渲染，无法取 id 前半段），故 family_fallback=true 回退手写。"
+    }
+  ],
+  "base": {
+    "default": "https://ddys.pro",
+    "ext": "whole"
+  },
+  "headers": {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.62 Safari/537.36",
+    "Referer": "{base}/"
+  },
+  "retries": 2,
+  "endpoints": {
+    "categories": {
+      "path": "/",
+      "rows": [
+        "li.menu-item a"
+      ],
+      "fields": {
+        "id": {
+          "self": true,
+          "attr": "href",
+          "segment": 99,
+          "tail_non_empty": true,
+          "non_empty": true
+        },
+        "name": {
+          "self": true,
+          "attr": "title",
+          "collapse": true,
+          "non_empty": true,
+          "fallback": {
+            "self": true,
+            "collapse": true,
+            "non_empty": true
+          }
+        }
+      },
+      "filters": [
+        {
+          "field": "name",
+          "equals": "热映中"
+        },
+        {
+          "field": "name",
+          "equals": "全部"
+        },
+        {
+          "field": "id",
+          "if_empty": true
+        }
+      ],
+      "dedupe": true
+    },
+    "list": {
+      "path": "/",
+      "segments": [
+        {
+          "template": "category/{cat}/",
+          "if_var": "cat"
+        },
+        {
+          "template": "page/{page}/",
+          "if_gt": {
+            "var": "page",
+            "value": 1
+          }
+        }
+      ],
+      "rows": [
+        "div.post-box-container"
+      ],
+      "fields": {
+        "id": {
+          "sel": [
+            ".post-box-title a"
+          ],
+          "attr": "href",
+          "segment": 99,
+          "tail_non_empty": true,
+          "non_empty": true
+        },
+        "name": {
+          "sel": [
+            ".post-box-title a"
+          ],
+          "replace": {
+            " ": "(",
+            ")": ""
+          },
+          "split_on": "(",
+          "segment": 0,
+          "collapse": true,
+          "non_empty": true
+        },
+        "remark": {
+          "sel": [
+            ".post-box-title a"
+          ],
+          "replace": {
+            " ": "(",
+            ")": ""
+          },
+          "split_on": "(",
+          "segment": 1,
+          "collapse": true,
+          "non_empty": true
+        },
+        "cover": {
+          "sel": [
+            ".post-box-image"
+          ],
+          "attr": "style",
+          "trim": true,
+          "non_empty": true,
+          "replace": {
+            " ": "",
+            "'": "",
+            "(": "",
+            ")": "",
+            "background-image:": "",
+            "url": ""
+          }
+        }
+      }
+    },
+    "detail": {
+      "family_fallback": true,
+      "path": "/",
+      "trim_id": true,
+      "empty_id_error": "详情 id 为空",
+      "rules": [
+        {
+          "prefixes": [
+            "http://",
+            "https://"
+          ],
+          "url": "{id}"
+        }
+      ],
+      "segments": [
+        {
+          "template": "{id}"
+        }
+      ],
+      "fields": {
+        "name": {
+          "sel": [
+            "h1.post-title"
+          ],
+          "split_on": "(",
+          "segment": 0,
+          "collapse": true,
+          "non_empty": true
+        },
+        "cover": {
+          "sel": [
+            "div.post img"
+          ],
+          "attr": "data-src",
+          "trim": true,
+          "non_empty": true,
+          "fallback": {
+            "sel": [
+              "div.post img"
+            ],
+            "attr": "src",
+            "trim": true,
+            "non_empty": true
+          }
+        }
+      },
+      "require": [
+        {
+          "target": "name",
+          "error": "详情页缺少 h1.post-title（站点改版或非 Ddrk 模板？）"
+        }
+      ]
+    },
+    "search": {
+      "family_fallback": true,
+      "path": "/",
+      "params": [
+        {
+          "key": "s",
+          "value": "{kw}",
+          "encode": "alnum"
+        },
+        {
+          "key": "post_type",
+          "value": "post"
+        }
+      ],
+      "rows": [
+        "article"
+      ],
+      "fields": {
+        "id": {
+          "sel": [
+            ".post-title a"
+          ],
+          "attr": "href",
+          "segment": 99,
+          "tail_non_empty": true,
+          "non_empty": true
+        },
+        "name": {
+          "sel": [
+            ".post-title a"
+          ],
+          "collapse": true,
+          "non_empty": true
+        }
+      }
+    },
+    "play": {
+      "family_fallback": true,
+      "parse": 0,
+      "jx": true,
+      "url": "{id}",
+      "empty_id_error": "播放 id 需要 `视频接口|字幕` 两段"
+    }
+  }
+}

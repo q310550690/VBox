@@ -1,0 +1,213 @@
+{
+  "schema": 1,
+  "api": "csp_TTian",
+  "kind": "json",
+  "class": "com.github.catvod.spider.TTian",
+  "jar": "0f047745-FxzHm.jar",
+  "jar_sha256": "4399167d2ec514bd99c73b09923711beeb4fbdb947131332fc635e0edb52e9c9",
+  "evidence": [
+    {
+      "method": "homeContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/TTian.java",
+      "lines": "238-261",
+      "note": "分类：POST /v2/type/top_type，multipart 表单携带 sign/timestamp；data.list 为空时回退 4 条硬编码分类（电影/电视剧/动漫/综艺）。v1 的 post_form 只发 urlencoded，且没有「请求成功后按空列表回退静态分类」原语，故 categories 保留手写。"
+    },
+    {
+      "method": "categoryContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/TTian.java",
+      "lines": "49-114",
+      "note": "列表：POST /v2/home/type_search，固定 multipart boundary 4b8a0b47-84bc-4b6e-b252-db25b4b9abd2，字段 limit/type_id/page；分类 id trim 后为空须报 catvod.result.parse。v1 无 multipart body 与「入参为空即报错」原语，故 list 保留手写。"
+    },
+    {
+      "method": "detailContent",
+      "file": "_rea/tmp/TTian.recovered.decoded.java",
+      "lines": "226-524",
+      "note": "TTian.java 中该方法被 jadx 跳过（仅 134-139 行占位 UnsupportedOperationException），此处用 T2 恢复源码。简介需按 vod_class 动态加方括号前缀（跨字段拼接），剧集 URL 需 play_url 加竖线再接 parse_urls 长度分支得到的 flag；v1 无跨字段模板与分支拼接，故 detail 保留手写。"
+    },
+    {
+      "method": "playerContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/TTian.java",
+      "lines": "352-408",
+      "note": "播放：id 先按竖线拆成 url 与 flag；flag 长度小于 3 直出；否则 GET flag+url 再拼 &sign= 换链、读 JSON 的 url；换链失败再按 .m3u8 直出或视频站域名给 parse=1，其余报 catvod.play.parse。v1 无 id 拆分、无失败回退，故 play 保留手写。"
+    },
+    {
+      "method": "searchContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/TTian.java",
+      "lines": "410-523",
+      "note": "搜索：POST /v2/home/search，字段 keyword/sign/timestamp，解析 data.list。描述化唯一偏差是 urlencoded 代替 multipart（上游已不可达，无法真站确认是否接受）。"
+    },
+    {
+      "method": "homeVideoContent",
+      "file": "_rea/tmp/TTian.recovered.decoded.java",
+      "lines": "556-706",
+      "note": "首页推荐：POST /v2/type/tj_vod，解析 data.cai。schema 五入口不含首页推荐，仍由手写家族公开函数 home_videos 提供（mock 直接调用）。"
+    }
+  ],
+  "base": {
+    "default": "http://op.ysdqjs.cn",
+    "ext": "whole"
+  },
+  "vars": [
+    {
+      "name": "ts",
+      "apply": "unix_ts"
+    },
+    {
+      "name": "sign",
+      "apply": "md5_hex",
+      "template": "kj5649ertj84ks89r4jh8s45hf84hjfds04k{ts}"
+    }
+  ],
+  "headers": {
+    "User-Agent": "okhttp-okgo/jeasonlzy"
+  },
+  "endpoints": {
+    "categories": {
+      "family_fallback": true,
+      "method": "post_form",
+      "path": "/v2/type/top_type",
+      "body": [
+        {
+          "key": "sign",
+          "value": "{sign}"
+        },
+        {
+          "key": "timestamp",
+          "value": "{ts}"
+        }
+      ],
+      "rows": ["data.list"],
+      "fields": {
+        "id": "type_id",
+        "name": "type_name"
+      }
+    },
+    "list": {
+      "family_fallback": true,
+      "method": "post_form",
+      "path": "/v2/home/type_search",
+      "body": [
+        {
+          "key": "sign",
+          "value": "{sign}"
+        },
+        {
+          "key": "timestamp",
+          "value": "{ts}"
+        },
+        {
+          "key": "limit",
+          "value": "12"
+        },
+        {
+          "key": "type_id",
+          "value": "{cat}"
+        },
+        {
+          "key": "page",
+          "value": "{page}"
+        }
+      ],
+      "rows": ["data.list"],
+      "fields": {
+        "id": "vod_id",
+        "name": "vod_name",
+        "cover": {
+          "path": "vod_pic",
+          "fallback": {
+            "path": "vod_pic_thumb"
+          }
+        },
+        "remark": "vod_remarks"
+      }
+    },
+    "detail": {
+      "family_fallback": true,
+      "method": "post_form",
+      "path": "/v2/home/vod_details",
+      "body": [
+        {
+          "key": "vod_id",
+          "value": "{id}"
+        },
+        {
+          "key": "sign",
+          "value": "{sign}"
+        },
+        {
+          "key": "timestamp",
+          "value": "{ts}"
+        }
+      ],
+      "root": "data",
+      "fields": {
+        "name": "vod_name",
+        "cover": {
+          "path": "vod_pic",
+          "fallback": {
+            "path": "vod_pic_thumb"
+          }
+        },
+        "desc": "vod_content",
+        "year": "vod_year",
+        "area": "vod_area",
+        "director": "vod_director",
+        "actor": "vod_actor"
+      },
+      "groups": {
+        "rows": "data.vod_play_list[]",
+        "name": "title",
+        "name_fallback": "线路{index}",
+        "items": "urls[]",
+        "title": "name",
+        "url": "url",
+        "title_fallback_episode": true
+      },
+      "require": [
+        {
+          "target": "root",
+          "error": "详情响应缺少 data"
+        }
+      ]
+    },
+    "search": {
+      "method": "post_form",
+      "path": "/v2/home/search",
+      "body": [
+        {
+          "key": "keyword",
+          "value": "{kw}"
+        },
+        {
+          "key": "sign",
+          "value": "{sign}"
+        },
+        {
+          "key": "timestamp",
+          "value": "{ts}"
+        }
+      ],
+      "rows": ["data.list"],
+      "fields": {
+        "id": "vod_id",
+        "name": "vod_name",
+        "cover": {
+          "path": "vod_pic",
+          "fallback": {
+            "path": "vod_pic_thumb"
+          }
+        },
+        "remark": "vod_remarks"
+      },
+      "trim_keyword": true
+    },
+    "play": {
+      "family_fallback": true,
+      "parse": 0,
+      "url": "{id}",
+      "header": {
+        "User-Agent": "okhttp-okgo/jeasonlzy"
+      }
+    }
+  }
+}

@@ -1,0 +1,160 @@
+{
+  "schema": 1,
+  "api": "csp_Kanqiu",
+  "kind": "html",
+  "class": "com.github.catvod.spider.Kanqiu",
+  "jar": "5d982c72-阿里.jar",
+  "jar_sha256": "bcf8bddc08de3f36d59b9cdf242081e854fd0f922338c10b5292e8a8cd423c71",
+  "evidence": [
+    {
+      "method": "init",
+      "file": "_rea/decompiled/5d982c72-_/deobf/com/github/catvod/spider/Kanqiu.java",
+      "lines": "105-111",
+      "note": "init 在站点配置字符串非空时替换写死的默认基址；对应 base.ext=whole：ext 按 $$$ 取首段，是 http(s) 地址才覆盖默认基址，否则回到默认站点。"
+    },
+    {
+      "method": "categoryContent",
+      "file": "_rea/decompiled/5d982c72-_/deobf/com/github/catvod/spider/Kanqiu.java",
+      "lines": "34-74",
+      "note": "列表页逻辑：Java 按筛选参数拼列表地址（空筛选拼基址加 cat），VBox 有意改为空 cat 请求站点首页、非空 cat 请求 /match/cat/live；行 li.list-group-item，链接取 a.btn.btn-primary（VBox 增加任一 a[href] 兜底），标题取 .row.d-none 文本、空则整行文本，备注取链接文本，封面取行内首个 img 的 src、空则 data-src、相对路径补基址、仍空用固定占位图。该入口可被描述完整表达，描述接管。"
+    },
+    {
+      "method": "homeContent",
+      "file": "_rea/decompiled/5d982c72-_/deobf/com/github/catvod/spider/Kanqiu.java",
+      "lines": "95-103",
+      "note": "首页返回固定分类：第一项 id 为空串（全部直播），其余三项为 1/8/29，外加嵌入的 filters 子联赛 JSON；VBox 不承载 filters，只保留四个分类。schema v1 的 static_categories 校验要求每项 id 非空，空串分类无法表达，故 categories 端点整体 family_fallback 回退手写；此处仍声明三个可表达的分类，待原语允许空 id 后补首项即可接管。"
+    },
+    {
+      "method": "detailContent",
+      "file": "_rea/decompiled/5d982c72-_/deobf/com/github/catvod/spider/Kanqiu.java",
+      "lines": "76-93",
+      "note": "详情先对 id 拼 -url 后 GET，解析 JSON links 数组的 name/url，原实现把 name 与 url 用 # 连接、播放组名固定 Qile；VBox 手写改为 episodes 分组并补 第N集 兜底标题。站点列表是 HTML 而详情是 JSON，schema v1 只有一个全局 kind、没有端点级 kind（§20.4 已记录的 Libvio search 同型缺口），故 detail 端点 family_fallback 回退手写；下面仍按 html 口径声明 URL 规则与占位字段，不参与执行。"
+    },
+    {
+      "method": "playerContent",
+      "file": "_rea/decompiled/5d982c72-_/deobf/com/github/catvod/spider/Kanqiu.java",
+      "lines": "113-120",
+      "note": "播放直出：parse=0，url 即传入的播放地址，header 只带 User-Agent，playUrl 固定空串。该形状可由 play 的 url/parse/header 原语完整表达，描述接管。"
+    }
+  ],
+  "base": {
+    "default": "http://www.88kanqiu.one",
+    "ext": "whole"
+  },
+  "headers": {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
+  },
+  "retries": 1,
+  "endpoints": {
+    "categories": {
+      "family_fallback": true,
+      "static_categories": [
+        {
+          "id": "1",
+          "name": "篮球直播"
+        },
+        {
+          "id": "8",
+          "name": "足球直播"
+        },
+        {
+          "id": "29",
+          "name": "其他直播"
+        }
+      ]
+    },
+    "list": {
+      "path": "/",
+      "segments": [
+        {
+          "template": "match/{cat}/live",
+          "if_var": "cat"
+        }
+      ],
+      "rows": [
+        "li.list-group-item"
+      ],
+      "fields": {
+        "id": {
+          "sel": [
+            "a.btn.btn-primary",
+            "a[href]"
+          ],
+          "attr": "href",
+          "join_base": true
+        },
+        "name": {
+          "sel": [
+            ".row.d-none"
+          ],
+          "collapse": true,
+          "fallback": {
+            "self": true,
+            "collapse": true
+          }
+        },
+        "cover": {
+          "sel": [
+            "img"
+          ],
+          "attr": "src",
+          "join_base": true,
+          "fallback": {
+            "sel": [
+              "img"
+            ],
+            "attr": "data-src",
+            "join_base": true,
+            "default": "https://qlql.link/b/日期.jpg"
+          }
+        },
+        "remark": {
+          "sel": [
+            "a.btn.btn-primary",
+            "a[href]"
+          ],
+          "collapse": true,
+          "non_empty": true
+        }
+      }
+    },
+    "detail": {
+      "family_fallback": true,
+      "path": "/{id}-url",
+      "rules": [
+        {
+          "prefixes": [
+            "http://",
+            "https://"
+          ],
+          "url": "{id}-url"
+        }
+      ],
+      "trim_id": true,
+      "empty_id_error": "比赛尚未开始",
+      "fields": {
+        "name": {
+          "sel": [
+            "title"
+          ],
+          "collapse": true,
+          "default": "{id}"
+        }
+      },
+      "require": [
+        {
+          "target": "episodes",
+          "error": "详情没有可播放地址（比赛可能尚未开始或已结束）"
+        }
+      ]
+    },
+    "play": {
+      "empty_id_error": "播放地址为空",
+      "parse": 0,
+      "url": "{id}",
+      "header": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
+      }
+    }
+  }
+}

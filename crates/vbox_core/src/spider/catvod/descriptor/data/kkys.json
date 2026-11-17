@@ -1,0 +1,302 @@
+{
+  "schema": 1,
+  "api": "csp_Kkys",
+  "kind": "json",
+  "class": "com.github.catvod.spider.Kkys",
+  "jar": "69dadb9a-Yoursmile.jar",
+  "jar_sha256": "cc3b06eb7b265eb7efbceac31da8d46381099e65e0e5f4becfe62d06c42f36e5",
+  "evidence": [
+    {
+      "method": "homeContent",
+      "file": "_rea/decompiled/69dadb9a-Yoursmile/deobf/com/github/catvod/spider/Kkys.java",
+      "lines": "489-708",
+      "note": "jadx 视图：分类与首页"
+    },
+    {
+      "method": "categoryContent",
+      "file": "_rea/decompiled/69dadb9a-Yoursmile/deobf/com/github/catvod/spider/Kkys.java",
+      "lines": "459-479",
+      "note": "jadx 跳过该方法，见 Vineflower 视图 _rea/tmp/r219/Kkys.view.java"
+    },
+    {
+      "method": "detailContent",
+      "file": "_rea/decompiled/69dadb9a-Yoursmile/deobf/com/github/catvod/spider/Kkys.java",
+      "lines": "480-488",
+      "note": "jadx 跳过该方法，见 Vineflower 视图"
+    },
+    {
+      "method": "searchContent",
+      "file": "_rea/decompiled/69dadb9a-Yoursmile/deobf/com/github/catvod/spider/Kkys.java",
+      "lines": "1032-1096"
+    },
+    {
+      "method": "playerContent",
+      "file": "_rea/decompiled/69dadb9a-Yoursmile/deobf/com/github/catvod/spider/Kkys.java",
+      "lines": "709-1031"
+    }
+  ],
+  "base": {
+    "default": "https://api1.baibaipei.com:8899",
+    "ext": "token"
+  },
+  "vars": [
+    {
+      "name": "proxy",
+      "from_ext": "proxy=",
+      "default": "https://cache.json.icu/8520.php?url="
+    }
+  ],
+  "headers": {
+    "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 9; PCRT00 Build/PQ3B.190801.07101926)"
+  },
+  "retries": 2,
+  "json_error": "csp_Kkys JSON 解析失败: {error}; url={url}",
+  "endpoints": {
+    "categories": {
+      "path": "/api.php/Index/getTopVideoCategory",
+      "rows": [
+        "data[]"
+      ],
+      "fields": {
+        "id": {
+          "path": "nav_type_id",
+          "non_empty": true
+        },
+        "name": {
+          "path": "nav_name",
+          "non_empty": true
+        }
+      },
+      "filters": [
+        {
+          "field": "name",
+          "equals": "推荐"
+        },
+        {
+          "field": "name",
+          "if_empty": true
+        },
+        {
+          "field": "id",
+          "if_empty": true
+        }
+      ]
+    },
+    "list": {
+      "path": "/api.php/Video/getFilterVideoList",
+      "page_min": 1,
+      "params": [
+        {
+          "key": "type",
+          "value": "{cat}",
+          "encode": "alnum"
+        },
+        {
+          "key": "p",
+          "value": "{page}"
+        },
+        {
+          "key": "sort",
+          "value": "0"
+        },
+        {
+          "key": "area",
+          "value": "0"
+        },
+        {
+          "key": "year",
+          "value": "0"
+        },
+        {
+          "key": "class",
+          "value": "fll---"
+        }
+      ],
+      "rows": [
+        "data.list[]",
+        "data.data.list[]"
+      ],
+      "fields": {
+        "id": {
+          "path": "vod_id",
+          "non_empty": true
+        },
+        "name": {
+          "path": "vod_name",
+          "keep_empty": true
+        },
+        "cover": {
+          "path": "vod_pic",
+          "non_empty": true
+        },
+        "remark": {
+          "path": "vod_remarks",
+          "non_empty": true
+        }
+      }
+    },
+    "detail": {
+      "path": "/api.php/Video/getVideoInfo",
+      "trim_id": true,
+      "empty_id_error": "csp_Kkys 详情 id 为空",
+      "params": [
+        {
+          "key": "video_id",
+          "value": "{id}",
+          "encode": "alnum"
+        }
+      ],
+      "root": "data.video",
+      "require": [
+        {
+          "target": "root",
+          "error": "csp_Kkys 详情缺少 data.video: {value}"
+        }
+      ],
+      "fields": {
+        "name": {
+          "path": "vod_name"
+        },
+        "cover": {
+          "path": "vod_pic",
+          "non_empty": true
+        },
+        "year": {
+          "path": "vod_year",
+          "non_empty": true
+        },
+        "area": {
+          "path": "vod_area",
+          "non_empty": true
+        },
+        "director": {
+          "path": "vod_director",
+          "non_empty": true
+        },
+        "actor": {
+          "path": "vod_actor",
+          "non_empty": true
+        }
+      },
+      "desc_parts": [
+        {
+          "from": "vod_content",
+          "collapse": true
+        }
+      ],
+      "groups": {
+        "rows": [
+          "vod_play[]"
+        ],
+        "name": "playerForm",
+        "name_fallback": "线路{index}",
+        "items": "url[]",
+        "title": "title",
+        "url": "play_url",
+        "title_fallback_url": true,
+        "url_prefix_if_group": {
+          "when": "jp",
+          "prefix": "tvbox-xg:"
+        }
+      }
+    },
+    "search": {
+      "path": "/api.php/Search/getSearch",
+      "params": [
+        {
+          "key": "key",
+          "value": "{kw}",
+          "encode": "alnum"
+        },
+        {
+          "key": "page",
+          "value": "1"
+        }
+      ],
+      "rows": [
+        "data.list[]",
+        "data.data.list[]"
+      ],
+      "fields": {
+        "id": {
+          "path": "vod_id",
+          "non_empty": true
+        },
+        "name": {
+          "path": "vod_name",
+          "non_empty": true
+        },
+        "cover": {
+          "path": "vod_pic",
+          "non_empty": true
+        },
+        "remark": {
+          "path": "vod_remarks",
+          "non_empty": true
+        }
+      }
+    },
+    "play": {
+      "empty_id_error": "csp_Kkys 播放地址为空",
+      "jx": true,
+      "parse": 0,
+      "rules": [
+        {
+          "prefixes": [
+            "tvbox-xg:"
+          ],
+          "url": "{id}",
+          "header": {}
+        },
+        {
+          "platforms": [
+            {
+              "contains": "youku",
+              "referer": "https://www.youku.com"
+            },
+            {
+              "contains": "iqiyi",
+              "referer": "https://www.iqiyi.com"
+            },
+            {
+              "contains": "v.qq.com",
+              "referer": "https://v.qq.com"
+            },
+            {
+              "contains": "pptv",
+              "referer": "https://www.pptv.com"
+            },
+            {
+              "contains": "le.com",
+              "referer": "https://www.le.com"
+            },
+            {
+              "contains": "1905.com",
+              "referer": "https://www.1905.com"
+            },
+            {
+              "contains": "mgtv",
+              "referer": "https://www.mgtv.com"
+            },
+            {
+              "contains": "bili",
+              "referer": "https://www.bilibili.com"
+            }
+          ],
+          "header": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36",
+            "referer": "{platform.referer}"
+          }
+        }
+      ],
+      "proxy": {
+        "url": "{proxy}{id:alnum}",
+        "extract": "data.url",
+        "header": {
+          "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 9; PCRT00 Build/PQ3B.190801.07101926)"
+        },
+        "error": "csp_Kkys 播放代理未返回 url: id={id}"
+      }
+    }
+  }
+}

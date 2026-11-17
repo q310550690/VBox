@@ -1,0 +1,14 @@
+[package]
+name = "vbox_player"
+version = "0.1.2"
+edition = "2021"
+description = "VBox 播放内核：libmpv 薄封装（兼容 TVBox 播放页直链）"
+
+[dependencies]
+thiserror = "1"
+serde = { version = "1", features = ["derive"] }
+# libmpv 通过运行时 LoadLibrary/dlopen 动态加载（见 src/ffi.rs），不需要链接期 import library。
+
+# macOS / Linux 用 dlopen 动态加载 libmpv.dylib / libmpv.so
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"

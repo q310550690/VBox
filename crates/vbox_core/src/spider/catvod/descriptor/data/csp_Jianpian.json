@@ -1,0 +1,370 @@
+{
+  "schema": 1,
+  "api": "csp_Jianpian",
+  "kind": "json",
+  "class": "com.github.catvod.spider.Jianpian",
+  "jar": "0f047745-FxzHm.jar",
+  "jar_sha256": "4399167d2ec514bd99c73b09923711beeb4fbdb947131332fc635e0edb52e9c9",
+  "evidence": [
+    {
+      "method": "homeContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/Jianpian.java",
+      "lines": "80-89",
+      "note": "固定 5 分类（0/1/2/3/4 → 全部/电影/电视剧/动漫/综艺），不联网；schema v1 无静态分类指令"
+    },
+    {
+      "method": "categoryContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/Jianpian.java",
+      "lines": "35-55",
+      "note": "GET /api/crumb/list?area=0&category_id=&page=&type=0&limit=24&sort=hot&year=0"
+    },
+    {
+      "method": "searchContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/Jianpian.java",
+      "lines": "127-139",
+      "note": "GET /api/video/search?page=1&key=URLEncoder.encode(kw)"
+    },
+    {
+      "method": "detailContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/Jianpian.java",
+      "lines": "64-79",
+      "note": "GET /api/node/detail?channel=wandoujia&token=&id=；字段映射见 parse_detail 手写实现"
+    },
+    {
+      "method": "playerContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/Jianpian.java",
+      "lines": "111-126",
+      "note": "弹幕开关（ext 第二段 == \"1\"）关闭时直出 parse=0 + url + header + playUrl 空串；手写实现恒直出"
+    },
+    {
+      "method": "init",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/Jianpian.java",
+      "lines": "99-110",
+      "note": "ext 按 \\$\\$\\$ 拆分：第一段基址、第二段弹幕开关；手写 base_of 只取第一段"
+    }
+  ],
+  "base": {
+    "default": "http://api2.rinhome.com",
+    "ext": "whole"
+  },
+  "headers": {
+    "User-Agent": "jianpian-android/360",
+    "JPAUTH": "y261ow7kF2dtzlxh1GS9EB8nbTxNmaK/QQIAjctlKiEv"
+  },
+  "json_error": "csp_Jianpian 响应不是合法 JSON: {error}",
+  "endpoints": {
+    "categories": {
+      "static_categories": [
+        {
+          "id": "0",
+          "name": "全部"
+        },
+        {
+          "id": "1",
+          "name": "电影"
+        },
+        {
+          "id": "2",
+          "name": "电视剧"
+        },
+        {
+          "id": "3",
+          "name": "动漫"
+        },
+        {
+          "id": "4",
+          "name": "综艺"
+        }
+      ]
+    },
+    "list": {
+      "path": "/api/crumb/list",
+      "params": [
+        {
+          "key": "area",
+          "value": "0"
+        },
+        {
+          "key": "category_id",
+          "value": "{cat}"
+        },
+        {
+          "key": "page",
+          "value": "{page}"
+        },
+        {
+          "key": "type",
+          "value": "0"
+        },
+        {
+          "key": "limit",
+          "value": "24"
+        },
+        {
+          "key": "sort",
+          "value": "hot"
+        },
+        {
+          "key": "year",
+          "value": "0"
+        }
+      ],
+      "rows": [
+        "data[]"
+      ],
+      "fields": {
+        "id": {
+          "path": "jump_id",
+          "trim": true,
+          "non_empty": true,
+          "fallback": {
+            "path": "id",
+            "trim": true,
+            "non_empty": true
+          }
+        },
+        "name": {
+          "path": "title",
+          "trim": true,
+          "non_empty": true
+        },
+        "cover": {
+          "path": "thumbnail",
+          "trim": true,
+          "replace": {
+            "@Referer=www.jianpianapp.com@User-Agent=jianpian-version362": ""
+          },
+          "non_empty": true,
+          "fallback": {
+            "path": "path",
+            "trim": true,
+            "non_empty": true
+          }
+        },
+        "remark": {
+          "path": "mask",
+          "trim": true,
+          "non_empty": true,
+          "fallback": {
+            "path": "playlist.title",
+            "trim": true,
+            "non_empty": true,
+            "fallback": {
+              "path": "playlist.name",
+              "trim": true,
+              "non_empty": true,
+              "fallback": {
+                "path": "playlist.val",
+                "trim": true,
+                "non_empty": true,
+                "fallback": {
+                  "path": "playlist",
+                  "trim": true,
+                  "non_empty": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "detail": {
+      "path": "/api/node/detail",
+      "params": [
+        {
+          "key": "channel",
+          "value": "wandoujia"
+        },
+        {
+          "key": "token",
+          "value": ""
+        },
+        {
+          "key": "id",
+          "value": "{id}",
+          "encode": "alnum"
+        }
+      ],
+      "root": "data",
+      "require": [
+        {
+          "target": "root",
+          "error": "csp_Jianpian 详情响应缺少 data 对象"
+        },
+        {
+          "target": "name",
+          "error": "csp_Jianpian 详情缺少 title"
+        }
+      ],
+      "fields": {
+        "name": {
+          "path": "title",
+          "trim": true
+        },
+        "cover": {
+          "path": "thumbnail",
+          "trim": true,
+          "replace": {
+            "@Referer=www.jianpianapp.com@User-Agent=jianpian-version362": ""
+          },
+          "non_empty": true,
+          "fallback": {
+            "path": "path",
+            "trim": true,
+            "non_empty": true
+          }
+        },
+        "desc": {
+          "path": "description",
+          "replace": {
+            "　": ""
+          },
+          "trim": true
+        },
+        "year": {
+          "path": "year.title",
+          "trim": true,
+          "non_empty": true,
+          "fallback": {
+            "path": "year",
+            "trim": true,
+            "non_empty": true
+          }
+        },
+        "area": {
+          "path": "area.title",
+          "trim": true,
+          "non_empty": true,
+          "fallback": {
+            "path": "area",
+            "trim": true,
+            "non_empty": true
+          }
+        },
+        "director": {
+          "path": "directors[].title",
+          "join": " ",
+          "fallback": {
+            "path": "directors[].name",
+            "join": " ",
+            "fallback": {
+              "path": "directors[].val",
+              "join": " ",
+              "fallback": {
+                "path": "directors[]",
+                "join": " "
+              }
+            }
+          }
+        },
+        "actor": {
+          "path": "actors[].title",
+          "join": " ",
+          "fallback": {
+            "path": "actors[].name",
+            "join": " ",
+            "fallback": {
+              "path": "actors[].val",
+              "join": " ",
+              "fallback": {
+                "path": "actors[]",
+                "join": " "
+              }
+            }
+          }
+        }
+      },
+      "groups": {
+        "rows": [
+          "btbo_downlist[]"
+        ],
+        "single_group": "Jianpian",
+        "url": {
+          "path": "val",
+          "replace": {
+            "ftp": "tvbox-xg:ftp"
+          },
+          "split_on": "$",
+          "segment": 1,
+          "fallback": {
+            "path": "val",
+            "replace": {
+              "ftp": "tvbox-xg:ftp"
+            }
+          }
+        },
+        "title_fallback_episode": true
+      }
+    },
+    "search": {
+      "path": "/api/video/search",
+      "params": [
+        {
+          "key": "page",
+          "value": "1"
+        },
+        {
+          "key": "key",
+          "value": "{kw}",
+          "encode": "alnum"
+        }
+      ],
+      "rows": [
+        "data[]"
+      ],
+      "fields": {
+        "id": {
+          "path": "jump_id",
+          "trim": true,
+          "non_empty": true,
+          "fallback": {
+            "path": "id",
+            "trim": true,
+            "non_empty": true
+          }
+        },
+        "name": {
+          "path": "title",
+          "trim": true,
+          "non_empty": true
+        },
+        "cover": {
+          "path": "thumbnail",
+          "trim": true,
+          "replace": {
+            "@Referer=www.jianpianapp.com@User-Agent=jianpian-version362": ""
+          },
+          "non_empty": true,
+          "fallback": {
+            "path": "path",
+            "trim": true,
+            "non_empty": true
+          }
+        },
+        "remark": {
+          "path": "mask",
+          "trim": true,
+          "non_empty": true,
+          "fallback": {
+            "path": "playlist.title",
+            "trim": true,
+            "non_empty": true,
+            "fallback": {
+              "path": "playlist.val",
+              "trim": true,
+              "non_empty": true
+            }
+          }
+        }
+      }
+    },
+    "play": {
+      "parse": 0,
+      "url": "{id}",
+      "header": {
+        "User-Agent": "jianpian-android/360",
+        "JPAUTH": "y261ow7kF2dtzlxh1GS9EB8nbTxNmaK/QQIAjctlKiEv"
+      }
+    }
+  }
+}

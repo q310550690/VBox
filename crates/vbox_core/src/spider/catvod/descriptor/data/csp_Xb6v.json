@@ -1,0 +1,309 @@
+{
+  "schema": 1,
+  "api": "csp_Xb6v",
+  "kind": "html",
+  "class": "com.github.catvod.spider.Xb6v",
+  "jar": "41c87635-custom_spider.jar",
+  "jar_sha256": "646c5449e06bceea84eac4f42341a887187c4f09cfcb038820418719a898669f",
+  "evidence": [
+    {
+      "method": "homeContent",
+      "file": "_rea/decompiled/41c87635-custom_spider/deobf/com/github/catvod/spider/Xb6v.java",
+      "lines": "155-248",
+      "note": "分类 = #menus a[href]：跳过「首页」「最新50部」、绝对地址与 href=/ 的项，id 取去 fragment 后的站内相对路径。描述用 filters 排除首页项与 http 前缀绝对地址，dedupe 去重；id 原样取自 href（站点导航本身是已归一的相对路径）。"
+    },
+    {
+      "method": "categoryContent",
+      "file": "_rea/decompiled/41c87635-custom_spider/deobf/com/github/catvod/spider/Xb6v.java",
+      "lines": "59-75",
+      "note": "列表 #post_container .post_hover：行内第一个 class=zoom 锚点的 href 作 id、title 属性空则锚点文本作 name，锚点内第一个 img 的 src 作封面（// 前缀补 https:），行内 rel 小写含 category 的文本作备注；第 2 页起 URL 为 cat 后接 index_页码.html。描述用 path 加 segments(if_gt 页码 1) 表达分页；封面用 // 前缀分支 replace 补 https:，其余 join_base。"
+    },
+    {
+      "method": "detailContent",
+      "file": "_rea/decompiled/41c87635-custom_spider/deobf/com/github/catvod/spider/Xb6v.java",
+      "lines": "76-154",
+      "note": "标题 .article_container > h1；封面 #post_content img 的 src 绝对化；#post_content 内每张 table 一组线路，仅保留 href 以 magnet: 开头的链接（迅雷云盘表跳过），组名按保留组序号拼「磁力线路N」；元数据 div.context 为纯文本行，标签内嵌两个全角空格、标签与值之间是 ASCII 冒号加一个全角空格，主演吞后续无 ◎ 前缀行、简介吞其后全部行。schema v1 的 meta.label 硬编码全角冒号（value::labeled）匹配不到本站，故描述以 replace 哨兵加 split_on/segment 精确切出 year/area/director/actor/desc；组名用匹配不到任何元素的 tabs 选择器触发 name_fallback。"
+    },
+    {
+      "method": "playerContent",
+      "file": "_rea/decompiled/41c87635-custom_spider/deobf/com/github/catvod/spider/Xb6v.java",
+      "lines": "249-254",
+      "note": "播放不联网：直接返回 url=id、parse=0、jx=0、playUrl 空串与 UA/Referer 请求头。描述 play 用 url={id}、parse=0、jx=true（引擎插入 jx=0），header 直接声明 UA 与 Referer，不联网。"
+    },
+    {
+      "method": "searchContent",
+      "file": "_rea/decompiled/41c87635-custom_spider/deobf/com/github/catvod/spider/Xb6v.java",
+      "lines": "255-269",
+      "note": "搜索 POST {base}/e/search/index.php，表单 show/tempid/tbname/mid/dopost/submit/keyboard；行解析同列表。描述用 method=post_form 与 body（keyboard={kw}）。原类对页码不等于 1 的搜索走 index.php?page=... 分页，VBox SearchEp 无搜索分页参数，手写实现同样未实现，忽略。"
+    }
+  ],
+  "base": {
+    "default": "https://www.xb6v.com",
+    "ext": "whole"
+  },
+  "retries": 2,
+  "headers": {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Referer": "{base}/",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "zh-CN,zh;q=0.9"
+  },
+  "endpoints": {
+    "categories": {
+      "path": "/",
+      "rows": "#menus a[href]",
+      "fields": {
+        "id": {
+          "self": true,
+          "attr": "href",
+          "trim": true,
+          "non_empty": true
+        },
+        "name": {
+          "self": true,
+          "trim": true,
+          "non_empty": true
+        }
+      },
+      "filters": [
+        {
+          "field": "id",
+          "equals": "/"
+        },
+        {
+          "field": "id",
+          "exclude_contains": "http"
+        },
+        {
+          "field": "name",
+          "equals": "首页"
+        },
+        {
+          "field": "name",
+          "equals": "最新50部"
+        }
+      ],
+      "dedupe": true
+    },
+    "list": {
+      "path": "{cat}",
+      "segments": [
+        {
+          "template": "index_{page}.html",
+          "if_gt": {
+            "var": "page",
+            "value": 1
+          }
+        }
+      ],
+      "rows": "#post_container .post_hover",
+      "fields": {
+        "id": {
+          "sel": "[class=zoom]",
+          "attr": "href",
+          "non_empty": true
+        },
+        "name": {
+          "sel": "[class=zoom]",
+          "attr": "title",
+          "non_empty": true,
+          "fallback": {
+            "sel": "[class=zoom]",
+            "non_empty": true
+          }
+        },
+        "cover": {
+          "sel": "img[src^='//']",
+          "attr": "src",
+          "replace": {
+            "//": "https://"
+          },
+          "non_empty": true,
+          "fallback": {
+            "sel": "img",
+            "attr": "src",
+            "join_base": true,
+            "non_empty": true
+          }
+        },
+        "remark": {
+          "sel": "[rel*='category']",
+          "non_empty": true
+        }
+      }
+    },
+    "detail": {
+      "path": "{id}",
+      "rules": [
+        {
+          "prefixes": ["http://", "https://"],
+          "url": "{id}"
+        }
+      ],
+      "fields": {
+        "name": {
+          "sel": ".article_container > h1",
+          "non_empty": true
+        },
+        "cover": {
+          "sel": "#post_content img",
+          "attr": "src",
+          "join_base": true,
+          "non_empty": true
+        },
+        "year": {
+          "sel": ".context",
+          "replace": {
+            "◎年\u3000\u3000代:\u3000": "§",
+            "◎产\u3000\u3000地:\u3000": "§"
+          },
+          "split_on": "§",
+          "segment": 1,
+          "collapse": true,
+          "non_empty": true
+        },
+        "area": {
+          "sel": ".context",
+          "replace": {
+            "◎产\u3000\u3000地:\u3000": "§",
+            "◎类\u3000\u3000别:\u3000": "§"
+          },
+          "split_on": "§",
+          "segment": 1,
+          "collapse": true,
+          "non_empty": true
+        },
+        "director": {
+          "sel": ".context",
+          "replace": {
+            "◎导\u3000\u3000演:\u3000": "§",
+            "◎主\u3000\u3000演:\u3000": "§"
+          },
+          "split_on": "§",
+          "segment": 1,
+          "collapse": true,
+          "non_empty": true
+        },
+        "actor": {
+          "sel": ".context",
+          "replace": {
+            "◎主\u3000\u3000演:\u3000": "§",
+            "◎简\u3000\u3000介": "§"
+          },
+          "split_on": "§",
+          "segment": 1,
+          "collapse": true,
+          "non_empty": true
+        },
+        "desc": {
+          "sel": ".context",
+          "replace": {
+            "◎简\u3000\u3000介": "§"
+          },
+          "split_on": "§",
+          "segment": 1,
+          "collapse": true,
+          "non_empty": true
+        }
+      },
+      "groups": {
+        "tabs": "#xb6v-no-group-tab",
+        "lists": "#post_content table",
+        "item": "a[href^='magnet:']",
+        "url_attr": "href",
+        "name_fallback": "磁力线路{index}"
+      },
+      "require": [
+        {
+          "target": "name_and_episodes",
+          "error": "详情页缺少标题与磁力线路（站点改版或非 Xb6v 模板？）id={id}"
+        }
+      ]
+    },
+    "search": {
+      "method": "post_form",
+      "path": "/e/search/index.php",
+      "body": [
+        {
+          "key": "show",
+          "value": "title",
+          "kind": "str"
+        },
+        {
+          "key": "tempid",
+          "value": "1",
+          "kind": "str"
+        },
+        {
+          "key": "tbname",
+          "value": "article",
+          "kind": "str"
+        },
+        {
+          "key": "mid",
+          "value": "1",
+          "kind": "str"
+        },
+        {
+          "key": "dopost",
+          "value": "search",
+          "kind": "str"
+        },
+        {
+          "key": "submit",
+          "value": "",
+          "kind": "str"
+        },
+        {
+          "key": "keyboard",
+          "value": "{kw}",
+          "kind": "str"
+        }
+      ],
+      "rows": "#post_container .post_hover",
+      "fields": {
+        "id": {
+          "sel": "[class=zoom]",
+          "attr": "href",
+          "non_empty": true
+        },
+        "name": {
+          "sel": "[class=zoom]",
+          "attr": "title",
+          "non_empty": true,
+          "fallback": {
+            "sel": "[class=zoom]",
+            "non_empty": true
+          }
+        },
+        "cover": {
+          "sel": "img[src^='//']",
+          "attr": "src",
+          "replace": {
+            "//": "https://"
+          },
+          "non_empty": true,
+          "fallback": {
+            "sel": "img",
+            "attr": "src",
+            "join_base": true,
+            "non_empty": true
+          }
+        },
+        "remark": {
+          "sel": "[rel*='category']",
+          "non_empty": true
+        }
+      }
+    },
+    "play": {
+      "parse": 0,
+      "jx": true,
+      "url": "{id}",
+      "header": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Referer": "{base}/"
+      }
+    }
+  }
+}

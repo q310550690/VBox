@@ -1,0 +1,407 @@
+/* ============================================================
+   主题基础层（移植自 听墨 桌面端 src/styles/theme.scss）
+   - 亮色：html.theme-xxx  /  暗色：html.dark.theme-xxx
+   - 所有业务颜色/字体只允许引用这里的 --el-* / --font-* 变量
+   ============================================================ */
+* { box-sizing: border-box; outline: none;}
+html, body, #app {
+  height:100%;
+  width:100%;
+  overflow:hidden;
+  font-family: var(--font-family);
+  color: var(--el-text-color-primary);
+  background: var(--el-bg-color-page);
+  transition: background-color .18s ease, color .18s ease;
+}
+:root {
+  --font-family: 'Segoe UI', -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'Cascadia Code', Consolas, 'Courier New', monospace;
+  /* 让 Element Plus 组件与页面字体完全一致 */
+  --el-font-family: var(--font-family);
+  color-scheme: light;
+}
+html.dark { color-scheme: dark; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--el-color-primary) 35%, transparent);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--el-color-primary) 60%, transparent);
+}
+:focus-visible { outline: 2px solid var(--el-color-primary); outline-offset: 2px; }
+
+/* ============================================================
+   多主题系统
+   亮色 class="theme-xxx"  /  暗色 class="dark theme-xxx"
+   每套只定义 5 标准色 + EP 布局变量
+   ============================================================ */
+
+// ── SCSS 颜色辅助函数 ──
+@function el-light($color, $percent) {
+  @return color-mix(in srgb, white #{$percent}, $color);
+}
+
+@function el-dark($color, $percent) {
+  @return color-mix(in srgb, black #{$percent}, $color);
+}
+
+// ── 按语义色批量派生 Element Plus 完整色阶（light-1 ~ light-9 / dark-2） ──
+// 只写 light-1/3/5/7/9 会漏掉 EP 组件实际用到的 light-2/4/6/8（例如 el-tag 边框用 light-8），
+// 漏掉的号会落回 Element 默认调色板（蓝色 / 绿色），与主题色差异明显。
+// 亮色主题：light-N = 混入 N×10% 白色；dark-2 = 混入 20% 黑色
+@mixin color-scale-light($name, $color) {
+  @for $i from 1 through 9 {
+    --el-color-#{$name}-light-#{$i}: #{el-light($color, $i * 10%)};
+  }
+  --el-color-#{$name}-dark-2: #{el-dark($color, 20%)};
+}
+
+// 暗色主题：light-N = 混入 N×10% 黑色（越浅号越贴近暗背景）；dark-2 = 混入 20% 白色
+@mixin color-scale-dark($name, $color) {
+  @for $i from 1 through 9 {
+    --el-color-#{$name}-light-#{$i}: #{el-dark($color, $i * 10%)};
+  }
+  --el-color-#{$name}-dark-2: #{el-light($color, 20%)};
+}
+
+@mixin theme-color-vars($primary, $success, $warning, $danger, $error, $info) {
+  --el-color-primary: #{$primary};
+  --el-color-success: #{$success};
+  --el-color-warning: #{$warning};
+  --el-color-danger: #{$danger};
+  --el-color-error: #{$error};
+  --el-color-info: #{$info};
+
+  @include color-scale-light(primary, $primary);
+  @include color-scale-light(success, $success);
+  @include color-scale-light(warning, $warning);
+  @include color-scale-light(danger, $danger);
+  @include color-scale-light(error, $error);
+  @include color-scale-light(info, $info);
+}
+
+@mixin theme-color-vars-dark($primary, $success, $warning, $danger, $error, $info) {
+  --el-color-primary: #{$primary};
+  --el-color-success: #{$success};
+  --el-color-warning: #{$warning};
+  --el-color-danger: #{$danger};
+  --el-color-error: #{$error};
+  --el-color-info: #{$info};
+
+  @include color-scale-dark(primary, $primary);
+  @include color-scale-dark(success, $success);
+  @include color-scale-dark(warning, $warning);
+  @include color-scale-dark(danger, $danger);
+  @include color-scale-dark(error, $error);
+  @include color-scale-dark(info, $info);
+}
+
+// ── 亮色主题共用布局变量 ──
+@mixin layout-light {
+  --el-box-shadow: 0px 12px 32px 4px rgba(0,0,0,0.06), 0px 8px 20px rgba(0,0,0,0.08);
+  --el-box-shadow-light: 0px 0px 12px rgba(0,0,0,0.08);
+  --el-box-shadow-lighter: 0px 0px 6px rgba(0,0,0,0.08);
+  --el-box-shadow-dark: 0px 16px 48px 16px rgba(0,0,0,0.08), 0px 12px 32px rgba(0,0,0,0.1), 0px 8px 16px -8px rgba(0,0,0,0.1);
+  --el-mask-color: rgba(0,0,0,0.8);
+  --el-mask-color-extra-light: rgba(0,0,0,0.3);
+  --el-text-color-primary: #2C2C2C;
+  --el-text-color-regular: #404040;
+  --el-text-color-secondary: #707070;
+  --el-text-color-placeholder: #A0A0A0;
+  --el-text-color-disabled: #C0C0C0;
+}
+
+// ── 暗色主题共用布局变量 ──
+@mixin layout-dark {
+  --el-box-shadow: 0px 12px 32px 4px #0000005c, 0px 8px 20px #000000b8;
+  --el-box-shadow-light: 0px 0px 12px #000000b8;
+  --el-box-shadow-lighter: 0px 0px 6px #000000b8;
+  --el-box-shadow-dark: 0px 16px 48px 16px #000000b8, 0px 12px 32px #000, 0px 8px 16px -8px #000;
+  --el-mask-color: #000c;
+  --el-mask-color-extra-light: #0000004d;
+  --el-text-color-primary: #E8E8E8;
+  --el-text-color-regular: #D0D0D0;
+  --el-text-color-secondary: #A0A0A0;
+  --el-text-color-placeholder: #707070;
+  --el-text-color-disabled: #505050;
+}
+
+// ── 从 border-color / fill-color 自动派生全系变体 ──
+@mixin border-fill-derivatives {
+  --el-border-color-darker: color-mix(in srgb, var(--el-border-color) 80%, black);
+  --el-border-color-dark: color-mix(in srgb, var(--el-border-color) 90%, black);
+  --el-border-color-light: color-mix(in srgb, var(--el-border-color) 80%, white);
+  --el-border-color-lighter: color-mix(in srgb, var(--el-border-color) 60%, white);
+  --el-border-color-extra-light: color-mix(in srgb, var(--el-border-color) 40%, white);
+  --el-fill-color-darker: color-mix(in srgb, var(--el-fill-color) 80%, black);
+  --el-fill-color-dark: color-mix(in srgb, var(--el-fill-color) 90%, black);
+  --el-fill-color-extra-light: color-mix(in srgb, var(--el-fill-color) 80%, white);
+}
+
+/* ══════ 亮色主题 ══════ */
+/* 赤 — 赤霞 */
+:root,
+html.theme-coral-rose {
+  @include theme-color-vars(#CF6A60, #7A9A6A, #C9A86A, #C96A6A, #C96A6A, #A77C74);
+  @include layout-light;
+  --el-bg-color-page: #F8EFEF;
+  --el-bg-color: #FFFFFF;
+  --el-bg-color-overlay: #FCF5F3;
+  --el-border-color: #E0D0C8;
+  --el-fill-color-blank: #FFFFFF;
+  --el-fill-color: #F5EBE8;
+  --el-fill-color-light: #F0E3DE;
+  --el-fill-color-lighter: #F2E8E5;
+  @include border-fill-derivatives;
+}
+
+/* 橙 — 暖橙 */
+html.theme-autumn-field {
+  @include theme-color-vars(#D49A6A, #7A9A6A, #C9B07A, #B07A5A, #B07A5A, #9A8A7A);
+  @include layout-light;
+  --el-bg-color-page: #F8F2EA;
+  --el-bg-color: #FFFFFF;
+  --el-bg-color-overlay: #FCF8F3;
+  --el-border-color: #E0D8CC;
+  --el-fill-color-blank: #FFFFFF;
+  --el-fill-color: #F2ECE4;
+  --el-fill-color-light: #EDE6DC;
+  --el-fill-color-lighter: #F0EAE2;
+  @include border-fill-derivatives;
+}
+
+/* 黄 — 金砂 */
+html.theme-sandalwood {
+  @include theme-color-vars(#B89A6A, #7A9A6A, #C9B07A, #B08A5A, #B08A5A, #9A8A7A);
+  @include layout-light;
+  --el-bg-color-page: #F5F0E6;
+  --el-bg-color: #FFFFFF;
+  --el-bg-color-overlay: #FAF8F2;
+  --el-border-color: #E0D8CA;
+  --el-fill-color-blank: #FFFFFF;
+  --el-fill-color: #F0EBE0;
+  --el-fill-color-light: #EBE4D8;
+  --el-fill-color-lighter: #EEE9DE;
+  @include border-fill-derivatives;
+}
+
+/* 绿 — 翠微 */
+html.theme-ink-green {
+  @include theme-color-vars(#4A6640, #5C8A50, #8A7A3A, #8A4A4A, #8A4A4A, #6B7660);
+  @include layout-light;
+  --el-bg-color-page: #F4F6EF;
+  --el-bg-color: #FFFFFF;
+  --el-bg-color-overlay: #FAFBF8;
+  --el-border-color: #E2E6DA;
+  --el-fill-color-blank: #FFFFFF;
+  --el-fill-color: #F0F4ED;
+  --el-fill-color-light: #EBF3ED;
+  --el-fill-color-lighter: #F0F4F8;
+  @include border-fill-derivatives;
+}
+
+/* 青 — 霜月 */
+html.theme-frost-moon {
+  @include theme-color-vars(#5A7A8A, #5A8A7A, #8A8A6A, #7A6A6A, #7A6A6A, #6A7A8A);
+  @include layout-light;
+  --el-bg-color-page: #F8F9FA;
+  --el-bg-color: #FFFFFF;
+  --el-bg-color-overlay: #FCFCFD;
+  --el-border-color: #DCE0E5;
+  --el-fill-color-blank: #FFFFFF;
+  --el-fill-color: #F0F2F4;
+  --el-fill-color-light: #E8ECF0;
+  --el-fill-color-lighter: #F0F2F5;
+  @include border-fill-derivatives;
+}
+
+/* 蓝 — 蔚蓝 */
+html.theme-ocean-blue {
+  @include theme-color-vars(#3A5A7A, #5A8A7A, #8A7A5A, #7A5A5A, #7A5A5A, #6A7A8A);
+  @include layout-light;
+  --el-bg-color-page: #EBF0F5;
+  --el-bg-color: #FFFFFF;
+  --el-bg-color-overlay: #F4F7FA;
+  --el-border-color: #D0D8E0;
+  --el-fill-color-blank: #FFFFFF;
+  --el-fill-color: #EDF0F5;
+  --el-fill-color-light: #E5EAF0;
+  --el-fill-color-lighter: #EDF0F5;
+  @include border-fill-derivatives;
+}
+
+/* 紫 — 烟紫 */
+html.theme-lavender-mist {
+  @include theme-color-vars(#6A5A7A, #7A9A8A, #BBA06A, #9A7A8A, #9A7A8A, #8A7A9A);
+  @include layout-light;
+  --el-bg-color-page: #F5F2F8;
+  --el-bg-color: #FFFFFF;
+  --el-bg-color-overlay: #FAF8FC;
+  --el-border-color: #D8D4E0;
+  --el-fill-color-blank: #FFFFFF;
+  --el-fill-color: #F0EEF4;
+  --el-fill-color-light: #EAE6F0;
+  --el-fill-color-lighter: #F0EEF4;
+  @include border-fill-derivatives;
+}
+
+/* ══════ 暗色主题 ══════ */
+/* 赤 — 暗赤 */
+html.dark.theme-crimson {
+  @include theme-color-vars-dark(#D47A7A, #6A8A7A, #C9A06A, #C96A6A, #C96A6A, #9A7A8A);
+  @include layout-dark;
+  --el-bg-color-page: #1E1818;
+  --el-bg-color: #221C1C;
+  --el-bg-color-overlay: #282222;
+  --el-border-color: #322A2A;
+  --el-fill-color-blank: #282222;
+  --el-fill-color: #302828;
+  --el-fill-color-light: #3A3232;
+  --el-fill-color-lighter: #2E2828;
+  @include border-fill-derivatives;
+}
+
+/* 橙 — 暗橙 */
+html.dark.theme-ember {
+  @include theme-color-vars-dark(#CE9A6A, #7A9A6A, #C9B07A, #C97A6A, #C97A6A, #9A8A7A);
+  @include layout-dark;
+  --el-bg-color-page: #1E1C18;
+  --el-bg-color: #22201C;
+  --el-bg-color-overlay: #282622;
+  --el-border-color: #322E2A;
+  --el-fill-color-blank: #282622;
+  --el-fill-color: #302C28;
+  --el-fill-color-light: #3A3632;
+  --el-fill-color-lighter: #2E2C28;
+  @include border-fill-derivatives;
+}
+
+/* 黄 — 暗金 */
+html.dark.theme-gold {
+  @include theme-color-vars-dark(#BAA67A, #7A9A6A, #C9B07A, #B08A6A, #B08A6A, #9A8A7A);
+  @include layout-dark;
+  --el-bg-color-page: #1C1C18;
+  --el-bg-color: #20201C;
+  --el-bg-color-overlay: #262622;
+  --el-border-color: #302E2A;
+  --el-fill-color-blank: #262622;
+  --el-fill-color: #2E2C28;
+  --el-fill-color-light: #383632;
+  --el-fill-color-lighter: #2C2C28;
+  @include border-fill-derivatives;
+}
+
+/* 绿 — 墨绿 */
+html.dark.theme-forest {
+  @include theme-color-vars-dark(#6A9A7A, #5A8A6A, #9A9A6A, #8A7A5A, #8A7A5A, #6A8A7A);
+  @include layout-dark;
+  --el-bg-color-page: #161C18;
+  --el-bg-color: #1A201C;
+  --el-bg-color-overlay: #1E2622;
+  --el-border-color: #282E2A;
+  --el-fill-color-blank: #1E2622;
+  --el-fill-color: #262C28;
+  --el-fill-color-light: #2E3430;
+  --el-fill-color-lighter: #222824;
+  @include border-fill-derivatives;
+}
+
+/* 青 — 夜阑 */
+html.dark.theme-night-blue {
+  @include theme-color-vars-dark(#5BC0BE, #5A9E7A, #BFA06A, #BF7A7A, #BF7A7A, #7A8A9A);
+  @include layout-dark;
+  --el-bg-color-page: #1A2332;
+  --el-bg-color: #1E2A3A;
+  --el-bg-color-overlay: #243344;
+  --el-border-color: #2D3A4A;
+  --el-fill-color-blank: #243344;
+  --el-fill-color: #263848;
+  --el-fill-color-light: #304452;
+  --el-fill-color-lighter: #2A3A4A;
+  @include border-fill-derivatives;
+}
+
+/* 蓝 — 暗蓝 */
+html.dark.theme-sapphire {
+  @include theme-color-vars-dark(#6A8AB0, #5A8A7A, #9A9A6A, #8A6A6A, #8A6A6A, #6A7A9A);
+  @include layout-dark;
+  --el-bg-color-page: #161A24;
+  --el-bg-color: #1A1E28;
+  --el-bg-color-overlay: #1E2430;
+  --el-border-color: #282E3A;
+  --el-fill-color-blank: #1E2430;
+  --el-fill-color: #262C38;
+  --el-fill-color-light: #2E3440;
+  --el-fill-color-lighter: #222834;
+  @include border-fill-derivatives;
+}
+
+/* 紫 — 暮紫 */
+html.dark.theme-twilight-purple {
+  @include theme-color-vars-dark(#BBA9C9, #7A9A8A, #BBA06A, #B08A9A, #B08A9A, #8A7A9A);
+  @include layout-dark;
+  --el-bg-color-page: #1E1A2E;
+  --el-bg-color: #24203A;
+  --el-bg-color-overlay: #2A2646;
+  --el-border-color: #32304A;
+  --el-fill-color-blank: #2A2646;
+  --el-fill-color: #302C4A;
+  --el-fill-color-light: #3A3656;
+  --el-fill-color-lighter: #322E50;
+  @include border-fill-derivatives;
+}
+
+/* ============================================================
+   幽灵按钮
+   ============================================================ */
+.el-button {
+  --el-button-border-color: transparent;
+  --el-button-hover-border-color: transparent;
+  --el-button-active-border-color: transparent;
+  --el-button-disabled-bg-color: color-mix(in srgb, var(--el-color-primary) 6%, transparent);
+  --el-button-disabled-text-color: var(--el-color-primary-light-7);
+  --el-button-disabled-border-color: transparent;
+  border: none;
+}
+.el-button, .el-button--primary {
+  --el-button-bg-color: color-mix(in srgb, var(--el-color-primary) 12%, transparent);
+  --el-button-text-color: var(--el-color-primary);
+  --el-button-hover-bg-color: color-mix(in srgb, var(--el-color-primary) 30%, transparent);
+  --el-button-hover-text-color: var(--el-color-primary);
+  --el-button-active-bg-color: color-mix(in srgb, var(--el-color-primary) 45%, transparent);
+  --el-button-active-text-color: var(--el-color-primary);
+}
+.el-button--success {
+  --el-button-bg-color: color-mix(in srgb, var(--el-color-success) 12%, transparent);
+  --el-button-text-color: var(--el-color-success);
+  --el-button-hover-bg-color: color-mix(in srgb, var(--el-color-success) 30%, transparent);
+  --el-button-hover-text-color: var(--el-color-success);
+  --el-button-active-bg-color: color-mix(in srgb, var(--el-color-success) 45%, transparent);
+  --el-button-active-text-color: var(--el-color-success);
+}
+.el-button--warning {
+  --el-button-bg-color: color-mix(in srgb, var(--el-color-warning) 12%, transparent);
+  --el-button-text-color: var(--el-color-warning);
+  --el-button-hover-bg-color: color-mix(in srgb, var(--el-color-warning) 30%, transparent);
+  --el-button-hover-text-color: var(--el-color-warning);
+  --el-button-active-bg-color: color-mix(in srgb, var(--el-color-warning) 45%, transparent);
+  --el-button-active-text-color: var(--el-color-warning);
+}
+.el-button--danger {
+  --el-button-bg-color: color-mix(in srgb, var(--el-color-danger) 12%, transparent);
+  --el-button-text-color: var(--el-color-danger);
+  --el-button-hover-bg-color: color-mix(in srgb, var(--el-color-danger) 30%, transparent);
+  --el-button-hover-text-color: var(--el-color-danger);
+  --el-button-active-bg-color: color-mix(in srgb, var(--el-color-danger) 45%, transparent);
+  --el-button-active-text-color: var(--el-color-danger);
+}
+.el-button--info {
+  --el-button-bg-color: color-mix(in srgb, var(--el-color-info) 12%, transparent);
+  --el-button-text-color: var(--el-color-info);
+  --el-button-hover-bg-color: color-mix(in srgb, var(--el-color-info) 30%, transparent);
+  --el-button-hover-text-color: var(--el-color-info);
+  --el-button-active-bg-color: color-mix(in srgb, var(--el-color-info) 45%, transparent);
+  --el-button-active-text-color: var(--el-color-info);
+}

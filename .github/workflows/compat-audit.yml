@@ -1,0 +1,108 @@
+name: compat-audit
+
+# 100% 原生兼容判据 + 审计门禁自检（不需要真站网络证据的部分）。
+# 真站回归（30 个 #[ignore] 用例）依赖外部站点，交给本地 `node _rea/tools/audit-all.mjs` 定期跑；
+# CI 里只跑 `--skip-live`，并用 `--selftest` 验证 10 类门禁注入都能被拦下。
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - "crates/vbox_core/**"
+      - "_rea/tools/**"
+      - "_rea/samples/inventory/**"
+      - ".github/workflows/compat-audit.yml"
+      - "src-tauri/src/source_health.rs"
+
+  pull_request:
+    paths:
+      - "crates/vbox_core/**"
+      - "_rea/tools/**"
+      - "_rea/samples/inventory/**"
+      - ".github/workflows/compat-audit.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: compat-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: "1"
+
+jobs:
+  audit:
+    name: audit / test / selftest
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 文档维护在私有仓库 VBox-docs，检出到 docs/ 供判据与审计工具读取。
+      # 需要在仓库设置里配置 secret：VBOX_DOCS_TOKEN（对该私有仓库有 read 权限的 PAT）。
+      - name: Checkout docs (private)
+        uses: actions/checkout@v4
+        with:
+          repository: q310550690/VBox-docs
+          token: ${{ secrets.VBOX_DOCS_TOKEN }}
+          path: docs
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-compat-audit-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-compat-audit-
+
+      - name: 审计工具语法检查
+        run: |
+          set -euo pipefail
+          for f in _rea/tools/*.mjs _rea/tools/lib/*.mjs; do
+            node --check "$f"
+          done
+
+      - name: cargo test -p vbox_core
+        run: cargo test -p vbox_core
+
+      - name: 审计（跳过真站）+ 10 类门禁注入自检
+        run: node _rea/tools/audit-all.mjs --skip-live --selftest
+
+      - name: 上传审计产物
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compat-audit-${{ github.sha }}
+          path: |
+            docs/兼容性审计.md
+            docs/站点覆盖报告.md
+            docs/真站回归矩阵.md
+            docs/上游复核.md
+            docs/阻断复核.md
+            docs/审计索引.md
+            docs/审计快照.json
+            _rea/tmp/audit-full.log
+            _rea/tmp/live-audit-latest.log
+            _rea/tmp/live-flaky.log
+          if-no-files-found: warn
+          retention-days: 30

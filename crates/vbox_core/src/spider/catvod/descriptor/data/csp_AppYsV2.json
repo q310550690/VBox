@@ -1,0 +1,593 @@
+{
+  "schema": 1,
+  "api": "csp_AppYsV2",
+  "kind": "json",
+  "class": "com.github.catvod.spider.AppYsV2",
+  "jar": "ddaf13d7-0206.jpg",
+  "jar_sha256": "253450a7500979f6bbe9b4a5cf19aadb8bd372845db1c3d629ea3fd2293154e1",
+  "evidence": [
+    {
+      "method": "init",
+      "file": "_rea/decompiled/ddaf13d7-0206/sources/com/github/catvod/spider/AppYsV2.java",
+      "lines": "830-837",
+      "note": "init 只解析 ext 得到基址与附加参数；分类、列表、详情、搜索的 URL 由基址形态推导。本描述按 App 形态（基址含 api.php/app 或 xgapp）声明端点。"
+    },
+    {
+      "method": "homeContent",
+      "file": "_rea/decompiled/ddaf13d7-0206/sources/com/github/catvod/spider/AppYsV2.java",
+      "lines": "522-770",
+      "note": "列表请求与 JSON 字段映射；列表 URL 三形态仅差路径与参数名，描述按 App 形态接管，Vod 与 Generic 形态的真站基址会走错端点，属已知偏差。"
+    },
+    {
+      "method": "categoryContent",
+      "file": "_rea/decompiled/ddaf13d7-0206/sources/com/github/catvod/spider/AppYsV2.java",
+      "lines": "419-501",
+      "note": "分类路由随基址形态变化：App 请求 nav 带 token，Vod 请求 types，Generic 直接返回固定 6 分类；schema v1 没有按基址形态分支的指令，该入口保留手写实现。"
+    },
+    {
+      "method": "detailContent",
+      "file": "_rea/decompiled/ddaf13d7-0206/sources/com/github/catvod/spider/AppYsV2.java",
+      "lines": "502-521",
+      "note": "详情与线路组结构随基址形态变化：App 读 data.vod_url_with_player，Vod 读 data.vod_play_list，Generic 直接报错没有独立详情接口；无形态分支指令，该入口保留手写实现。"
+    },
+    {
+      "method": "playerContent",
+      "file": "_rea/decompiled/ddaf13d7-0206/sources/com/github/catvod/spider/AppYsV2.java",
+      "lines": "919-946",
+      "note": "按 URL 扩展名判定直链（大小写不敏感），直链 parse 为 0，其余 parse 为 1；手写非直链附带字符串 jx，引擎只能输出数值 jx，属已知偏差。"
+    },
+    {
+      "method": "searchContent",
+      "file": "_rea/decompiled/ddaf13d7-0206/sources/com/github/catvod/spider/AppYsV2.java",
+      "lines": "947-1004",
+      "note": "搜索 URL 三形态不同；描述按 App 形态接管，并用 alnum 编码复刻 NON_ALPHANUMERIC 关键词口径。"
+    }
+  ],
+  "base": {
+    "default": "http://127.0.0.1/api.php/app",
+    "ext": "whole"
+  },
+  "vars": [],
+  "headers": {
+    "User-Agent": "Dart/2.14 (dart:io)"
+  },
+  "json_error": "响应不是 JSON: {error}; url={url}",
+  "endpoints": {
+    "categories": {
+      "family_fallback": true,
+      "path": "/nav?token=",
+      "rows": [
+        "list",
+        "data.list",
+        "data"
+      ],
+      "fields": {
+        "id": {
+          "path": "type_id",
+          "trim": true,
+          "fallback": {
+            "path": "id",
+            "trim": true,
+            "fallback": {
+              "path": "tid",
+              "trim": true
+            }
+          }
+        },
+        "name": {
+          "path": "type_name",
+          "trim": true,
+          "fallback": {
+            "path": "name",
+            "trim": true,
+            "fallback": {
+              "path": "title",
+              "trim": true
+            }
+          }
+        }
+      }
+    },
+    "list": {
+      "path": "/video?tid={cat}&class=&area=&lang=&year=&limit=18&pg={page}",
+      "rows": [
+        "list",
+        "data.list",
+        "data"
+      ],
+      "fields": {
+        "id": {
+          "path": "vod_id",
+          "trim": true,
+          "fallback": {
+            "path": "nextlink",
+            "trim": true,
+            "fallback": {
+              "path": "id",
+              "trim": true
+            }
+          }
+        },
+        "name": {
+          "path": "vod_name",
+          "trim": true,
+          "fallback": {
+            "path": "title",
+            "trim": true,
+            "fallback": {
+              "path": "name",
+              "trim": true
+            }
+          }
+        },
+        "cover": {
+          "path": "vod_pic",
+          "trim": true,
+          "fallback": {
+            "path": "pic",
+            "trim": true,
+            "fallback": {
+              "path": "img_url",
+              "trim": true,
+              "fallback": {
+                "path": "cover",
+                "trim": true
+              }
+            }
+          }
+        },
+        "remark": {
+          "path": "vod_remarks",
+          "trim": true,
+          "fallback": {
+            "path": "state",
+            "trim": true,
+            "fallback": {
+              "path": "notes",
+              "trim": true
+            }
+          }
+        }
+      }
+    },
+    "detail": {
+      "family_fallback": true,
+      "path": "/video_detail",
+      "params": [
+        {
+          "key": "id",
+          "value": "{id}"
+        }
+      ],
+      "root": "data",
+      "fields": {
+        "name": {
+          "path": "vod_name",
+          "trim": true,
+          "fallback": {
+            "path": "title",
+            "trim": true
+          }
+        },
+        "cover": {
+          "path": "vod_pic",
+          "trim": true,
+          "fallback": {
+            "path": "img_url",
+            "trim": true,
+            "fallback": {
+              "path": "pic",
+              "trim": true
+            }
+          }
+        },
+        "desc": {
+          "path": "vod_content",
+          "trim": true,
+          "fallback": {
+            "path": "intro",
+            "trim": true
+          }
+        },
+        "year": {
+          "path": "vod_year",
+          "trim": true,
+          "fallback": {
+            "path": "pubtime",
+            "trim": true
+          }
+        },
+        "area": {
+          "path": "vod_area",
+          "trim": true,
+          "fallback": {
+            "path": "area",
+            "trim": true,
+            "join": ","
+          }
+        },
+        "director": {
+          "path": "vod_director",
+          "trim": true,
+          "fallback": {
+            "path": "director",
+            "trim": true,
+            "join": ","
+          }
+        },
+        "actor": {
+          "path": "vod_actor",
+          "trim": true,
+          "fallback": {
+            "path": "actor",
+            "trim": true,
+            "join": ","
+          }
+        }
+      }
+    },
+    "search": {
+      "path": "/search",
+      "params": [
+        {
+          "key": "text",
+          "value": "{kw}",
+          "encode": "alnum"
+        },
+        {
+          "key": "pg",
+          "value": ""
+        }
+      ],
+      "rows": [
+        "list",
+        "data.list",
+        "data"
+      ],
+      "fields": {
+        "id": {
+          "path": "vod_id",
+          "trim": true,
+          "fallback": {
+            "path": "nextlink",
+            "trim": true,
+            "fallback": {
+              "path": "id",
+              "trim": true
+            }
+          }
+        },
+        "name": {
+          "path": "vod_name",
+          "trim": true,
+          "fallback": {
+            "path": "title",
+            "trim": true,
+            "fallback": {
+              "path": "name",
+              "trim": true
+            }
+          }
+        },
+        "cover": {
+          "path": "vod_pic",
+          "trim": true,
+          "fallback": {
+            "path": "pic",
+            "trim": true,
+            "fallback": {
+              "path": "img_url",
+              "trim": true,
+              "fallback": {
+                "path": "cover",
+                "trim": true
+              }
+            }
+          }
+        },
+        "remark": {
+          "path": "vod_remarks",
+          "trim": true,
+          "fallback": {
+            "path": "state",
+            "trim": true,
+            "fallback": {
+              "path": "notes",
+              "trim": true
+            }
+          }
+        }
+      }
+    },
+    "play": {
+      "empty_id_error": "播放 id 为空",
+      "parse": 1,
+      "jx": true,
+      "url": "{id}",
+      "header": {
+        "User-Agent": "Dalvik/2.1.0"
+      },
+      "rules": [
+        {
+          "suffixes": [
+            ".m3u8",
+            ".mp4",
+            ".flv",
+            ".mkv",
+            ".avi",
+            ".ts",
+            ".mov",
+            ".wmv",
+            ".rmvb",
+            ".webm",
+            ".m4v",
+            ".mpd",
+            ".mp3",
+            ".m4a",
+            ".m4s",
+            ".M3U8",
+            ".MP4",
+            ".FLV",
+            ".MKV",
+            ".AVI",
+            ".TS",
+            ".MOV",
+            ".WMV",
+            ".RMVB",
+            ".WEBM",
+            ".M4V",
+            ".MPD",
+            ".MP3",
+            ".M4A",
+            ".M4S"
+          ],
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".m3u8?",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".m3u8#",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".mp4?",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".mp4#",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".flv?",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".flv#",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".mkv?",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".mkv#",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".avi?",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".avi#",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".ts?",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".ts#",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".mov?",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".mov#",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".wmv?",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".wmv#",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".rmvb?",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".rmvb#",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".webm?",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".webm#",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".m4v?",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".m4v#",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".mpd?",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".mpd#",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".mp3?",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".mp3#",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".m4a?",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".m4a#",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".m4s?",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        },
+        {
+          "contains_ignore_case": ".m4s#",
+          "parse": 0,
+          "jx": true,
+          "header": {
+            "User-Agent": "Dalvik/2.1.0"
+          }
+        }
+      ]
+    }
+  }
+}

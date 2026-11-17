@@ -1,0 +1,244 @@
+{
+  "schema": 1,
+  "api": "csp_SixV",
+  "kind": "html",
+  "class": "com.github.catvod.spider.SixV",
+  "jar": "69dadb9a-Yoursmile.jar",
+  "jar_sha256": "cc3b06eb7b265eb7efbceac31da8d46381099e65e0e5f4becfe62d06c42f36e5",
+  "evidence": [
+    {
+      "method": "init",
+      "file": "_rea/decompiled/69dadb9a-Yoursmile/deobf/com/github/catvod/spider/SixV.java",
+      "lines": "153-159",
+      "note": "站点基址取 ext；jar 仅去掉一个尾部斜杠，描述用 base.ext=whole（去掉全部尾部斜杠，极小偏差）。"
+    },
+    {
+      "method": "homeContent",
+      "file": "_rea/decompiled/69dadb9a-Yoursmile/deobf/com/github/catvod/spider/SixV.java",
+      "lines": "135-151",
+      "note": "固定 12 个分类、零网络；描述用 categories.static_categories 对齐。"
+    },
+    {
+      "method": "categoryContent",
+      "file": "_rea/decompiled/69dadb9a-Yoursmile/deobf/com/github/catvod/spider/SixV.java",
+      "lines": "49-73",
+      "note": "列表 URL 为 base 拼接 cat，页码大于 1 时追加 /index_{page}.html；行进 #post_container .post_hover，取其中第一个 [class=zoom] 的 href/title/img@src，备注取带 rel=category 的元素。形状已按此填写，但本端点 family_fallback=true：手写实现在 ext 缺失时抛含 ext 的解析错误，而 v1 的 base.ext 缺失会静默回落 base.default（无 require_ext/错误模板原语），描述接管会改变既有错误契约。"
+    },
+    {
+      "method": "detailContent",
+      "file": "_rea/decompiled/69dadb9a-Yoursmile/deobf/com/github/catvod/spider/SixV.java",
+      "lines": "75-133",
+      "note": "标题 .article_container > h1，封面 #post_content 首个 img@src，播放线路为 #post_content 下每个 table 内 href 以 magnet 开头的 a（组名 magnetN，按非空组计数），元数据在 .context 内联 HTML 的「◎类　　别　值」式标签里。v1 的 detail.meta 只能按全角冒号 label 取值，本站标签无冒号，故用 replace 把标签替换为哨兵 § 后 split_on/segment 切出 year/area/director/actor/desc；组名用匹配不到的 tabs 选择器触发 name_fallback。"
+    },
+    {
+      "method": "searchContent",
+      "file": "_rea/decompiled/69dadb9a-Yoursmile/deobf/com/github/catvod/spider/SixV.java",
+      "lines": "170-193",
+      "note": "POST {base}/e/search/index.php，表单 show/tempid/tbname/mid/dopost/submit/keyboard；行进 #post_container [class=zoom]（锚点自身即条目），vod_name 取 title 属性再去标签，空则取锚点文本，vod_pic 取锚点内首个 img@src。描述用 method=post_form + body；表单值由 HTTP 库编码，body 内不写 {kw:alnum}。"
+    },
+    {
+      "method": "playerContent",
+      "file": "_rea/decompiled/69dadb9a-Yoursmile/deobf/com/github/catvod/spider/SixV.java",
+      "lines": "161-168",
+      "note": "不联网，直接返回 parse=0、header 空串、playUrl 空串、url=id。描述 play 用 parse=0 + url={id}；PlaySpec 的 header 只能是空对象，输出 {}=空对象而手写为 \"\"（normalize.parse_headers 对两者归一结果相同，仅原始 JSON 类型偏差）。"
+    }
+  ],
+  "base": {
+    "default": "https://www.6vdy.org",
+    "ext": "whole"
+  },
+  "vars": [],
+  "headers": {
+    "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36",
+    "Referer": "{base}/",
+    "Origin": "{base}"
+  },
+  "endpoints": {
+    "categories": {
+      "static_categories": [
+        { "id": "dianshiju/guoju", "name": "国剧" },
+        { "id": "dianshiju/rihanju", "name": "日韩剧" },
+        { "id": "dianshiju/oumeiju", "name": "欧美剧" },
+        { "id": "xijupian", "name": "喜剧片" },
+        { "id": "dongzuopian", "name": "动作片" },
+        { "id": "aiqingpian", "name": "爱情片" },
+        { "id": "kehuanpian", "name": "科幻片" },
+        { "id": "kongbupian", "name": "恐怖片" },
+        { "id": "juqingpian", "name": "剧情片" },
+        { "id": "zhanzhengpian", "name": "战争片" },
+        { "id": "jilupian", "name": "纪录片" },
+        { "id": "donghuapian", "name": "动画片" }
+      ]
+    },
+    "list": {
+      "family_fallback": true,
+      "path": "{cat}",
+      "segments": [
+        {
+          "template": "/index_{page}.html",
+          "if_gt": { "var": "page", "value": 1 }
+        }
+      ],
+      "rows": [
+        "#post_container .post_hover"
+      ],
+      "fields": {
+        "id": {
+          "sel": "[class=zoom]",
+          "attr": "href",
+          "non_empty": true
+        },
+        "name": {
+          "sel": "[class=zoom]",
+          "attr": "title",
+          "non_empty": true,
+          "fallback": {
+            "sel": "[class=zoom]",
+            "collapse": true
+          }
+        },
+        "cover": {
+          "sel": "[class=zoom] img",
+          "attr": "src",
+          "non_empty": true
+        },
+        "remark": {
+          "sel": "[rel*='category']",
+          "collapse": true,
+          "non_empty": true
+        }
+      }
+    },
+    "detail": {
+      "path": "{id}",
+      "rules": [
+        {
+          "prefixes": ["http://", "https://"],
+          "url": "{id}"
+        }
+      ],
+      "fields": {
+        "name": {
+          "sel": ".article_container > h1",
+          "collapse": true,
+          "non_empty": true
+        },
+        "cover": {
+          "sel": "#post_content img",
+          "attr": "src",
+          "non_empty": true
+        },
+        "year": {
+          "sel": ".context",
+          "collapse": true,
+          "replace": {
+            "◎年　　代　": "§",
+            "◎产　　地　": "§"
+          },
+          "split_on": "§",
+          "segment": 1,
+          "non_empty": true
+        },
+        "area": {
+          "sel": ".context",
+          "collapse": true,
+          "replace": {
+            "◎产　　地　": "§",
+            "◎上映日期　": "§"
+          },
+          "split_on": "§",
+          "segment": 1,
+          "non_empty": true
+        },
+        "director": {
+          "sel": ".context",
+          "collapse": true,
+          "replace": {
+            "◎导　　演　": "§",
+            "◎演　　员　": "§",
+            "◎主　　演　": "§"
+          },
+          "split_on": "§",
+          "segment": 1,
+          "non_empty": true
+        },
+        "actor": {
+          "sel": ".context",
+          "collapse": true,
+          "replace": {
+            "◎演　　员　": "§",
+            "◎主　　演　": "§",
+            "◎简　　介": "§"
+          },
+          "split_on": "§",
+          "segment": 1,
+          "non_empty": true
+        },
+        "desc": {
+          "sel": ".context",
+          "collapse": true,
+          "replace": {
+            "◎简　　介": "§"
+          },
+          "split_on": "§",
+          "segment": 1,
+          "non_empty": true
+        }
+      },
+      "groups": {
+        "tabs": "#sixv-no-group-tab",
+        "lists": "#post_content table",
+        "item": "a[href^='magnet']",
+        "url_attr": "href",
+        "name_fallback": "magnet{index}"
+      },
+      "require": [
+        {
+          "target": "name_and_episodes",
+          "error": "详情页缺少标题与播放线路（站点改版或非 SixV 模板？）"
+        }
+      ]
+    },
+    "search": {
+      "method": "post_form",
+      "path": "/e/search/index.php",
+      "body": [
+        { "key": "show", "value": "title" },
+        { "key": "tempid", "value": "1" },
+        { "key": "tbname", "value": "article" },
+        { "key": "mid", "value": "1" },
+        { "key": "dopost", "value": "search" },
+        { "key": "submit", "value": "" },
+        { "key": "keyboard", "value": "{kw}" }
+      ],
+      "rows": [
+        "#post_container [class=zoom]"
+      ],
+      "fields": {
+        "id": {
+          "self": true,
+          "attr": "href",
+          "non_empty": true
+        },
+        "name": {
+          "self": true,
+          "attr": "title",
+          "non_empty": true,
+          "fallback": {
+            "self": true,
+            "collapse": true
+          }
+        },
+        "cover": {
+          "sel": "img",
+          "attr": "src",
+          "non_empty": true
+        }
+      }
+    },
+    "play": {
+      "parse": 0,
+      "url": "{id}"
+    }
+  }
+}

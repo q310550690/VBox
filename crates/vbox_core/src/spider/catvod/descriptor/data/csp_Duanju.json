@@ -1,0 +1,178 @@
+{
+  "schema": 1,
+  "api": "csp_Duanju",
+  "kind": "html",
+  "class": "com.github.catvod.spider.Duanju",
+  "jar": "0f047745-FxzHm.jar",
+  "jar_sha256": "4399167d2ec514bd99c73b09923711beeb4fbdb947131332fc635e0edb52e9c9",
+  "evidence": [
+    {
+      "method": "homeContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/Duanju.java",
+      "lines": "119-134",
+      "note": "分类由固定表给出（8 项，顺序见 categories.static_categories），不联网；描述用 static_categories 表达，无需 rows/path。"
+    },
+    {
+      "method": "categoryContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/Duanju.java",
+      "lines": "37-53",
+      "note": "列表 URL 为 12 段连字符：/vodshow/{cat}--------{page}---.html，page<=1 时不写页码；行选择器 .module-items .module-item，取 id/name/cover/remark。描述语义以 crates/vbox_core/src/spider/catvod/families/duanju.rs 为准（反编译版每页都写页码，且字段回退细节与手写不同）。"
+    },
+    {
+      "method": "searchContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/Duanju.java",
+      "lines": "152-165",
+      "note": "搜索 URL /vodsearch/{kw}-------------.html（13 个连字符），关键词按 NON_ALPHANUMERIC 百分号编码；行选择器 .module-search-item，name 取 img 的 alt（空则取 a 文本），cover 只认 data-src，remark 取 a.video-serial。"
+    },
+    {
+      "method": "detailContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/Duanju.java",
+      "lines": "55-117",
+      "note": "详情：标题、标签年份地区、简介，以及线路组。组名由 tab 的 span 名与 small 集数拼成 线路N(共M集)，再与 class=scroll-content 容器按序号配对；年份要求第一个 4 位纯数字标签，地区取非纯数字标签按值去重后的第 2 或第 1 个。schema v1 的 GroupsHtml 组名只能取 tab 元素整体文本或 name_fallback 的序号模板，无组名计数后缀拼接、也无标签筛选/去重指令。故 detail 写 family_fallback=true 回退手写。"
+    },
+    {
+      "method": "playerContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/Duanju.java",
+      "lines": "143-150",
+      "note": "播放：GET 播放页后，从页面中定位 player_aaaa= 到 </script> 之间的 JSON，取 url 直出，并附带 UA/Referer 头。schema v1 的 PlaySpec 只有 rules/proxy/url/header，proxy 仅支持 JSON 响应，没有抓 HTML 播放页再按子串/JSON 提取的指令。故 play 写 family_fallback=true 回退手写。"
+    },
+    {
+      "method": "init",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/Duanju.java",
+      "lines": "136-140",
+      "note": "初始化用配置串覆盖基址：取 ext 以 $$$ 分隔的首段并 trim，http(s) 开头则去尾斜杠，否则用默认基址；与 base.ext=whole 语义一致。"
+    }
+  ],
+  "base": {
+    "default": "https://duanju.one",
+    "ext": "whole"
+  },
+  "vars": [],
+  "headers": {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+  },
+  "retries": 2,
+  "endpoints": {
+    "categories": {
+      "static_categories": [
+        { "id": "1", "name": "抖剧" },
+        { "id": "2", "name": "快剧" },
+        { "id": "3", "name": "都市" },
+        { "id": "26", "name": "穿越" },
+        { "id": "25", "name": "逆袭" },
+        { "id": "27", "name": "虐恋" },
+        { "id": "28", "name": "重生" },
+        { "id": "32", "name": "其他" }
+      ]
+    },
+    "list": {
+      "path": "/vodshow/{cat}--------",
+      "segments": [
+        { "template": "{page}", "if_gt": { "var": "page", "value": 1 } },
+        { "template": "---.html" }
+      ],
+      "rows": [".module-items .module-item"],
+      "fields": {
+        "id": {
+          "sel": [".module-item-pic a"],
+          "attr": "href",
+          "trim": true,
+          "join_base": true,
+          "non_empty": true
+        },
+        "name": {
+          "sel": [".module-item-pic a"],
+          "attr": "title",
+          "trim": true,
+          "non_empty": true,
+          "fallback": {
+            "sel": [".module-item-pic a"],
+            "trim": true,
+            "non_empty": true
+          }
+        },
+        "cover": {
+          "sel": [".module-item-pic img"],
+          "attr": "data-src",
+          "trim": true,
+          "replace": { "//": "https://" },
+          "join_base": true,
+          "non_empty": true,
+          "fallback": {
+            "sel": [".module-item-pic img"],
+            "attr": "src",
+            "trim": true,
+            "replace": { "//": "https://" },
+            "join_base": true,
+            "non_empty": true
+          }
+        },
+        "remark": {
+          "sel": [".module-item-text"],
+          "collapse": true,
+          "non_empty": true
+        }
+      }
+    },
+    "detail": {
+      "url": "{id}",
+      "trim_id": true,
+      "empty_id_error": "详情 id 为空",
+      "fields": {
+        "name": {
+          "sel": ["h1.page-title"],
+          "collapse": true,
+          "non_empty": true
+        }
+      },
+      "family_fallback": true
+    },
+    "search": {
+      "path": "/vodsearch/{kw:alnum}-------------.html",
+      "rows": [".module-search-item"],
+      "fields": {
+        "id": {
+          "sel": [".module-item-pic a"],
+          "attr": "href",
+          "trim": true,
+          "join_base": true,
+          "non_empty": true
+        },
+        "name": {
+          "sel": [".module-item-pic img"],
+          "attr": "alt",
+          "trim": true,
+          "non_empty": true,
+          "fallback": {
+            "sel": [".module-item-pic a"],
+            "trim": true,
+            "non_empty": true
+          }
+        },
+        "cover": {
+          "sel": [".module-item-pic img"],
+          "attr": "data-src",
+          "trim": true,
+          "replace": { "//": "https://" },
+          "join_base": true,
+          "non_empty": true
+        },
+        "remark": {
+          "sel": [".video-info-header a.video-serial"],
+          "collapse": true,
+          "non_empty": true
+        }
+      }
+    },
+    "play": {
+      "url": "{id}",
+      "parse": 0,
+      "jx": true,
+      "header": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Referer": "{base}/"
+      },
+      "family_fallback": true
+    }
+  }
+}

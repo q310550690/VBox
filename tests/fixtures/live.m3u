@@ -1,0 +1,7 @@
+#EXTM3U
+#EXTINF:-1 tvg-name="央视一套",CCTV-1
+https://example.com/cctv1.m3u8
+#EXTINF:-1 tvg-name="央视二套",CCTV-2
+https://example.com/cctv2.m3u8
+#EXTINF:-1 tvg-name="地方台",CCTV-Local
+https://example.com/local.m3u8

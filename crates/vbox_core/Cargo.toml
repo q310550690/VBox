@@ -1,0 +1,56 @@
+[package]
+name = "vbox_core"
+version = "0.1.2"
+edition = "2021"
+description = "VBox 核心引擎：订阅解析 / 源站适配 / 直链解析（兼容 TVBox 源格式，纯 Rust，无 Tauri 依赖）"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_path_to_error = "0.1"
+# 注意：关闭 default-features 以避免引入异步运行时；用 blocking + rustls-tls 保证跨平台可编译
+# cookies：在线字幕（SubHD）下载需要会话 cookie 串联 3 步请求
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "gzip", "brotli", "deflate", "rustls-tls", "cookies"] }
+thiserror = "1"
+tracing = "0.1"
+encoding_rs = "0.8"
+
+# 配置解密（TVBox 的 2423 / ;pk; 格式）
+aes = "0.8"
+cbc = { version = "0.1", features = ["alloc"] }
+ecb = { version = "0.1", features = ["alloc"] }
+cipher = "0.4"
+# DES（csp_NiNi 的 Nivod 签名/响应解密）
+des = "0.8"
+base64 = "0.22"
+hex = "0.4"
+md5 = "0.7"
+# RSA（csp_Kuaikan 的 ticket 签名与响应解密）
+rsa = "0.9"
+# gzip 解压（csp_Bdys01 的 m3u8 密文头）
+flate2 = "1"
+url = "2"
+percent-encoding = "2"
+
+# type=0 XML 源
+quick-xml = "0.38"
+
+# HTML 规则引擎（pdfh/pdfa、XYQHiker/XBPQ）
+scraper = "0.24"
+
+# XPath 规则引擎（csp_XPath 家族：TVBox 标准 xpath 规则 JSON）
+sxd-document = "0.3"
+sxd-xpath = "0.4"
+
+# type=3 JS spider（catvod/drpy 子集）
+rquickjs = { version = "0.9", features = ["full"] }
+
+# 解析链 / M3U8 清洗使用
+regex = "1"
+
+# Node sidecar 超时
+wait-timeout = "0.2"
+
+[dev-dependencies]
+# 集成测试用本地 mock HTTP server（不访问真实网络）
+tiny_http = "0.12"

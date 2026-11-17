@@ -1,0 +1,339 @@
+{
+  "schema": 1,
+  "api": "csp_Tangrenjie",
+  "kind": "html",
+  "class": "com.github.catvod.spider.Tangrenjie",
+  "jar": "ddaf13d7-0206.jpg",
+  "jar_sha256": "253450a7500979f6bbe9b4a5cf19aadb8bd372845db1c3d629ea3fd2293154e1",
+  "evidence": [
+    {
+      "method": "homeContent",
+      "file": "_rea/decompiled/ddaf13d7-0206/deobf/com/github/catvod/spider/Tangrenjie.java",
+      "lines": "292-350",
+      "note": "首页导航分类：选择器 #nav li a，跳过 网站首页/专题/会员；分类 id 取 href 中 /type/ 与 .html 之间的数字。schema v1 无「解析为空时报错」指令，描述版空结果返回空数组。"
+    },
+    {
+      "method": "categoryContent",
+      "file": "_rea/decompiled/ddaf13d7-0206/deobf/com/github/catvod/spider/Tangrenjie.java",
+      "lines": "47-53",
+      "note": "方法体被 jadx 跳过（Method dump skipped, instructions count: 496），列表规则以手写实现 families/tangrenjie.rs 的现站模板为准。v1 缺口：第 2 页路由 /show/{cat}--------{page}---.html 需要 page<=1 的二选一路由，Segment 只有 if_var/if_gt 追加语义，无法表达，故 list 暂 family_fallback=true 交回手写。"
+    },
+    {
+      "method": "detailContent",
+      "file": "_rea/decompiled/ddaf13d7-0206/deobf/com/github/catvod/spider/Tangrenjie.java",
+      "lines": "55-283",
+      "note": "详情：标题/海报/简介/年份/地区/导演/主演/播放线路。v1 缺口：线路组名需要去播放符号与 emoji、在「-在线播放」处截断、只保留 ASCII 与 CJK，GroupsHtml 组名只有 clean_private_use 加 collapse；简介需要多个 p 的文本以换行拼接，字段只能取单元素文本或容器整体文本，故 detail 暂 family_fallback=true。"
+    },
+    {
+      "method": "fP",
+      "file": "_rea/decompiled/ddaf13d7-0206/deobf/com/github/catvod/spider/Tangrenjie.java",
+      "lines": "284-291",
+      "note": "请求头：描述 headers 采用手写实现的现站口径（PC Chrome/122 UA、Accept、Accept-Language），重试 2 次。"
+    },
+    {
+      "method": "playerContent",
+      "file": "_rea/decompiled/ddaf13d7-0206/deobf/com/github/catvod/spider/Tangrenjie.java",
+      "lines": "378-416",
+      "note": "播放：抓播放页后用正则提取 var player_aaaa 的 JSON、取 url、encrypt 非 0 视为加密失败、// 开头补 https:。v1 的 PlaySpec 没有抓页与正则提取指令，proxy 只接受 JSON 响应，故 play 暂 family_fallback=true。"
+    },
+    {
+      "method": "searchContent",
+      "file": "_rea/decompiled/ddaf13d7-0206/deobf/com/github/catvod/spider/Tangrenjie.java",
+      "lines": "417-479",
+      "note": "搜索：/search/{kw}----------1---.html，关键词按 NON_ALPHANUMERIC 编码、trim 后为空直接返回空；remark 先取「状态」行，描述用最后一个 dl 的 dd 近似。"
+    }
+  ],
+  "base": {
+    "default": "https://www.tangrenjie.net",
+    "ext": "token"
+  },
+  "headers": {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2"
+  },
+  "retries": 2,
+  "endpoints": {
+    "categories": {
+      "path": "/",
+      "rows": [
+        "#nav li a"
+      ],
+      "fields": {
+        "id": {
+          "self": true,
+          "attr": "href",
+          "replace": {
+            ".html": ""
+          },
+          "split_on": "/",
+          "segment": 2,
+          "trim": true,
+          "non_empty": true
+        },
+        "name": {
+          "self": true,
+          "collapse": true,
+          "non_empty": true
+        }
+      },
+      "filters": [
+        {
+          "field": "name",
+          "equals": "网站首页"
+        },
+        {
+          "field": "name",
+          "equals": "专题"
+        },
+        {
+          "field": "name",
+          "equals": "会员"
+        }
+      ],
+      "dedupe": true
+    },
+    "list": {
+      "family_fallback": true,
+      "path": "/type/{cat}.html",
+      "segments": [
+        {
+          "template": "/show/{cat}--------{page}---.html",
+          "if_gt": {
+            "var": "page",
+            "value": 1
+          }
+        }
+      ],
+      "rows": [
+        "ul.img-list li"
+      ],
+      "fields": {
+        "id": {
+          "sel": [
+            "a"
+          ],
+          "attr": "href",
+          "trim": true,
+          "non_empty": true
+        },
+        "name": {
+          "sel": [
+            "a"
+          ],
+          "attr": "title",
+          "trim": true,
+          "collapse": true,
+          "non_empty": true,
+          "fallback": {
+            "sel": [
+              "h2"
+            ],
+            "collapse": true,
+            "non_empty": true
+          }
+        },
+        "cover": {
+          "sel": [
+            "img"
+          ],
+          "attr": "src",
+          "trim": true,
+          "non_empty": true,
+          "fallback": {
+            "sel": [
+              "img"
+            ],
+            "attr": "data-original",
+            "trim": true,
+            "non_empty": true
+          }
+        },
+        "remark": {
+          "sel": [
+            "i"
+          ],
+          "collapse": true,
+          "non_empty": true
+        }
+      },
+      "filters": [
+        {
+          "field": "id",
+          "if_empty": true
+        },
+        {
+          "field": "id",
+          "contains": "/vod/"
+        },
+        {
+          "field": "name",
+          "if_empty": true
+        }
+      ]
+    },
+    "detail": {
+      "family_fallback": true,
+      "path": "{id}",
+      "rules": [
+        {
+          "prefixes": [
+            "http://",
+            "https://"
+          ],
+          "url": "{id}"
+        }
+      ],
+      "trim_id": true,
+      "empty_id_error": "详情 id 为空",
+      "fields": {
+        "name": {
+          "sel": [
+            "div.detail-title h1",
+            "h1"
+          ],
+          "collapse": true,
+          "non_empty": true
+        },
+        "cover": {
+          "sel": [
+            "div.detail-pic img"
+          ],
+          "attr": "src",
+          "trim": true,
+          "non_empty": true,
+          "fallback": {
+            "sel": [
+              "div.detail-pic img"
+            ],
+            "attr": "data-original",
+            "trim": true,
+            "non_empty": true
+          }
+        },
+        "desc": {
+          "sel": [
+            "div.vod-intro"
+          ],
+          "collapse": true,
+          "non_empty": true
+        }
+      },
+      "meta_scope": "div.detail-info dl",
+      "meta": [
+        {
+          "field": "year",
+          "label": "年份"
+        },
+        {
+          "field": "area",
+          "label": "地区"
+        },
+        {
+          "field": "director",
+          "label": "导演"
+        },
+        {
+          "field": "actor",
+          "label": "主演"
+        },
+        {
+          "field": "actor",
+          "label": "演员"
+        }
+      ],
+      "groups": {
+        "tabs": "div.box[id^=\"playlist_\"] .box-title h2",
+        "lists": "div.box[id^=\"playlist_\"] .video_list",
+        "item": "a",
+        "url_attr": "href"
+      },
+      "require": [
+        {
+          "target": "name",
+          "error": "详情页缺少 `div.detail-title h1`（站点改版或非 Tangrenjie 模板？）"
+        }
+      ]
+    },
+    "search": {
+      "path": "/search/{kw:alnum}----------1---.html",
+      "trim_keyword": true,
+      "rows": [
+        "ul.show-list li"
+      ],
+      "fields": {
+        "id": {
+          "sel": [
+            "h2 a"
+          ],
+          "attr": "href",
+          "trim": true,
+          "non_empty": true
+        },
+        "name": {
+          "sel": [
+            "h2 a"
+          ],
+          "collapse": true,
+          "non_empty": true
+        },
+        "cover": {
+          "sel": [
+            "a.play-img img"
+          ],
+          "attr": "src",
+          "trim": true,
+          "non_empty": true,
+          "fallback": {
+            "sel": [
+              "a.play-img img"
+            ],
+            "attr": "data-original",
+            "trim": true,
+            "non_empty": true
+          }
+        },
+        "remark": {
+          "sel": [
+            "div.play-txt dl:last-of-type dd"
+          ],
+          "collapse": true,
+          "non_empty": true
+        }
+      },
+      "filters": [
+        {
+          "field": "id",
+          "if_empty": true
+        },
+        {
+          "field": "id",
+          "contains": "/vod/"
+        },
+        {
+          "field": "name",
+          "if_empty": true
+        }
+      ]
+    },
+    "play": {
+      "family_fallback": true,
+      "empty_id_error": "播放 id 为空",
+      "parse": 0,
+      "jx": true,
+      "rules": [
+        {
+          "prefixes": [
+            "http://",
+            "https://"
+          ],
+          "url": "{id}"
+        }
+      ],
+      "url": "{base}{id}",
+      "header": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+      }
+    }
+  }
+}

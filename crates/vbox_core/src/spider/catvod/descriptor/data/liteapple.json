@@ -1,0 +1,177 @@
+{
+  "schema": 1,
+  "api": "csp_LiteApple",
+  "kind": "json",
+  "class": "com.github.catvod.spider.LiteApple",
+  "jar": "5fc50e17-5199d8f8bcbe3c6d6938ded33cb90596.png",
+  "jar_sha256": "19ca20400ffa9c32fd31d63ba91b1ac2d9809dabfa7b1288b33fe0bfc98625aa",
+  "evidence": [
+    {
+      "method": "homeContent",
+      "file": "_rea/decompiled/5fc50e17-5199d8f8bcbe3c6d6938ded33cb90596/deobf/com/github/catvod/spider/LiteApple.java",
+      "lines": "287-701",
+      "note": "分类、请求头签名（timestamp/hash）与首页"
+    },
+    {
+      "method": "categoryContent",
+      "file": "_rea/decompiled/5fc50e17-5199d8f8bcbe3c6d6938ded33cb90596/deobf/com/github/catvod/spider/LiteApple.java",
+      "lines": "144-245"
+    },
+    {
+      "method": "detailContent",
+      "file": "_rea/decompiled/5fc50e17-5199d8f8bcbe3c6d6938ded33cb90596/deobf/com/github/catvod/spider/LiteApple.java",
+      "lines": "246-286"
+    },
+    {
+      "method": "searchContent",
+      "file": "_rea/decompiled/5fc50e17-5199d8f8bcbe3c6d6938ded33cb90596/deobf/com/github/catvod/spider/LiteApple.java",
+      "lines": "724-784"
+    },
+    {
+      "method": "playerContent",
+      "file": "_rea/decompiled/5fc50e17-5199d8f8bcbe3c6d6938ded33cb90596/deobf/com/github/catvod/spider/LiteApple.java",
+      "lines": "702-723"
+    }
+  ],
+  "base": {
+    "default": "http://item.xpgtv.com",
+    "ext": "token"
+  },
+  "vars": [
+    {
+      "name": "token2",
+      "literal": "XFxIummRrngadHB4TCzeUaleebTX10Vl/ftCvGLPeI5tN2Y/liZ5tY5e4t8="
+    },
+    { "name": "version", "literal": "XPGBOX com.phoenix.tv1.5.5" },
+    { "name": "ua", "literal": "okhttp/3.12.11" },
+    { "name": "timestamp", "apply": "unix_ts" },
+    {
+      "name": "hash",
+      "apply": "md5_hex",
+      "template": "null{version}{timestamp}",
+      "slice": [8, 12]
+    }
+  ],
+  "headers": {
+    "token": "",
+    "token2": "{token2}",
+    "user_id": "XPGBOX",
+    "version": "{version}",
+    "timestamp": "{timestamp}",
+    "hash": "{hash}",
+    "screenx": "2331",
+    "screeny": "1121",
+    "User-Agent": "{ua}"
+  },
+  "retries": 2,
+  "json_error": "LiteApple JSON 解析失败: {error}; url={url}",
+  "endpoints": {
+    "categories": {
+      "path": "/api.php/v2.vod/androidtypes",
+      "on_error_empty": true,
+      "rows": ["data[]"],
+      "fields": {
+        "id": { "path": "type_id", "non_empty": true },
+        "name": { "path": "type_name", "non_empty": true }
+      }
+    },
+    "list": {
+      "path": "/api.php/v2.vod/androidfilter/",
+      "params": [
+        { "key": "page", "value": "{page}" },
+        { "key": "type", "value": "{cat}", "encode": "url" }
+      ],
+      "rows": ["data[]"],
+      "fields": {
+        "id": { "path": "id", "non_empty": true },
+        "name": { "path": "name", "non_empty": true },
+        "cover": { "path": "pic", "non_empty": true },
+        "remark": { "path": "updateInfo", "non_empty": true }
+      }
+    },
+    "detail": {
+      "path": "/api.php/v3.vod/androiddetail2",
+      "params": [{ "key": "vod_id", "value": "{id}", "encode": "url" }],
+      "root": "data",
+      "require": [
+        {
+          "target": "name",
+          "error": "LiteApple 详情缺少 data.name（vod_id={id}）"
+        },
+        {
+          "target": "episodes",
+          "error": "LiteApple 条目无播放地址（vod_id={id}，可能已下架）"
+        }
+      ],
+      "fields": {
+        "name": { "path": "name" },
+        "cover": { "path": "pic", "non_empty": true },
+        "year": { "path": "year", "non_empty": true },
+        "area": { "path": "area", "non_empty": true },
+        "director": { "path": "director", "non_empty": true },
+        "actor": { "path": "actor", "non_empty": true }
+      },
+      "desc_parts": [
+        { "from": "content", "collapse": true },
+        { "label": "分类：", "from": "className" },
+        { "label": "更新：", "from": "updateInfo" }
+      ],
+      "groups": {
+        "rows": ["urls[]"],
+        "single_group": "LiteApple",
+        "title": "key",
+        "url": "url",
+        "title_fallback_url": true
+      }
+    },
+    "search": {
+      "path": "/api.php/v2.vod/androidsearch10086",
+      "params": [
+        { "key": "page", "value": "1" },
+        { "key": "wd", "value": "{kw}", "encode": "url" }
+      ],
+      "rows": ["data[]"],
+      "fields": {
+        "id": { "path": "id", "non_empty": true },
+        "name": { "path": "name", "non_empty": true },
+        "cover": { "path": "pic", "non_empty": true },
+        "remark": { "path": "updateInfo", "non_empty": true }
+      },
+      "filters": [{ "field": "name", "contains": "{kw}" }]
+    },
+    "play": {
+      "empty_id_error": "LiteApple 播放 id 为空",
+      "parse": 0,
+      "rules": [
+        {
+          "contains_ignore_case": "http",
+          "url": "{id}",
+          "header": {
+            "token": "",
+            "token2": "{token2}",
+            "user_id": "XPGBOX",
+            "version": "{version}",
+            "timestamp": "{timestamp}",
+            "hash": "{hash}",
+            "screenx": "2331",
+            "screeny": "1121",
+            "User-Agent": "{ua}"
+          }
+        }
+      ],
+      "url": "http://c.xpgtv.net/m3u8/{id}.m3u8",
+      "header": {
+        "token": "",
+        "token2": "{token2}",
+        "user_id": "XPGBOX",
+        "version": "{version}",
+        "timestamp": "{timestamp}",
+        "hash": "{hash}",
+        "screenx": "2331",
+        "screeny": "1121",
+        "User-Agent": "{ua}"
+      },
+      "header_as_json": true
+    }
+  }
+}

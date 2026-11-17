@@ -1,0 +1,122 @@
+
+/* 设置页共享样式：14 个 section 组件的公共样式全部收敛到这一个文件
+   （分区头/说明/尾注、字段/标签/提示/网格、状态行、开关文案……）。
+   作用域限定在 .settings-page 内，避免影响其它页面；
+   组件里只保留各自独有的局部样式（如 .dir-field / .cache-fields 等非公共类）。 */
+.settings-page .section-head-text {
+  min-width: 0;
+}
+
+.settings-page .section-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.settings-page .field-control {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.settings-page .field-control .el-select {
+  width: 100%;
+}
+
+.settings-page .switch-label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.settings-page .status-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--el-color-info);
+  flex: none;
+}
+
+.settings-page .status-error {
+  color: var(--el-color-danger);
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.settings-page .status-label {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.settings-page .status-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+}
+
+/* —— 各组件里「重复/写法不一」的样式统一版 —— */
+
+/* 分区头：统一底距；带右侧操作按钮的头（用 .section-head-text 包裹标题）自动切两端布局 */
+.settings-page .section-head {
+  margin-bottom: var(--space-3);
+}
+
+.settings-page .section-head:has(.section-head-text) {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* 分区说明（设置页由 index.vue 统一 display:none，此处仅保证样式唯一） */
+.settings-page .section-desc {
+  margin: var(--space-1) 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* 分区尾注 */
+.settings-page .section-note {
+  margin: var(--space-3) 0 0;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+/* 字段：标签 + 控件纵向排列，统一上下间距；
+   在 .field-grid 内的字段由网格 gap 控距，清零自身外边距 */
+.settings-page .field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.settings-page .field-grid .field {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.settings-page .field-label {
+  font-size: 13px;
+  color: var(--text-regular);
+}
+
+.settings-page .field-hint {
+  margin: var(--space-2) 0 0;
+  font-size: 11.5px;
+  color: var(--text-faint);
+  word-break: break-all;
+}
+
+.settings-page .field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-3);
+}

@@ -1,0 +1,103 @@
+[package]
+name = "vbox-desktop"
+version = "0.1.2"
+description = "VBox 桌面端（Tauri 2 + Vue 3.6 前端）"
+authors = ["VBox contributors"]
+license = "MIT"
+edition = "2024"
+
+# 库目标：Tauri 2 推荐把主逻辑放在 lib crate（名称带 _lib 后缀），
+# crate-type 含 staticlib/cdylib 以支持桌面与移动端链接。
+# main.rs 中调用的正是 `vbox_desktop_lib::run()`，二者必须对应。
+[lib]
+name = "vbox_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+# 声明独立 workspace，避免被根目录 VBox/Cargo.toml 的 workspace 自动吞并。
+# 这样根 `cargo build` 只编译核心库（vbox_core 等），不会因 Tauri 需要系统
+# WebView2 / GTK 等预置依赖而把桌面端一起拉起来。
+[workspace]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# macOS 透明窗口 + NSView 内嵌播放需要 macos-private-api；
+# Windows 上启用该 feature 无副作用。
+tauri = { version = "2", features = ["macos-private-api"] }
+tauri-plugin-opener = "2"
+# 自动更新：检查 GitHub Release 的 latest.json，下载签名过的更新包并安装；
+# 签名密钥由 CI 通过 TAURI_SIGNING_PRIVATE_KEY 注入，公钥固定在 tauri.conf.json。
+tauri-plugin-updater = "2"
+# 更新完成后重启应用（前端 @tauri-apps/plugin-process 的 relaunch）
+tauri-plugin-process = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# 引入核心引擎与播放内核（相对路径引用本地 crate）
+vbox_core = { path = "../crates/vbox_core" }
+vbox_player = { path = "../crates/vbox_player" }
+
+# 观看历史持久化：SQLite（bundled 静态编译，不依赖系统 sqlite3.dll）
+rusqlite = { version = "0.41", features = ["bundled"] }
+
+# 本地 HTTP 服务（对应 TVBox 的 9978：clan:// 文件 / proxy:// 直播代理）
+# 仅监听 127.0.0.1，端口由系统分配后写入 AppState.local_base。
+tiny_http = "0.12"
+base64 = "0.22"
+percent-encoding = "2"
+
+# 下载引擎：HTTP 直链 + HLS 分片（blocking + rustls，与 vbox_core 同版本，
+# 可复用同一份编译产物；不用系统 OpenSSL，Windows 分发更省事）。
+# cookies：HLS 会话与字幕站需要会话 cookie。
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls", "cookies"] }
+
+# HLS 本地代理：URL 解析、分片地址哈希
+url = "2"
+md5 = "0.7"
+# HLS AES-128（CBC）分片解密：与 vbox_core 用同一批 crate/版本
+aes = "0.8"
+cbc = { version = "0.1", features = ["alloc"] }
+cipher = { version = "0.4", features = ["block-padding"] }
+hex = "0.4"
+
+# 原生「选择下载目录」对话框（Windows 用系统 IFileDialog，macOS 用 NSOpenPanel）
+rfd = "0.17"
+
+# 在线字幕：部分站点返回 zip / rar 字幕包，下载后需要就地解包；
+# FFmpeg 一键集成也从官方 zip 里取出 ffmpeg.exe（同一份依赖，不引入 7z）
+zip = { version = "2", default-features = false, features = ["deflate"] }
+
+# 下载空间管理：读取磁盘总容量/剩余空间（设置页「空间管理」磁盘总览）
+fs2 = "0.4"
+# FFmpeg 一键集成：校验下载包 SHA-256
+sha2 = "0.10"
+# rar 解包（SubHD 大量 ASS 字幕以 .rar 打包）——内置 UnRAR 源码，不依赖系统工具
+unrar = "0.5"
+window-vibrancy = "0.6"
+
+# Windows：直接操作 WebView2，做网络层抓包
+# 对应 Android 的 WebViewClient.shouldInterceptRequest：跨 iframe / Web Worker 的
+# 媒体请求也能看到（仅靠页面内 JS hook 只能覆盖主 frame）。
+[target.'cfg(windows)'.dependencies]
+webview2-com = "0.39"
+windows-core = "0.62"
+
+# macOS 视频输出（方案 2）：专用 layer-backed NSView + CAMetalLayer。
+# 版本与 tauri 的传递依赖保持一致（见 Cargo.lock），避免重复引入 objc2 运行时。
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", features = ["NSView", "NSWindow", "NSGraphics", "objc2-quartz-core"] }
+objc2-foundation = { version = "0.3", features = ["NSGeometry"] }
+objc2-quartz-core = { version = "0.3", features = ["CALayer", "CAMetalLayer"] }
+
+[features]
+# 默认特性保持最小，后续按需启用（如 custom-protocol）
+default = []
+
+# 发布构建优化（Tauri 官方推荐）：减小体积、提升性能
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true

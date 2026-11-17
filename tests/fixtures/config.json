@@ -1,0 +1,33 @@
+{
+  "sites": [
+    {
+      "key": "demo",
+      "name": "测试苹果CMS源",
+      "type": 1,
+      "api": "https://example.com/api.php/provide/vod/",
+      "searchable": true,
+      "playable": true
+    },
+    {
+      "key": "xmlsrc",
+      "name": "XML 源示例",
+      "type": 0,
+      "api": "https://example.com/xml"
+    },
+    {
+      "key": "spidersrc",
+      "name": "Spider 源示例",
+      "type": 3,
+      "api": "https://example.com/spider"
+    }
+  ],
+  "lives": [
+    { "name": "示例直播", "type": 0, "url": "https://example.com/live.m3u" }
+  ],
+  "parses": [
+    { "name": "示例解析", "type": 1, "url": "https://example.com/parse" }
+  ],
+  "urls": [
+    "https://example.com/sub.json"
+  ]
+}

@@ -1,0 +1,213 @@
+{
+  "schema": 1,
+  "api": "csp_FirstAid",
+  "kind": "html",
+  "class": "com.github.catvod.spider.FirstAid",
+  "jar": "0f047745-FxzHm.jar",
+  "jar_sha256": "4399167d2ec514bd99c73b09923711beeb4fbdb947131332fc635e0edb52e9c9",
+  "evidence": [
+    {
+      "method": "homeContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/FirstAid.java",
+      "lines": "84-92",
+      "note": "原 homeContent 写死 8 个分类（type_id 形如 jijiu|0 … jijiu|7，竖线后是该分类在 /jijiu 页里的区块下标），名称依次为 急救技能/家庭生活/急危重症/常见损伤/动物致伤/海洋急救/中毒急救/意外事故，不发起请求。描述用 static_categories 精确复刻该表，filters 为空。"
+    },
+    {
+      "method": "categoryContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/FirstAid.java",
+      "lines": "32-58",
+      "note": "type_id 按竖线拆成列表段与区块下标，请求 基础地址 + 斜线 + 列表段；取第 idx 个 .jj-title-li 区块内的 li.list-br3 行（首个 a[href]，name 取锚点全文，id 用 join_url 绝对化），封面取第 idx 个 img.block100[src] 并按协议补全（同分类共用一张题图）；忽略 page 且不输出 pagecount。描述层没有「从 cat 拆出下标再取第 N 个区块 / 第 N 张图」的原语（rows/fields 只能是固定选择器且不跨作用域），list 无法等价，写 family_fallback=true，rows/fields 仅按跨区块的最佳猜测声明。"
+    },
+    {
+      "method": "detailContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/FirstAid.java",
+      "lines": "60-82",
+      "note": "原版从 DOM 取 .video-title.h1-title、.video-cover.list-flex-in img、span.doc-name、.img-text-con、#video source 回退 #video[src]，vod_play_from 固定 Qile、vod_area 固定 中国。现网详情页已改为 SSR，手写实现优先解析页面脚本里的 window.__INITIAL_DATA__（videoDetailData 的 title/lit_pic/content/media_url/doctor.name/format_add_time），旧选择器只作回退。描述引擎 kind=html 只能整页 CSS 选择、kind=json 要求响应体本身是 JSON，均无法读取「HTML 内嵌 JSON」这一主数据源，故 detail 无法等价，写 family_fallback=true，fields 只按旧选择器尽力声明。"
+    },
+    {
+      "method": "detailContent",
+      "file": "crates/vbox_core/src/spider/catvod/families/firstaid.rs",
+      "lines": "273-436",
+      "note": "手写金标准：initial_data() 273-310 行按花括号配对 + 字符串感知截取内嵌 JSON；parse_json_detail 311-364 行；parse_legacy_detail 365-436 行旧 DOM 兜底。这是 detail 用 family_fallback 的直接依据。"
+    },
+    {
+      "method": "searchContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/FirstAid.java",
+      "lines": "101-116",
+      "note": "GET 基础地址 + /cse/search?q= 关键词（手写用 NON_ALPHANUMERIC 编码，与描述 encode=alnum 同口径）；行 .search-video-li.list-br2，id 取首个 a[href] 后 join_url 绝对化，name 取 h5.line-clamp1 文本，cover 取 dt.logo-bg img[src] 后按绝对 / 协议相对 / 站内相对补全。search 由描述接管。偏差：cover 用 replace 把双斜线替换成 https 再 join_base，已是绝对 http(s) 的封面会被二次加前缀（手写保持原样）；name 取元素文本时引擎直接拼接内联子节点、手写按文本节点加空格拼接，多子节点标题会有空格差异。"
+    },
+    {
+      "method": "playerContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/FirstAid.java",
+      "lines": "94-99",
+      "note": "手写：id 以 http(s) 开头原样作为 url，否则 join_url(基础地址, id)；返回 parse=0、url、playUrl 空串、header 只含 User-Agent。描述 play 接管：rule 命中 http(s) 前缀取 id，均不命中用 基础地址斜线 id，parse=0，分支与兜底 header 同为该 UA。偏差：引擎先 trim id（手写不 trim）；非绝对 id 的兜底是字符串拼接（手写在 id 以斜线开头时会做 URL 归一化）；空 id 在描述层报「播放地址为空」，手写会返回以基础地址为 url 的结果。"
+    }
+  ],
+  "base": {
+    "default": "https://m.youlai.cn",
+    "ext": "whole"
+  },
+  "vars": [],
+  "headers": {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+  },
+  "endpoints": {
+    "categories": {
+      "static_categories": [
+        {
+          "id": "jijiu|0",
+          "name": "急救技能"
+        },
+        {
+          "id": "jijiu|1",
+          "name": "家庭生活"
+        },
+        {
+          "id": "jijiu|2",
+          "name": "急危重症"
+        },
+        {
+          "id": "jijiu|3",
+          "name": "常见损伤"
+        },
+        {
+          "id": "jijiu|4",
+          "name": "动物致伤"
+        },
+        {
+          "id": "jijiu|5",
+          "name": "海洋急救"
+        },
+        {
+          "id": "jijiu|6",
+          "name": "中毒急救"
+        },
+        {
+          "id": "jijiu|7",
+          "name": "意外事故"
+        }
+      ]
+    },
+    "list": {
+      "family_fallback": true,
+      "path": "/{cat}",
+      "rows": [
+        ".jj-title-li li.list-br3"
+      ],
+      "fields": {
+        "id": {
+          "sel": "a",
+          "attr": "href",
+          "trim": true,
+          "join_base": true,
+          "non_empty": true
+        },
+        "name": {
+          "sel": "a",
+          "collapse": true,
+          "non_empty": true
+        },
+        "cover": {
+          "sel": "img.block100",
+          "attr": "src",
+          "trim": true,
+          "replace": {
+            "//": "https://"
+          },
+          "join_base": true,
+          "non_empty": true
+        }
+      }
+    },
+    "detail": {
+      "family_fallback": true,
+      "url": "{id}",
+      "fields": {
+        "name": {
+          "sel": [
+            ".video-title.h1-title",
+            "h1"
+          ],
+          "collapse": true,
+          "non_empty": true
+        },
+        "cover": {
+          "sel": ".video-cover.list-flex-in img",
+          "attr": "src",
+          "trim": true,
+          "replace": {
+            "//": "https://"
+          },
+          "join_base": true,
+          "non_empty": true
+        },
+        "desc": {
+          "sel": ".img-text-con",
+          "collapse": true,
+          "non_empty": true
+        },
+        "actor": {
+          "sel": "span.doc-name",
+          "collapse": true,
+          "non_empty": true
+        }
+      }
+    },
+    "search": {
+      "path": "/cse/search",
+      "params": [
+        {
+          "key": "q",
+          "value": "{kw}",
+          "encode": "alnum"
+        }
+      ],
+      "rows": [
+        ".search-video-li.list-br2"
+      ],
+      "fields": {
+        "id": {
+          "sel": "a",
+          "attr": "href",
+          "trim": true,
+          "join_base": true,
+          "non_empty": true
+        },
+        "name": {
+          "sel": "h5.line-clamp1",
+          "collapse": true,
+          "non_empty": true
+        },
+        "cover": {
+          "sel": "dt.logo-bg img",
+          "attr": "src",
+          "trim": true,
+          "replace": {
+            "//": "https://"
+          },
+          "join_base": true,
+          "non_empty": true
+        }
+      }
+    },
+    "play": {
+      "parse": 0,
+      "rules": [
+        {
+          "prefixes": [
+            "http://",
+            "https://"
+          ],
+          "url": "{id}",
+          "header": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+          }
+        }
+      ],
+      "url": "{base}/{id}",
+      "header": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+      }
+    }
+  }
+}

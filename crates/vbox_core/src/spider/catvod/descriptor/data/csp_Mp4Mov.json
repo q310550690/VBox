@@ -1,0 +1,327 @@
+{
+  "schema": 1,
+  "api": "csp_Mp4Mov",
+  "kind": "html",
+  "class": "com.github.catvod.spider.Mp4Mov",
+  "jar": "5fc50e17-5199d8f8bcbe3c6d6938ded33cb90596.png",
+  "jar_sha256": "19ca20400ffa9c32fd31d63ba91b1ac2d9809dabfa7b1288b33fe0bfc98625aa",
+  "evidence": [
+    {
+      "method": "init",
+      "file": "_rea/decompiled/5fc50e17-5199d8f8bcbe3c6d6938ded33cb90596/deobf/com/github/catvod/spider/Mp4Mov.java",
+      "lines": "236-243",
+      "note": "init 收到非空 ext 即整体覆盖基址（不做 http 校验）；手写 Rust 收紧为 ext 首段以 http 或 https 开头才覆盖，否则回退默认主机，与 base.ext=whole 行为一致。"
+    },
+    {
+      "method": "homeContent",
+      "file": "_rea/decompiled/5fc50e17-5199d8f8bcbe3c6d6938ded33cb90596/deobf/com/github/catvod/spider/Mp4Mov.java",
+      "lines": "213-235",
+      "note": "固定 9 个分类（1 动作片、2 科幻片、3 爱情片、4 喜剧片、5 恐怖片、6 战争片、7 剧情片、8 纪录片、9 动画片），声明 static_categories 后不联网直接返回。"
+    },
+    {
+      "method": "categoryContent",
+      "file": "_rea/decompiled/5fc50e17-5199d8f8bcbe3c6d6938ded33cb90596/deobf/com/github/catvod/spider/Mp4Mov.java",
+      "lines": "73-139",
+      "note": "列表 URL 为 base 拼接 /list/cat-page.html；cat 等于 99 时行选择器 div#list_dy ul>li，否则 div#list_all ul>li；id 取行内首个 a[href] 的 href；name 取 h2 文本（list_dy 取 a 文本）后拆书名号；cover 取 img 的 data-original 否则 src 并补全为绝对地址；remark 取 .update_time 否则 .time。v1 没有「取两分隔符之间」原语，用 replace 把右书名号替换为左书名号再 split_on 左书名号加 segment 1 加 tail_non_empty 组合等价实现（标题无完整书名号时取原文，见偏差说明）；行选择器只能给固定顺序列表，无法按 cat 分支，故按 list_dy 优先、list_all 兜底声明。"
+    },
+    {
+      "method": "detailContent",
+      "file": "_rea/decompiled/5fc50e17-5199d8f8bcbe3c6d6938ded33cb90596/deobf/com/github/catvod/spider/Mp4Mov.java",
+      "lines": "140-199",
+      "note": "详情 URL：id 以 http 或 https 开头原样、以斜杠开头拼 base、否则 base 加斜杠再拼 id；标题取 div.article-header h1 否则 h1；封面取 div.pic 内 img 的 src 否则 data-original；面包屑第二个 li 文本含 电视剧 时整组倒序；每个 ul.down-list 只保留 magnet 或 ed2k 链接，条目标题优先取 a 的 title 属性、否则取元素文本、再空则按序号生成 第N集，组名固定为 列表加序号。GroupsHtml 没有 title 属性优先、逐项协议前缀过滤与倒序三种能力，故 detail 回退手写；下列 fields/groups/require 仅作尽力描述。"
+    },
+    {
+      "method": "encrypt",
+      "file": "_rea/decompiled/5fc50e17-5199d8f8bcbe3c6d6938ded33cb90596/deobf/com/github/catvod/spider/Mp4Mov.java",
+      "lines": "200-212",
+      "note": "搜索签名算法：AES-128-ECB/PKCS5Padding 加密明文，再 Base64 NO_WRAP 编码；密钥为 16 字节常量。v1 没有 AES 或 Base64 原语，无法生成该签名。"
+    },
+    {
+      "method": "searchContent",
+      "file": "_rea/decompiled/5fc50e17-5199d8f8bcbe3c6d6938ded33cb90596/deobf/com/github/catvod/spider/Mp4Mov.java",
+      "lines": "36-72",
+      "note": "搜索为 GET base 拼接 /search/，参数 wd 关键词（NON_ALPHANUMERIC 百分号编码）、p 固定 1、t 为前述 encrypt 结果再按 NON_ALPHANUMERIC 编码；行解析复用列表的 div#list_all ul>li 模板。因签名无法表达（token 变量只能声明为空），search 回退手写。"
+    },
+    {
+      "method": "playerContent",
+      "file": "_rea/decompiled/5fc50e17-5199d8f8bcbe3c6d6938ded33cb90596/deobf/com/github/catvod/spider/Mp4Mov.java",
+      "lines": "244-257",
+      "note": "播放为原样直出：url 使用传入地址、parse 0、playUrl 空串；原实现另有 danmaku 与 Proxy 字段，桌面端手写不实现。描述 play 端点用 url 模板加 parse 0 接管；引擎会先去 id 首尾空白、空 id 报错并固定追加 header 键，属已知偏差。"
+    }
+  ],
+  "base": {
+    "default": "https://mp4.z6.net.cn",
+    "ext": "whole"
+  },
+  "vars": [
+    {
+      "name": "token",
+      "literal": ""
+    }
+  ],
+  "headers": {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.54 Safari/537.36",
+    "Referer": "{base}/"
+  },
+  "retries": 1,
+  "endpoints": {
+    "categories": {
+      "static_categories": [
+        {
+          "id": "1",
+          "name": "动作片"
+        },
+        {
+          "id": "2",
+          "name": "科幻片"
+        },
+        {
+          "id": "3",
+          "name": "爱情片"
+        },
+        {
+          "id": "4",
+          "name": "喜剧片"
+        },
+        {
+          "id": "5",
+          "name": "恐怖片"
+        },
+        {
+          "id": "6",
+          "name": "战争片"
+        },
+        {
+          "id": "7",
+          "name": "剧情片"
+        },
+        {
+          "id": "8",
+          "name": "纪录片"
+        },
+        {
+          "id": "9",
+          "name": "动画片"
+        }
+      ]
+    },
+    "list": {
+      "path": "/list/{cat}-{page}.html",
+      "page_min": 1,
+      "rows": [
+        "div#list_dy ul>li",
+        "div#list_all ul>li"
+      ],
+      "fields": {
+        "id": {
+          "sel": [
+            "a[href]"
+          ],
+          "attr": "href"
+        },
+        "name": {
+          "sel": [
+            "h2"
+          ],
+          "replace": {
+            "》": "《"
+          },
+          "split_on": "《",
+          "segment": 1,
+          "tail_non_empty": true,
+          "collapse": true,
+          "trim": true,
+          "fallback": {
+            "sel": [
+              "a[href]"
+            ],
+            "replace": {
+              "》": "《"
+            },
+            "split_on": "《",
+            "segment": 1,
+            "tail_non_empty": true,
+            "collapse": true,
+            "trim": true
+          }
+        },
+        "cover": {
+          "sel": [
+            "img"
+          ],
+          "attr": "data-original",
+          "join_base": true,
+          "fallback": {
+            "sel": [
+              "img"
+            ],
+            "attr": "src",
+            "join_base": true
+          }
+        },
+        "remark": {
+          "sel": [
+            ".update_time"
+          ],
+          "collapse": true,
+          "fallback": {
+            "sel": [
+              ".time"
+            ],
+            "collapse": true
+          }
+        }
+      }
+    },
+    "detail": {
+      "family_fallback": true,
+      "rules": [
+        {
+          "prefixes": [
+            "http://",
+            "https://"
+          ],
+          "url": "{id}"
+        },
+        {
+          "prefixes": [
+            "/"
+          ],
+          "url": "{base}{id}"
+        }
+      ],
+      "path": "/",
+      "segments": [
+        {
+          "template": "{id}"
+        }
+      ],
+      "fields": {
+        "name": {
+          "sel": [
+            "div.article-header h1",
+            "h1"
+          ],
+          "collapse": true,
+          "trim": true
+        },
+        "cover": {
+          "sel": [
+            "div.pic > img",
+            "div.pic img"
+          ],
+          "attr": "src",
+          "join_base": true,
+          "fallback": {
+            "sel": [
+              "div.pic > img",
+              "div.pic img"
+            ],
+            "attr": "data-original",
+            "join_base": true
+          }
+        }
+      },
+      "groups": {
+        "tabs": "div.mp4mov-no-group-title",
+        "lists": "ul.down-list",
+        "item": "a[href^=\"magnet:\"], a[href^=\"ed2k:\"]",
+        "url_attr": "href",
+        "name_fallback": "列表{index}"
+      },
+      "require": [
+        {
+          "target": "name_and_episodes",
+          "error": "详情页缺少标题与下载列表: {id}"
+        }
+      ]
+    },
+    "search": {
+      "family_fallback": true,
+      "path": "/search/",
+      "params": [
+        {
+          "key": "wd",
+          "value": "{kw}",
+          "encode": "alnum"
+        },
+        {
+          "key": "p",
+          "value": "1"
+        },
+        {
+          "key": "t",
+          "value": "{token}",
+          "encode": "alnum"
+        }
+      ],
+      "rows": [
+        "div#list_all ul>li"
+      ],
+      "fields": {
+        "id": {
+          "sel": [
+            "a[href]"
+          ],
+          "attr": "href"
+        },
+        "name": {
+          "sel": [
+            "h2"
+          ],
+          "replace": {
+            "》": "《"
+          },
+          "split_on": "《",
+          "segment": 1,
+          "tail_non_empty": true,
+          "collapse": true,
+          "trim": true,
+          "fallback": {
+            "sel": [
+              "a[href]"
+            ],
+            "replace": {
+              "》": "《"
+            },
+            "split_on": "《",
+            "segment": 1,
+            "tail_non_empty": true,
+            "collapse": true,
+            "trim": true
+          }
+        },
+        "cover": {
+          "sel": [
+            "img"
+          ],
+          "attr": "data-original",
+          "join_base": true,
+          "fallback": {
+            "sel": [
+              "img"
+            ],
+            "attr": "src",
+            "join_base": true
+          }
+        },
+        "remark": {
+          "sel": [
+            ".update_time"
+          ],
+          "collapse": true,
+          "fallback": {
+            "sel": [
+              ".time"
+            ],
+            "collapse": true
+          }
+        }
+      }
+    },
+    "play": {
+      "url": "{id}",
+      "parse": 0
+    }
+  }
+}

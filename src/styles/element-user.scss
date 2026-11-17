@@ -1,0 +1,159 @@
+/* ============================================================
+   Element Plus 用户覆盖层（element-user.scss）
+   - 加载顺序：element-plus 基础样式 → 官方暗色变量 → theme.scss → tokens/base → 本文件（最后）
+   - 只覆盖视觉，不改组件行为；颜色一律引用 token（--accent-* / --text-*），不写死色值
+   - 约定：
+     输入框 / 下拉框背景 = 圆形返回按钮背景 = 主题色 12% 透明（--accent-weak）
+     输入框 / 下拉框无边框（Element Plus 用 inset box-shadow 画边框，这里统一清掉）
+     输入类控件 outline: none（去掉浏览器与 :focus-visible 焦点框）
+     hover / focus 只加强一点背景色，仍然没有边框
+   ============================================================ */
+
+/* ---------------- 1. 输入框 / 下拉框：主题色背景 + 去边框 + outline:none ---------------- */
+
+/* 变量层：让 Element Plus 自身各状态都拿不到边框色，避免 inset box-shadow 再画出来 */
+.el-input,
+.el-textarea,
+.el-input-number,
+.el-autocomplete,
+.el-select {
+  --el-input-bg-color: transparent;
+  --el-input-border-color: transparent;
+  --el-input-hover-border-color: transparent;
+  --el-input-focus-border-color: transparent;
+  --el-input-text-color: var(--text);
+  --el-input-placeholder-color: var(--text-faint);
+  --el-input-icon-color: var(--text-muted);
+  --el-input-clear-hover-color: var(--text);
+  --el-select-border-color-hover: transparent;
+  --el-select-input-focus-border-color: transparent;
+}
+
+/* 控件本体：背景 = 圆形返回按钮的背景色（主题色 12%），无边框、无 outline */
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select__wrapper {
+  background-color: var(--accent-weak);
+  box-shadow: none !important;
+  outline: none !important;
+  transition: background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+/* 任何状态都不再出现边框；hover 保持同一主题色背景 */
+.el-input__wrapper:hover,
+.el-input__wrapper.is-focus,
+.el-input__wrapper.is-focused,
+.el-input.is-focus .el-input__wrapper,
+.el-textarea__inner:hover,
+.el-textarea__inner:focus,
+.el-select__wrapper:hover,
+.el-select__wrapper.is-hovering:not(.is-focused),
+.el-select__wrapper.is-focused,
+.el-select__wrapper.is-focus {
+  box-shadow: none !important;
+  outline: none !important;
+  background-color: var(--accent-weak);
+}
+
+/* 聚焦态：只把主题色背景稍微加强，仍无边框 / 无 outline */
+.el-input__wrapper.is-focus,
+.el-input__wrapper.is-focused,
+.el-input.is-focus .el-input__wrapper,
+.el-textarea__inner:focus,
+.el-select__wrapper.is-focused {
+  background-color: var(--accent-weak-hover);
+}
+
+/* 内部原生输入 / 文本域：透明背景，彻底去掉 outline */
+.el-input__inner,
+.el-textarea__inner,
+.el-select__input,
+.el-select__selected-item,
+.el-input__inner:focus,
+.el-input__inner:focus-visible,
+.el-textarea__inner:focus-visible,
+.el-select__input:focus,
+.el-select__input:focus-visible,
+.el-input__wrapper:focus-visible,
+.el-select__wrapper:focus-visible {
+  background-color: transparent;
+  outline: none !important;
+}
+
+/* 禁用态：更淡的主题色，同样无边框 */
+.el-input.is-disabled .el-input__wrapper,
+.el-textarea.is-disabled .el-textarea__inner,
+.el-input-number.is-disabled .el-input__wrapper,
+.el-select__wrapper.is-disabled,
+.el-select__wrapper.is-disabled:hover,
+.el-select__wrapper.is-disabled.is-focus {
+  background-color: color-mix(in srgb, var(--el-color-primary) 6%, transparent);
+  box-shadow: none !important;
+}
+
+/* 数字输入框的加减按钮：与输入框主题色融合，去掉分隔边框 */
+.el-input-number__decrease,
+.el-input-number__increase {
+  background-color: transparent;
+  border: none;
+  color: var(--text-muted);
+}
+
+.el-input-number__decrease:hover,
+.el-input-number__increase:hover {
+  color: var(--el-color-primary);
+}
+
+/* ---------------- 2. 下拉浮层：同主题色底 + 去边框 ---------------- */
+
+/* 浮层需要不透明底色：主题色 12% 叠加在表面色上，视觉与圆形返回按钮一致 */
+.el-select__popper.el-popper {
+  background-color: color-mix(in srgb, var(--el-color-primary) 12%, var(--el-bg-color));
+  border: none !important;
+}
+
+.el-select__popper.el-popper .el-popper__arrow::before {
+  background-color: color-mix(in srgb, var(--el-color-primary) 12%, var(--el-bg-color));
+  border: none !important;
+}
+
+.el-select__popper .el-select-dropdown__item.is-hovering {
+  background-color: var(--accent-weak-hover);
+}
+
+.el-select__popper .el-select-dropdown__item.is-selected {
+  background-color: var(--accent-weak);
+  color: var(--el-color-primary);
+}
+
+/* 下拉浮层内部的分隔线也一并去掉 */
+.el-select__popper .el-select-dropdown__header,
+.el-select__popper .el-select-dropdown__footer {
+  border-color: transparent;
+}
+
+/* ---------------- 3. success 标签跟随主题主色 ---------------- */
+
+/* 本应用的 success 标签只用于「当前启用 / 当前线路」等状态装饰，不承载固定绿色语义；
+   theme.scss 里每套主题的 --el-color-success 都写成了偏绿色，导致切主题时标签几乎不变。
+   这里统一改用主题主色（--el-color-primary），切换主题即跟随变化。 */
+.el-tag.el-tag--success {
+  --el-tag-text-color: var(--el-color-primary);
+  --el-tag-bg-color: var(--el-color-primary-light-9);
+  --el-tag-border-color: var(--el-color-primary-light-5);
+  --el-tag-hover-color: var(--el-color-primary);
+}
+
+/* plain：白底 + 主题色描边 */
+.el-tag--plain.el-tag--success {
+  --el-tag-bg-color: var(--el-fill-color-blank);
+  --el-tag-border-color: var(--el-color-primary-light-5);
+}
+
+/* dark：实心主题色 */
+.el-tag--dark.el-tag--success {
+  --el-tag-bg-color: var(--el-color-primary);
+  --el-tag-border-color: var(--el-color-primary);
+  --el-tag-hover-color: var(--el-color-primary-light-3);
+  --el-tag-text-color: var(--el-color-white);
+}

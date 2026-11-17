@@ -1,0 +1,334 @@
+{
+  "schema": 1,
+  "api": "csp_Auete",
+  "kind": "html",
+  "class": "com.github.catvod.spider.Auete",
+  "jar": "88c55af0-fan.jar",
+  "jar_sha256": "15608f0242933c60a41f3cdf224bfce0ba086ac505e1e9ce21ac7e7249bd9379",
+  "evidence": [
+    {
+      "method": "homeContent",
+      "file": "_rea/decompiled/88c55af0-fan/deobf/com/github/catvod/spider/Auete.java",
+      "lines": "211-269"
+    },
+    {
+      "method": "detailContent",
+      "file": "_rea/decompiled/88c55af0-fan/deobf/com/github/catvod/spider/Auete.java",
+      "lines": "63-209",
+      "note": "详情 keyword: og:meta 已由描述字段覆盖；但线路名需取最后一个 『』 之后并去尾 ：/:，且需按已知线路表排序（F 在 J 前，未知线路在后稳定）——schema v1 的 GroupsHtml 仅 tabs/lists/item/url_attr/url_strip_prefix/url_join_base/name_fallback，无组名截取与组排序指令；另有 span.detail-label、「关键词: 值」、最后一条 message 文本兜底无法表达。故 detail 写 family_fallback=true 回退手写。"
+    },
+    {
+      "method": "searchContent",
+      "file": "_rea/decompiled/88c55af0-fan/deobf/com/github/catvod/spider/Auete.java",
+      "lines": "295-325"
+    },
+    {
+      "method": "categoryContent",
+      "file": "_rea/tmp/rec-Auete.java",
+      "lines": "55-187",
+      "note": "88c55af0-fan 的 deobf 中 categoryContent 为 stub，使用完整恢复版"
+    },
+    {
+      "method": "playerContent",
+      "file": "_rea/tmp/rec-Auete.java",
+      "lines": "411-465",
+      "note": "播放：必需 GET 播放页→正则 var\\s+now\\s*=\\s*([^;]+); 取值→base64decode 解码（含非 base64 字面量分支）→非 http 且含 m3u8 加 M3U8_CACHE_PREFIX，且结果 header 为空字符串；schema v1 的 PlaySpec 仅 rules/proxy/url/header，无抓页与脚本变量提取指令。故 play 写 family_fallback=true 回退手写。"
+    }
+  ],
+  "base": {
+    "default": "https://www.auete.com",
+    "ext": "whole"
+  },
+  "vars": [],
+  "headers": {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.106 Safari/537.36",
+    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+    "Referer": "{base}/"
+  },
+  "retries": 2,
+  "endpoints": {
+    "categories": {
+      "path": "/",
+      "rows": [
+        "ul.navbar-nav.mr-auto li a"
+      ],
+      "fields": {
+        "id": {
+          "self": true,
+          "attr": "href",
+          "strip_prefix": "/",
+          "strip_suffix": "/index.html",
+          "non_empty": true
+        },
+        "name": {
+          "self": true,
+          "collapse": true,
+          "non_empty": true
+        }
+      },
+      "filters": [
+        {
+          "field": "id",
+          "if_empty": true
+        },
+        {
+          "field": "id",
+          "exclude_contains": "/"
+        },
+        {
+          "field": "name",
+          "if_empty": true
+        }
+      ],
+      "dedupe": true
+    },
+    "list": {
+      "path": "/",
+      "segments": [
+        {
+          "template": "{cat}/",
+          "if_var": "cat"
+        },
+        {
+          "template": "index",
+          "if_var": "cat"
+        },
+        {
+          "template": "{page}",
+          "if_gt": {
+            "var": "page",
+            "value": 1
+          }
+        },
+        {
+          "template": ".html",
+          "if_var": "cat"
+        }
+      ],
+      "rows": [
+        "ul.threadlist li"
+      ],
+      "fields": {
+        "id": {
+          "sel": [
+            "h2 a"
+          ],
+          "attr": "href",
+          "strip_prefix": "/",
+          "strip_suffix": "/",
+          "non_empty": true
+        },
+        "name": {
+          "sel": [
+            "h2 a"
+          ],
+          "attr": "title",
+          "replace": {
+            "迅雷下载": ""
+          },
+          "collapse": true,
+          "non_empty": true,
+          "fallback": {
+            "sel": [
+              "h2 a"
+            ],
+            "replace": {
+              "迅雷下载": ""
+            },
+            "collapse": true,
+            "non_empty": true
+          }
+        },
+        "cover": {
+          "sel": [
+            "a img"
+          ],
+          "attr": "src",
+          "join_base": true,
+          "non_empty": true,
+          "fallback": {
+            "sel": [
+              "a img"
+            ],
+            "attr": "data-src",
+            "join_base": true,
+            "non_empty": true
+          }
+        },
+        "remark": {
+          "sel": [
+            "a button"
+          ],
+          "collapse": true,
+          "non_empty": true,
+          "fallback": {
+            "sel": [
+              "span.hdtag"
+            ],
+            "collapse": true,
+            "non_empty": true
+          }
+        }
+      }
+    },
+    "detail": {
+      "path": "/{id}/",
+      "trim_id": true,
+      "empty_id_error": "详情 id 为空",
+      "fields": {
+        "name": {
+          "sel": [
+            "meta[property=\"og:title\"]"
+          ],
+          "attr": "content",
+          "collapse": true,
+          "non_empty": true
+        },
+        "cover": {
+          "sel": [
+            "meta[property=\"og:image\"]"
+          ],
+          "attr": "content",
+          "join_base": true,
+          "non_empty": true
+        },
+        "desc": {
+          "sel": [
+            "meta[property=\"og:description\"]"
+          ],
+          "attr": "content",
+          "collapse": true,
+          "non_empty": true
+        },
+        "area": {
+          "sel": [
+            "meta[property=\"og:video:area\"]"
+          ],
+          "attr": "content",
+          "collapse": true,
+          "non_empty": true
+        },
+        "director": {
+          "sel": [
+            "meta[property=\"og:video:director\"]"
+          ],
+          "attr": "content",
+          "collapse": true,
+          "non_empty": true
+        },
+        "actor": {
+          "sel": [
+            "meta[property=\"og:video:actor\"]"
+          ],
+          "attr": "content",
+          "collapse": true,
+          "non_empty": true
+        }
+      },
+      "meta_scope": "div.message p",
+      "meta": [
+        {
+          "field": "year",
+          "label": "◎上映年份"
+        }
+      ],
+      "groups": {
+        "tabs": "div.card-header b",
+        "lists": "ul.episode-list",
+        "item": "a",
+        "url_attr": "href"
+      },
+      "require": [
+        {
+          "target": "name",
+          "error": "详情页缺少标题（站点改版或非 Auete 模板？）"
+        }
+      ],
+      "family_fallback": true
+    },
+    "search": {
+      "path": "/auete4so.php",
+      "params": [
+        {
+          "key": "searchword",
+          "value": "{kw}",
+          "encode": "alnum"
+        }
+      ],
+      "rows": [
+        "div.card-body ul li.media"
+      ],
+      "fields": {
+        "id": {
+          "sel": [
+            "div.media-body div.subject a",
+            "div.media-body a"
+          ],
+          "attr": "href",
+          "strip_prefix": "/",
+          "strip_suffix": "/",
+          "non_empty": true
+        },
+        "name": {
+          "sel": [
+            "div.media-body div.subject a span",
+            "div.media-body a"
+          ],
+          "collapse": true,
+          "non_empty": true,
+          "fallback": {
+            "sel": [
+              "div.media-body a"
+            ],
+            "collapse": true,
+            "non_empty": true
+          }
+        },
+        "cover": {
+          "sel": [
+            "img"
+          ],
+          "attr": "src",
+          "join_base": true,
+          "non_empty": true,
+          "fallback": {
+            "sel": [
+              "img"
+            ],
+            "attr": "data-src",
+            "join_base": true,
+            "non_empty": true
+          }
+        },
+        "remark": {
+          "sel": [
+            "div.media-body div.text-muted span"
+          ],
+          "collapse": true,
+          "non_empty": true
+        }
+      },
+      "filters": [
+        {
+          "field": "name",
+          "if_empty": true
+        }
+      ]
+    },
+    "play": {
+      "parse": 0,
+      "jx": true,
+      "rules": [
+        {
+          "prefixes": [
+            "http://",
+            "https://"
+          ],
+          "url": "{id}"
+        }
+      ],
+      "url": "{base}{id}",
+      "family_fallback": true
+    }
+  }
+}

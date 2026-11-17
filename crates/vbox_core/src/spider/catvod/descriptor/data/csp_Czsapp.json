@@ -1,0 +1,276 @@
+{
+  "schema": 1,
+  "api": "csp_Czsapp",
+  "kind": "html",
+  "class": "com.github.catvod.spider.Czsapp",
+  "jar": "0f047745-FxzHm.jar",
+  "jar_sha256": "4399167d2ec514bd99c73b09923711beeb4fbdb947131332fc635e0edb52e9c9",
+  "evidence": [
+    {
+      "method": "homeContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/Czsapp.java",
+      "lines": "495-738",
+      "note": "首页分类：ul.navlist > li > a，跳过「首页」，id 取 href 末段，按 id 去重；手写实现解析为空时报错「首页未解析到分类」，schema v1 的 categories 无空结果报错指令"
+    },
+    {
+      "method": "categoryContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/Czsapp.java",
+      "lines": "204-392",
+      "note": "列表：div.bt_img.mi_ne_kd > ul > li，id 由 href 按基址绝对化，cover 取 img 的 data-original 否则 src（原样不拼基址），remark 取 div.jidi > span"
+    },
+    {
+      "method": "detailContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/Czsapp.java",
+      "lines": "402-493",
+      "note": "详情：h1 标题 / dyimg img 封面 / yp_context 简介；元数据取 moviedteail_list 的 li，导演、主演优先取第 6、8 个 li 的 actor 链接（schema 无 nth-child，用 actor 链接 + first_only/文档顺序近似），其次取「导演：」「主演：」行；paly_list_btn 为单线路，组名固定「厂长资源」，href 用 url_join_base 绝对化"
+    },
+    {
+      "method": "searchContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/Czsapp.java",
+      "lines": "821-957",
+      "note": "搜索：/xsss1O1?q=关键词（URL 编码），关键词先去首尾空白，空白则不发请求直接返回空（trim_keyword）"
+    },
+    {
+      "method": "playerContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/Czsapp.java",
+      "lines": "760-819",
+      "note": "播放：抓播放页（Android UA）后 AES/CBC 解密、iframe url= 参数、result_v2 反转/hex、媒体正则四条分支；schema v1 无抓页/解密管线，本描述以 family_fallback=true 交回手写实现"
+    }
+  ],
+  "base": {
+    "default": "https://www.czzy55.com",
+    "ext": "whole"
+  },
+  "headers": {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36",
+    "Referer": "{base}"
+  },
+  "endpoints": {
+    "categories": {
+      "path": "/",
+      "dedupe": true,
+      "rows": [
+        "ul.navlist > li > a"
+      ],
+      "fields": {
+        "id": {
+          "self": true,
+          "attr": "href",
+          "segment": 99,
+          "tail_non_empty": true,
+          "non_empty": true
+        },
+        "name": {
+          "self": true,
+          "non_empty": true
+        }
+      },
+      "filters": [
+        {
+          "field": "name",
+          "equals": "首页"
+        },
+        {
+          "field": "id",
+          "if_empty": true
+        },
+        {
+          "field": "name",
+          "if_empty": true
+        }
+      ]
+    },
+    "list": {
+      "path": "/",
+      "page_min": 1,
+      "segments": [
+        {
+          "template": "{cat}/page/{page}"
+        }
+      ],
+      "rows": [
+        "div.bt_img.mi_ne_kd > ul > li"
+      ],
+      "fields": {
+        "id": {
+          "sel": [
+            "h3.dytit > a"
+          ],
+          "attr": "href",
+          "join_base": true,
+          "non_empty": true
+        },
+        "name": {
+          "sel": [
+            "h3.dytit > a"
+          ],
+          "non_empty": true
+        },
+        "cover": {
+          "sel": [
+            "img"
+          ],
+          "attr": "data-original",
+          "non_empty": true,
+          "fallback": {
+            "sel": [
+              "img"
+            ],
+            "attr": "src",
+            "non_empty": true
+          }
+        },
+        "remark": {
+          "sel": [
+            "div.jidi > span"
+          ],
+          "non_empty": true
+        }
+      }
+    },
+    "detail": {
+      "path": "/",
+      "segments": [
+        {
+          "template": "{id}"
+        }
+      ],
+      "rules": [
+        {
+          "prefixes": [
+            "http://",
+            "https://"
+          ],
+          "url": "{id}"
+        }
+      ],
+      "trim_id": true,
+      "empty_id_error": "详情 id 为空",
+      "fields": {
+        "name": {
+          "sel": [
+            "div.moviedteail_tt > h1"
+          ],
+          "non_empty": true
+        },
+        "cover": {
+          "sel": [
+            "div.dyimg img"
+          ],
+          "attr": "src",
+          "join_base": true,
+          "non_empty": true
+        },
+        "desc": {
+          "sel": [
+            "div.yp_context"
+          ],
+          "non_empty": true
+        }
+      },
+      "meta_scope": "ul.moviedteail_list > li",
+      "meta": [
+        {
+          "field": "year",
+          "label": "年份"
+        },
+        {
+          "field": "area",
+          "label": "地区"
+        },
+        {
+          "field": "director",
+          "href_contains": "/actor/",
+          "first_only": true
+        },
+        {
+          "field": "actor",
+          "href_contains": "/actor/"
+        },
+        {
+          "field": "director",
+          "label": "导演"
+        },
+        {
+          "field": "actor",
+          "label": "主演"
+        }
+      ],
+      "groups": {
+        "tabs": "div.czsapp-no-tabs",
+        "lists": "div.paly_list_btn",
+        "item": "a",
+        "url_attr": "href",
+        "name_fallback": "厂长资源",
+        "url_join_base": true
+      },
+      "require": [
+        {
+          "target": "name",
+          "error": "详情页未解析到标题"
+        }
+      ]
+    },
+    "search": {
+      "path": "/xsss1O1",
+      "params": [
+        {
+          "key": "q",
+          "value": "{kw}",
+          "encode": "url"
+        }
+      ],
+      "rows": [
+        "div.bt_img.mi_ne_kd > ul > li"
+      ],
+      "fields": {
+        "id": {
+          "sel": [
+            "h3.dytit > a"
+          ],
+          "attr": "href",
+          "join_base": true,
+          "non_empty": true
+        },
+        "name": {
+          "sel": [
+            "h3.dytit > a"
+          ],
+          "non_empty": true
+        },
+        "cover": {
+          "sel": [
+            "img"
+          ],
+          "attr": "data-original",
+          "non_empty": true,
+          "fallback": {
+            "sel": [
+              "img"
+            ],
+            "attr": "src",
+            "non_empty": true
+          }
+        },
+        "remark": {
+          "sel": [
+            "div.jidi > span"
+          ],
+          "non_empty": true
+        }
+      },
+      "trim_keyword": true
+    },
+    "play": {
+      "empty_id_error": "播放 id 为空",
+      "parse": 0,
+      "url": "{id}",
+      "header": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 15; PJZ110 Build/AP3A.240617.008; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/136.0.7103.127 Mobile Safari/537.36",
+        "Referer": "{base}",
+        "Accept-Language": "zh-CN,zh;q=0.9"
+      },
+      "family_fallback": true
+    }
+  }
+}

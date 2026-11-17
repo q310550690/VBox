@@ -1,0 +1,241 @@
+{
+  "schema": 1,
+  "api": "csp_Meijumi",
+  "kind": "html",
+  "class": "com.github.catvod.spider.MeijuMi",
+  "jar": "5fc50e17-5199d8f8bcbe3c6d6938ded33cb90596.png",
+  "jar_sha256": "19ca20400ffa9c32fd31d63ba91b1ac2d9809dabfa7b1288b33fe0bfc98625aa",
+  "evidence": [
+    {
+      "method": "homeContent",
+      "file": "_rea/decompiled/5fc50e17-5199d8f8bcbe3c6d6938ded33cb90596/deobf/com/github/catvod/spider/Meijumi.java",
+      "lines": "133-167",
+      "note": "首页导航：ul.nav-menu a[href]，名称清洗后跳过指定关键词与 script 链接，按 URL 去重；对应 categories 端点。"
+    },
+    {
+      "method": "categoryContent",
+      "file": "_rea/decompiled/5fc50e17-5199d8f8bcbe3c6d6938ded33cb90596/deobf/com/github/catvod/spider/Meijumi.java",
+      "lines": "46-85",
+      "note": "分类列表：div#post_list_box article 行解析，首链 href 为 id，title 属性经 clean_title（去 迅雷下载），img src 加 @Headers= 用户代理后缀；绝对 cat 原样、page 大于 1 时追加 /page/N/ 的预处理无法用 v1 的 url 模板条件表达，故 list 端点回退手写。"
+    },
+    {
+      "method": "detailContent",
+      "file": "_rea/decompiled/5fc50e17-5199d8f8bcbe3c6d6938ded33cb90596/deobf/com/github/catvod/spider/Meijumi.java",
+      "lines": "86-132",
+      "note": "详情：.entry-title 必填；剧集标题由 magnet 的 dn 参数或 ed2k 的 |file| 段经 percent-decode 推导，且仅收 magnet:/ed2k: 链接；GroupsHtml 无逐项过滤与 URL 正则，故 detail 端点回退手写。"
+    },
+    {
+      "method": "searchContent",
+      "file": "_rea/decompiled/5fc50e17-5199d8f8bcbe3c6d6938ded33cb90596/deobf/com/github/catvod/spider/Meijumi.java",
+      "lines": "190-215",
+      "note": "搜索：GET {base}/?s=关键词（NON_ALPHANUMERIC 编码），行选择器 ul.search-page article，字段规则与分类列表一致。"
+    },
+    {
+      "method": "playerContent",
+      "file": "_rea/decompiled/5fc50e17-5199d8f8bcbe3c6d6938ded33cb90596/deobf/com/github/catvod/spider/Meijumi.java",
+      "lines": "168-189"
+    }
+  ],
+  "base": {
+    "default": "https://www.meijumi.net",
+    "ext": "whole"
+  },
+  "vars": [
+    {
+      "name": "ua",
+      "literal": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.54 Safari/537.36"
+    },
+    {
+      "name": "ob",
+      "literal": "{"
+    },
+    {
+      "name": "cb",
+      "literal": "}"
+    }
+  ],
+  "headers": {
+    "User-Agent": "{ua}",
+    "Referer": "{base}/"
+  },
+  "retries": 2,
+  "endpoints": {
+    "categories": {
+      "path": "/",
+      "rows": "ul.nav-menu a[href]",
+      "fields": {
+        "id": {
+          "self": true,
+          "attr": "href",
+          "join_base": true
+        },
+        "name": {
+          "self": true,
+          "collapse": true
+        }
+      },
+      "filters": [
+        {
+          "field": "name",
+          "exclude_contains": "更新"
+        },
+        {
+          "field": "name",
+          "exclude_contains": "推荐"
+        },
+        {
+          "field": "name",
+          "exclude_contains": "首页"
+        },
+        {
+          "field": "name",
+          "exclude_contains": "韩剧"
+        },
+        {
+          "field": "name",
+          "exclude_contains": "即将"
+        },
+        {
+          "field": "id",
+          "exclude_contains": "javascript:"
+        },
+        {
+          "field": "id",
+          "exclude_contains": "mailto:"
+        },
+        {
+          "field": "id",
+          "exclude_contains": "#"
+        }
+      ],
+      "dedupe": true
+    },
+    "list": {
+      "family_fallback": true,
+      "url": "{cat}",
+      "rows": "div#post_list_box article",
+      "fields": {
+        "id": {
+          "sel": "a",
+          "attr": "href",
+          "join_base": true
+        },
+        "name": {
+          "sel": "a",
+          "attr": "title",
+          "replace": {
+            "迅雷下载": ""
+          },
+          "collapse": true,
+          "fallback": {
+            "sel": "a",
+            "collapse": true
+          }
+        },
+        "cover": {
+          "sel": "img",
+          "attr": "src",
+          "join_base": true,
+          "suffix": "@Headers={ob}\"User-Agent\":\"{ua}\"{cb}"
+        },
+        "remark": {
+          "sel": ".gxts",
+          "collapse": true
+        }
+      }
+    },
+    "detail": {
+      "family_fallback": true,
+      "url": "{id}",
+      "trim_id": true,
+      "fields": {
+        "name": {
+          "sel": ".entry-title",
+          "replace": {
+            "迅雷下载": ""
+          },
+          "collapse": true
+        },
+        "cover": {
+          "sel": "div.single-content img",
+          "attr": "src",
+          "join_base": true,
+          "suffix": "@Headers={ob}\"User-Agent\":\"{ua}\"{cb}"
+        }
+      },
+      "require": [
+        {
+          "target": "name",
+          "error": "详情页缺少 .entry-title（站点改版或非美剧迷模板？）"
+        }
+      ]
+    },
+    "search": {
+      "path": "/",
+      "params": [
+        {
+          "key": "s",
+          "value": "{kw}",
+          "encode": "alnum"
+        }
+      ],
+      "rows": "ul.search-page article",
+      "fields": {
+        "id": {
+          "sel": "a",
+          "attr": "href",
+          "join_base": true
+        },
+        "name": {
+          "sel": "a",
+          "attr": "title",
+          "replace": {
+            "迅雷下载": ""
+          },
+          "collapse": true,
+          "fallback": {
+            "sel": "a",
+            "collapse": true
+          }
+        },
+        "cover": {
+          "sel": "img",
+          "attr": "src",
+          "join_base": true,
+          "suffix": "@Headers={ob}\"User-Agent\":\"{ua}\"{cb}"
+        },
+        "remark": {
+          "sel": ".gxts",
+          "collapse": true
+        }
+      }
+    },
+    "play": {
+      "empty_id_error": "csp_Meijumi 播放地址为空",
+      "parse": 1,
+      "header": {
+        "User-Agent": "{ua}"
+      },
+      "rules": [
+        {
+          "prefixes": [
+            "tvbox"
+          ],
+          "url": "{id}",
+          "parse": 0,
+          "jx": true,
+          "header": {}
+        },
+        {
+          "prefixes": [
+            "ed2k"
+          ],
+          "url": "{id}",
+          "parse": 0,
+          "jx": true,
+          "header": {}
+        }
+      ]
+    }
+  }
+}

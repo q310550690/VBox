@@ -1,0 +1,250 @@
+/* ============================================================
+   全局基础样式：只使用 token / 主题变量，禁止写死颜色
+   ============================================================ */
+html,
+body,
+#app,
+* {
+  margin: 0;
+  padding: 0;
+}
+
+/* html / body / #app 必须透明：播放器视频由 libmpv 原生子窗口渲染在 WebView2 下层，
+   只有 WebView 未绘制的区域才能露出视频；窗口底色由 .app-shell 负责（并在播放时挖洞）。
+   index.html 首屏脚本会写 documentElement.style.backgroundColor，这里用 !important 覆盖。 */
+html,
+body,
+#app {
+  background: transparent !important;
+}
+
+body {
+  color: var(--text);
+  font-family: var(--font-family);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+img {
+  max-width: 100%;
+}
+
+/* —— 通用页面容器：所有内容页统一内边距 + 块间距 —— */
+.page {
+  padding: var(--space-4);
+  display: flex;
+  flex-flow: column;
+  gap: var(--space-4);
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  position: sticky;
+  /* top: var(--space-4); */
+  /* 层级：内容页头(40) < 外壳 TitleBar/SideNav(100) < 消息/弹层(2000+) */
+  z-index: 40;
+  /* background: var(--content-bg);
+  margin: calc(var(--space-4) * -1);
+  padding: var(--space-4); */
+}
+
+.page-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.2px;
+}
+
+/* —— 通用文本工具 —— */
+.muted {
+  color: var(--text-muted);
+}
+
+.faint {
+  color: var(--text-faint);
+}
+
+.ellipsis-1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ellipsis-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* —— 通用面板（页面可在 scoped 样式里覆盖） —— */
+.panel {
+  background: var(--surface);
+  /* background: var(--glass-bg); */
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+}
+.panel .el-scrollbar,
+.panel .el-scrollbar__wrap{
+  margin-left: calc(var(--space-3) * -1);
+  margin-right: calc(var(--space-3) * -1);
+  padding-left: var(--space-3);
+  padding-right: var(--space-3);
+}
+
+/* —— 页面切换过渡 —— */
+.route-fade-enter-active,
+.route-fade-leave-active {
+  transition: opacity 0.16s ease;
+}
+
+.route-fade-enter-from,
+.route-fade-leave-to {
+  opacity: 0;
+}
+
+/* ============================================================
+   Element Plus 圆角统一（与项目 token 一一对应，避免割裂感）
+   - 按钮 / 输入框 / 下拉类控件：--radius-md（统一圆角）
+   - 标签：--radius-sm
+   - 弹窗 / 抽屉 / 通知：--radius-lg
+   （is-round / is-circle 等 Element Plus 自身声明保留更高优先级）
+   ============================================================ */
+:root {
+  --el-border-radius-base: var(--radius-md);
+  --el-border-radius-small: var(--radius-sm);
+  --el-border-radius-round: var(--radius-pill);
+}
+
+/* 按钮：与输入框 / 下拉框统一使用 --radius-md；相邻按钮不再自动加左间距（布局统一由 flex gap / 容器间距控制） */
+.el-button {
+  border-radius: var(--radius-md);
+}
+
+.el-button+.el-button {
+  margin-left: 0;
+}
+
+/* 弹窗类底部按钮：改用 gap 控制间距（上面去掉了相邻按钮的 margin） */
+.el-dialog__footer,
+.el-message-box__btns,
+.el-drawer__footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* 输入类控件：输入框 / 文本域 / 选择器 */
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select__wrapper {
+  border-radius: var(--radius-md);
+}
+
+/* 标签 */
+.el-tag {
+  --el-tag-border-radius: var(--radius-sm);
+}
+
+/* 弹窗类：对话框 / 消息框 / 抽屉 / 通知 */
+.el-dialog {
+  --el-dialog-border-radius: var(--radius-lg);
+  border-radius: var(--radius-lg);
+}
+
+.el-message-box {
+  --el-messagebox-border-radius: var(--radius-lg);
+  border-radius: var(--radius-lg);
+}
+
+.el-drawer {
+  border-radius: var(--radius-lg);
+}
+
+.el-notification {
+  border-radius: var(--radius-lg);
+}
+
+/* 浮层：气泡 / 下拉菜单 / 全局消息 */
+.el-popover.el-popper {
+  border-radius: var(--radius-lg);
+}
+
+.el-popper.is-light {
+  border-radius: var(--radius-md);
+}
+
+.el-message {
+  border-radius: var(--radius-md);
+}
+
+/* ============================================================
+   亚克力外壳（Windows 原生 Acrylic 生效时）
+   - 桌面端 window_effect 应用毛玻璃成功后，前端给 <html> 加 .acrylic-on
+   - 外壳（标题栏 / 侧栏 / 外层容器）不再画不透明底色，露出窗口毛玻璃；
+     内容区 .app-content 仍用 --content-bg 不透明，保证正文可读性
+   - 外壳叠一层半透明主题色（--glass-bg），切换主题时跟着变色
+   ============================================================ */
+html.acrylic-on .app-shell,
+html.acrylic-on .app-body {
+  background: transparent;
+}
+html.acrylic-on .app-main,
+html.acrylic-on .titlebar,
+html.acrylic-on .sidebar {
+  background: var(--glass-bg);
+}
+html.acrylic-on.acrylic-on-content .app-content,
+html.acrylic-on.acrylic-on-content .status-tabs
+{
+  background: var(--glass-bg2);
+}
+html.acrylic-on.acrylic-on-content .vod-topbar
+{
+  background: linear-gradient(180deg, var(--glass-bg2) 75%, transparent);
+}
+
+/* ============================================================
+   视频表面接管后的外壳（libmpv 以 --wid 直接渲染在主窗口表面）
+   - 第一次起播后，窗口内容被视频表面接管：半透明亚克力外壳会透出视频表面的黑色，
+     亮色主题下标题栏 / 侧栏会变成深灰（用户反馈的「退出全屏后亚克力变深色」即此现象）；
+   - 此时外壳改用不透明主题色（等同关闭亚克力时的观感），亮/暗主题都保持正确；
+   - player-shell-solid 由 PlayerPane 在首次起播时写到 <html>，重启应用后恢复亚克力。
+   ============================================================ */
+html.player-shell-solid .app-main,
+html.player-shell-solid .titlebar,
+html.player-shell-solid .sidebar {
+  background: var(--shell-bg) !important;
+}
+
+html.player-shell-solid .app-content,
+html.player-shell-solid .status-tabs,
+html.player-shell-solid .vod-topbar {
+  background: var(--content-bg) !important;
+}

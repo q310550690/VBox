@@ -1,0 +1,213 @@
+{
+  "schema": 1,
+  "api": "csp_Libvio",
+  "kind": "html",
+  "class": "com.github.catvod.spider.Libvio",
+  "jar": "88c55af0-fan.jar",
+  "jar_sha256": "15608f0242933c60a41f3cdf224bfce0ba086ac505e1e9ce21ac7e7249bd9379",
+  "evidence": [
+    {
+      "method": "homeContent",
+      "file": "_rea/decompiled/88c55af0-fan/deobf/com/github/catvod/spider/Libvio.java",
+      "lines": "256-316",
+      "note": "导航分类只收 电影/剧集/动漫/日韩剧/欧美剧 五个名称（白名单是集合 OR 语义），且解析空时回退内置 5 项；v1 filters 只能对同一字段逐条 AND，没有集合/OR 与整入口兜底能力。categories 写 family_fallback=true 回退手写。"
+    },
+    {
+      "method": "categoryContent",
+      "file": "_rea/decompiled/88c55af0-fan/deobf/com/github/catvod/spider/Libvio.java",
+      "lines": "57-140",
+      "note": "分类列表：12 段横线连接的 /show 路径（段 0 为 cat、段 8 为 page，page=1 也带全 12 段），行 div.stui-vodlist__box，id 取 detail 链接末段、name 取 title、cover 取 data-original（不补基址）、remark 取 pic-text。list 端点可由描述精确表达并接管（mock 验证了 12 段 URL 与字段值）。"
+    },
+    {
+      "method": "detailContent",
+      "file": "_rea/decompiled/88c55af0-fan/deobf/com/github/catvod/spider/Libvio.java",
+      "lines": "141-255",
+      "note": "三处无法表达：线路名须按 SN 表 17 个显示名白名单过滤（GroupsHtml 无组名过滤）；分集链接须把 /play/a-b-c.html 转成 a-b-c（GroupsHtml 只有 url_strip_prefix 字符串替换，没有去 .html 后缀或正则捕获）；空标题须回退第 n 集（GroupsHtml 的 title 无回退）。另有 meta 限制：fill_meta_html 每个容器块最多命中一个 label 且只认全角冒号，而本家族同一 p.data 块含 地区 与 年份 两个字段。detail 写 family_fallback=true，fields/meta/groups/require 仅作尽力声明。"
+    },
+    {
+      "method": "searchContent",
+      "file": "_rea/decompiled/88c55af0-fan/deobf/com/github/catvod/spider/Libvio.java",
+      "lines": "398-432",
+      "note": "搜索走 /index.php/ajax/suggest 的 JSON 接口，而描述 kind 全局只有 html 或 json 一个口径：四个 HTML 入口与 JSON 搜索无法共存于同一描述；另有 total 大于 0 才取 list、list 可为 JSON 字符串、相对封面补基址等无原语。search 端点整体缺省，分发层按端点缺省即手写回退（等价 family_fallback）。"
+    },
+    {
+      "method": "playerContent",
+      "file": "_rea/decompiled/88c55af0-fan/deobf/com/github/catvod/spider/Libvio.java",
+      "lines": "328-392",
+      "note": "播放须先抓 /play/id.html 解析 var player_ 的 from/url，再按 SN 表的解析前缀拼出解析页抓第二次，从脚本里取 urls 或 vid 直链；PlaySpec 只有规则/代理/URL 模板，没有抓页后提取脚本变量再二次请求的能力。play 写 family_fallback=true，rules/url/header 仅作尽力声明。"
+    },
+    {
+      "method": "init",
+      "file": "_rea/decompiled/88c55af0-fan/deobf/com/github/catvod/spider/Libvio.java",
+      "lines": "317-327",
+      "note": "init 把站点的 ext 直接当基址（原版支持 URL、带 $$$ 的配置文本、JSON 对象三形态），并内嵌 SN 播放源表与过滤表；描述侧 base.ext=whole 已覆盖 URL 形态（mock 与常规站点配置）。"
+    }
+  ],
+  "base": {
+    "default": "https://www.libvio.pw",
+    "ext": "whole"
+  },
+  "vars": [],
+  "headers": {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Accept-Language": "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2",
+    "Referer": "{base}/"
+  },
+  "endpoints": {
+    "categories": {
+      "family_fallback": true,
+      "path": "/",
+      "rows": [
+        "ul.stui-header__menu li a"
+      ],
+      "fields": {
+        "id": {
+          "self": true,
+          "attr": "href",
+          "strip_prefix": "/type/",
+          "strip_suffix": ".html",
+          "non_empty": true
+        },
+        "name": {
+          "self": true,
+          "non_empty": true
+        }
+      },
+      "filters": [
+        {
+          "field": "id",
+          "if_empty": true
+        },
+        {
+          "field": "id",
+          "exclude_contains": "/"
+        }
+      ]
+    },
+    "list": {
+      "path": "/show/{cat}--------{page}---.html",
+      "rows": [
+        "div.stui-vodlist__box"
+      ],
+      "fields": {
+        "id": {
+          "sel": [
+            "a"
+          ],
+          "attr": "href",
+          "strip_suffix": ".html",
+          "split_on": "/",
+          "segment": 99,
+          "tail_non_empty": true,
+          "non_empty": true
+        },
+        "name": {
+          "sel": [
+            "a"
+          ],
+          "attr": "title",
+          "fallback": {
+            "sel": [
+              "a"
+            ],
+            "attr": "title2",
+            "keep_empty": true
+          }
+        },
+        "cover": {
+          "sel": [
+            "a"
+          ],
+          "attr": "data-original",
+          "non_empty": true
+        },
+        "remark": {
+          "sel": [
+            "a .pic-text"
+          ],
+          "non_empty": true
+        }
+      }
+    },
+    "detail": {
+      "family_fallback": true,
+      "path": "/detail/{id}.html",
+      "rules": [
+        {
+          "prefixes": [
+            "http://",
+            "https://"
+          ],
+          "url": "{id}"
+        }
+      ],
+      "fields": {
+        "name": {
+          "sel": [
+            "div.stui-content__detail h1"
+          ],
+          "non_empty": true
+        },
+        "cover": {
+          "sel": [
+            "div.stui-content__thumb a img"
+          ],
+          "attr": "data-original",
+          "join_base": true,
+          "non_empty": true
+        },
+        "desc": {
+          "sel": [
+            "span.detail-content"
+          ],
+          "non_empty": true
+        }
+      },
+      "meta_scope": "p.data",
+      "meta": [
+        {
+          "field": "year",
+          "label": "年份",
+          "cut": " "
+        },
+        {
+          "field": "area",
+          "label": "地区",
+          "cut": " "
+        },
+        {
+          "field": "actor",
+          "label": "主演",
+          "cut": " "
+        },
+        {
+          "field": "director",
+          "label": "导演",
+          "cut": " "
+        }
+      ],
+      "groups": {
+        "tabs": "div.stui-vodlist__head h3",
+        "lists": "ul.stui-content__playlist",
+        "item": "li a",
+        "url_attr": "href"
+      },
+      "require": [
+        {
+          "target": "name_and_episodes",
+          "error": "详情页 {base}/detail/{id}.html 缺少标题与播放线路（站点改版或非 stui 模板）"
+        }
+      ]
+    },
+    "play": {
+      "family_fallback": true,
+      "parse": 0,
+      "url": "{base}/play/{id}.html",
+      "header": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.62 Safari/537.36",
+        "Referer": "{base}"
+      }
+    }
+  }
+}

@@ -1,0 +1,175 @@
+{
+  "schema": 1,
+  "api": "csp_NanGua",
+  "kind": "json",
+  "class": "com.github.catvod.spider.NanGua",
+  "jar": "0f047745-FxzHm.jar",
+  "jar_sha256": "4399167d2ec514bd99c73b09923711beeb4fbdb947131332fc635e0edb52e9c9",
+  "evidence": [
+    {
+      "method": "homeContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/NanGua.java",
+      "lines": "316-325",
+      "note": "固定 5 分类（1 电影/2 电视剧/3 综艺/4 动漫/46 外剧），不联网；描述用 categories.static_categories 表达"
+    },
+    {
+      "method": "categoryContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/NanGua.java",
+      "lines": "58-176",
+      "note": "GET /api.php/provide/vod_list?id={cat}&page={page}，App 指纹参数 + timeMillis/sign 头；data.list 的 id/name/img/msg 字段映射"
+    },
+    {
+      "method": "detailContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/NanGua.java",
+      "lines": "189-309",
+      "note": "GET /api.php/provide/vod_detail?id={id}；player_info[].show 线路名、video_info[].name/url[0]；标题与线路都空时报 parse"
+    },
+    {
+      "method": "searchContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/NanGua.java",
+      "lines": "508-592",
+      "note": "GET /api.php/provide/search_result?video_name={kw:alnum}；video_name 去 <em> 标签，qingxidu→remark"
+    },
+    {
+      "method": "playerContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/NanGua.java",
+      "lines": "478-506",
+      "note": "对分集地址二次 GET（相对地址先补基址），取 data.url 与 data.header；data.url 空时报 parse"
+    }
+  ],
+  "base": {
+    "default": "http://ys.changmengyun.com",
+    "ext": "token"
+  },
+  "vars": [
+    { "name": "imei", "literal": "131251157296170" },
+    { "name": "ts", "apply": "unix_ts" },
+    { "name": "salt", "literal": "#uBFszdEM0oL0JRn@" },
+    { "name": "sign", "apply": "md5_hex", "template": "{imei}{salt}{ts}" }
+  ],
+  "headers": {
+    "version_name": "1.0.9",
+    "version_code": "9",
+    "user-agent": "okhttp/3.12.0",
+    "timeMillis": "{ts}",
+    "sign": "{sign}"
+  },
+  "json_error": "南瓜影视响应不是合法 JSON（{url}）：{error}",
+  "endpoints": {
+    "categories": {
+      "static_categories": [
+        { "id": "1", "name": "电影" },
+        { "id": "2", "name": "电视剧" },
+        { "id": "3", "name": "综艺" },
+        { "id": "4", "name": "动漫" },
+        { "id": "46", "name": "外剧" }
+      ]
+    },
+    "list": {
+      "path": "/api.php/provide/vod_list",
+      "page_min": 1,
+      "params": [
+        { "key": "appVersionName", "value": "1.0.9" },
+        { "key": "imei", "value": "{imei}" },
+        { "key": "time", "value": "{ts}" },
+        { "key": "id", "value": "{cat}" },
+        { "key": "page", "value": "{page}" },
+        { "key": "deviceScreen", "value": "2340*1080" },
+        { "key": "appVersionCode", "value": "9" },
+        { "key": "deviceModel", "value": "Pixel 4" },
+        { "key": "app", "value": "ylys" },
+        { "key": "deviceBrand", "value": "google" },
+        { "key": "devices", "value": "android" },
+        { "key": "deviceVersion", "value": "13" }
+      ],
+      "rows": ["data.list[]"],
+      "fields": {
+        "id": { "path": "id" },
+        "name": { "path": "name", "trim": true, "keep_empty": true },
+        "cover": { "path": "img" },
+        "remark": { "path": "msg", "trim": true, "non_empty": true }
+      }
+    },
+    "detail": {
+      "path": "/api.php/provide/vod_detail",
+      "params": [
+        { "key": "appVersionName", "value": "1.0.9" },
+        { "key": "imei", "value": "{imei}" },
+        { "key": "time", "value": "{ts}" },
+        { "key": "id", "value": "{id}" },
+        { "key": "deviceScreen", "value": "2340*1080" },
+        { "key": "appVersionCode", "value": "9" },
+        { "key": "deviceModel", "value": "Pixel 4" },
+        { "key": "app", "value": "ylys" },
+        { "key": "deviceBrand", "value": "google" },
+        { "key": "devices", "value": "android" },
+        { "key": "deviceVersion", "value": "13" }
+      ],
+      "root": "data",
+      "fields": {
+        "name": { "path": "name", "trim": true },
+        "cover": { "path": "img" },
+        "year": { "path": "year", "trim": true, "non_empty": true }
+      },
+      "desc_parts": [ { "from": "info" } ],
+      "groups": {
+        "rows": ["player_info[]"],
+        "name": "show",
+        "name_fallback": "线路{index}",
+        "items": "video_info[]",
+        "title": "name",
+        "url": "url[]"
+      },
+      "require": [
+        {
+          "target": "name_and_episodes",
+          "error": "南瓜影视详情页既无标题也无播放线路（接口改版？）"
+        }
+      ]
+    },
+    "search": {
+      "path": "/api.php/provide/search_result",
+      "params": [
+        { "key": "appVersionName", "value": "1.0.9" },
+        { "key": "imei", "value": "{imei}" },
+        { "key": "time", "value": "{ts}" },
+        { "key": "video_name", "value": "{kw}", "encode": "alnum" },
+        { "key": "deviceScreen", "value": "2340*1080" },
+        { "key": "appVersionCode", "value": "9" },
+        { "key": "deviceModel", "value": "Pixel 4" },
+        { "key": "app", "value": "ylys" },
+        { "key": "deviceBrand", "value": "google" },
+        { "key": "devices", "value": "android" },
+        { "key": "deviceVersion", "value": "13" }
+      ],
+      "rows": ["list[]"],
+      "fields": {
+        "id": { "path": "id" },
+        "name": {
+          "path": "video_name",
+          "trim": true,
+          "replace": { "<em>": "", "</em>": "" },
+          "fallback": {
+            "path": "name",
+            "trim": true,
+            "replace": { "<em>": "", "</em>": "" }
+          }
+        },
+        "cover": { "path": "img" },
+        "remark": { "path": "qingxidu", "trim": true, "non_empty": true }
+      }
+    },
+    "play": {
+      "parse": 0,
+      "proxy": {
+        "url": "{id}",
+        "extract": "data.url",
+        "header": {
+          "User-Agent": "okhttp/3.12.0",
+          "Referer": "http://ys.changmengyun.com/"
+        },
+        "error": "南瓜影视播放接口没有 data.url（{id}）"
+      }
+    }
+  }
+}

@@ -1,0 +1,276 @@
+{
+  "schema": 1,
+  "api": "csp_Dm84",
+  "kind": "html",
+  "class": "com.github.catvod.spider.Dm84",
+  "jar": "0f047745-FxzHm.jar",
+  "jar_sha256": "4399167d2ec514bd99c73b09923711beeb4fbdb947131332fc635e0edb52e9c9",
+  "evidence": [
+    {
+      "method": "homeContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/Dm84.java",
+      "lines": "134-199",
+      "note": "分类 = ul.nav_row > li > a 中 href 以 /list 开头的项；id 取 href 去掉 /list- 前缀与 .html 后缀。原类分类名 substring(0,2)，手写实现已改为取完整文本（站点改版），描述与手写一致（mock 断言 国漫/欧美动漫/电影）。首页同请求还返回 div.item 最新列表与筛选页，VBox Site 模型无筛选承载位，categories 只声明分类行。"
+    },
+    {
+      "method": "categoryContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/Dm84.java",
+      "lines": "52-69",
+      "note": "原类模板 /show-%s--%s-%s--%s-%s.html（by=time，type/year 来自筛选参数）实测 404；手写实现改用站点当前真实路由 /show-{id}------{page}.html，描述照此落地：path=/show- + segments cat/------/page(if_gt 1)/.html。行解析同 div.item。"
+    },
+    {
+      "method": "detailContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/Dm84.java",
+      "lines": "86-128",
+      "note": "h1.v_title 标题、og:* meta（image/description/area/actor/director/release_date/class）；线路名 ul.tab_control > li 与 ul.play_list 按序配对。原类用 文本$href、#、$$$ 拼字符串，引擎 GroupsHtml 直接产出模型；name_fallback=线路{index} 对齐手写空线路名兜底。require name_and_episodes 对齐手写『标题与线路同时为空才报错』。og:video:class 在原类仅作标签，不映射 VBox 字段。"
+    },
+    {
+      "method": "playerContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/Dm84.java",
+      "lines": "206-217",
+      "note": "播放需抓播放页取 iframe[src]，再补页面请求头 UA/Accept + 结果头 Referer={base}/。schema v1 的 PlaySpec 只有 rules/proxy/url/header，proxy 只解析 JSON，无『抓 HTML + CSS 提取』原语，故 play 写 family_fallback=true 回退手写实现。"
+    },
+    {
+      "method": "searchContent",
+      "file": "_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/spider/Dm84.java",
+      "lines": "219-227",
+      "note": "搜索 /s----------.html?wd={kw}；关键词由 params.encode=alnum（NON_ALPHANUMERIC）编码，与手写 percent_encoding 口径一致（原 Java URLEncoder 会把空格编成 +，手写定为 %20）。行解析同 categoryContent。"
+    }
+  ],
+  "base": {
+    "default": "https://dm84.tv",
+    "ext": "whole"
+  },
+  "headers": {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
+  },
+  "endpoints": {
+    "categories": {
+      "path": "/",
+      "rows": [
+        "ul.nav_row > li > a"
+      ],
+      "fields": {
+        "id": {
+          "self": true,
+          "attr": "href",
+          "strip_prefix": "/list-",
+          "strip_suffix": ".html",
+          "non_empty": true
+        },
+        "name": {
+          "self": true,
+          "trim": true,
+          "non_empty": true
+        }
+      },
+      "filters": [
+        {
+          "field": "id",
+          "equals": "/"
+        },
+        {
+          "field": "id",
+          "if_empty": true
+        },
+        {
+          "field": "name",
+          "if_empty": true
+        }
+      ],
+      "dedupe": true
+    },
+    "list": {
+      "path": "/show-",
+      "segments": [
+        {
+          "template": "{cat}"
+        },
+        {
+          "template": "------"
+        },
+        {
+          "template": "{page}",
+          "if_gt": {
+            "var": "page",
+            "value": 1
+          }
+        },
+        {
+          "template": ".html"
+        }
+      ],
+      "rows": [
+        "div.item"
+      ],
+      "fields": {
+        "id": {
+          "sel": [
+            "a.title"
+          ],
+          "attr": "href",
+          "split_on": "/",
+          "segment": 2,
+          "non_empty": true
+        },
+        "name": {
+          "sel": [
+            "a.title"
+          ],
+          "trim": true,
+          "non_empty": true
+        },
+        "cover": {
+          "sel": [
+            "a.cover"
+          ],
+          "attr": "data-bg",
+          "join_base": true,
+          "non_empty": true
+        },
+        "remark": {
+          "sel": [
+            "span.desc"
+          ],
+          "trim": true,
+          "non_empty": true
+        }
+      }
+    },
+    "detail": {
+      "path": "/v/{id}",
+      "rules": [
+        {
+          "prefixes": [
+            "http://",
+            "https://"
+          ],
+          "url": "{id}"
+        },
+        {
+          "prefixes": [
+            "/v/"
+          ],
+          "url": "{base}{id}"
+        }
+      ],
+      "fields": {
+        "name": {
+          "sel": [
+            "h1.v_title"
+          ],
+          "trim": true
+        },
+        "cover": {
+          "sel": [
+            "meta[property=\"og:image\"]"
+          ],
+          "attr": "content",
+          "join_base": true,
+          "non_empty": true
+        },
+        "desc": {
+          "sel": [
+            "meta[property=\"og:description\"]"
+          ],
+          "attr": "content",
+          "trim": true,
+          "non_empty": true
+        },
+        "year": {
+          "sel": [
+            "meta[name=\"og:video:release_date\"]"
+          ],
+          "attr": "content",
+          "non_empty": true
+        },
+        "area": {
+          "sel": [
+            "meta[name=\"og:video:area\"]"
+          ],
+          "attr": "content",
+          "non_empty": true
+        },
+        "director": {
+          "sel": [
+            "meta[name=\"og:video:director\"]"
+          ],
+          "attr": "content",
+          "non_empty": true
+        },
+        "actor": {
+          "sel": [
+            "meta[name=\"og:video:actor\"]"
+          ],
+          "attr": "content",
+          "trim": true,
+          "non_empty": true
+        }
+      },
+      "groups": {
+        "tabs": "ul.tab_control > li",
+        "lists": "ul.play_list",
+        "item": "a",
+        "url_attr": "href",
+        "name_fallback": "线路{index}"
+      },
+      "require": [
+        {
+          "target": "name_and_episodes",
+          "error": "详情页缺少标题与播放线路（站点改版或非 Dm84 模板？）id={id}"
+        }
+      ]
+    },
+    "search": {
+      "path": "/s----------.html",
+      "params": [
+        {
+          "key": "wd",
+          "value": "{kw}",
+          "encode": "alnum"
+        }
+      ],
+      "rows": [
+        "div.item"
+      ],
+      "fields": {
+        "id": {
+          "sel": [
+            "a.title"
+          ],
+          "attr": "href",
+          "split_on": "/",
+          "segment": 2,
+          "non_empty": true
+        },
+        "name": {
+          "sel": [
+            "a.title"
+          ],
+          "trim": true,
+          "non_empty": true
+        },
+        "cover": {
+          "sel": [
+            "a.cover"
+          ],
+          "attr": "data-bg",
+          "join_base": true,
+          "non_empty": true
+        },
+        "remark": {
+          "sel": [
+            "span.desc"
+          ],
+          "trim": true,
+          "non_empty": true
+        }
+      }
+    },
+    "play": {
+      "family_fallback": true,
+      "url": "{id}"
+    }
+  }
+}

@@ -1,0 +1,61 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Rust / Cargo 构建产物（编译缓存、可执行文件、调试符号；不要进版本库）
+target/
+**/target/
+
+# 本地播放器运行库（体积大，用 scripts/fetch-libmpv.ps1 获取）
+src-tauri/resources/libmpv-2.dll
+
+# 本地工具 / 下载缓存
+.tools/
+
+
+# Bundled FFmpeg (large; fetch with scripts/fetch-ffmpeg.ps1)
+src-tauri/resources/ffmpeg/ffmpeg.exe
+
+src-tauri/resources/python/*
+!src-tauri/resources/python/README.txt
+src-tauri/resources/node/*
+!src-tauri/resources/node/README.txt
+src-tauri/tauri.build.conf.json
+
+# IDE workspace
+.openidea/
+
+# 代码签名 / 自动更新私钥（绝不入库；详见 docs/发布与自动更新.md）
+*.pfx
+*.p12
+vbox-updater.key
+
+# macOS bundled libmpv
+src-tauri/resources/libmpv.dylib
+
+# REA 本地证据/环境记录（P0-1 起；不入库）
+_rea/
+
+# 文档已迁移到私有仓库 VBox-docs（本地通过目录联接 docs -> ../VBox-docs 访问）
+/docs/

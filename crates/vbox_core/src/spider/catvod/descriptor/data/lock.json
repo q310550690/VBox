@@ -1,0 +1,111 @@
+{
+  "schema": 1,
+  "note": "由 _rea/tools/diff-descriptor.mjs --write-lock 生成；jar 指纹变化即待审差分",
+  "entries": {
+    "csp_AppYsV2": {
+      "jar": "ddaf13d7-0206.jpg",
+      "jarSha256": "253450a7500979f6bbe9b4a5cf19aadb8bd372845db1c3d629ea3fd2293154e1",
+      "descriptorSha256": "d7d6f198f8aca1c4eeca97a8610035aae1f6abd8a24624e70d49b94c9ce68649"
+    },
+    "csp_Auete": {
+      "jar": "88c55af0-fan.jar",
+      "jarSha256": "15608f0242933c60a41f3cdf224bfce0ba086ac505e1e9ce21ac7e7249bd9379",
+      "descriptorSha256": "f4900e8367adb9fc48add1dd8beef3a70cabb9f13016485f0636dab4117b0de4"
+    },
+    "csp_Bttwoo": {
+      "jar": "88c55af0-fan.jar",
+      "jarSha256": "15608f0242933c60a41f3cdf224bfce0ba086ac505e1e9ce21ac7e7249bd9379",
+      "descriptorSha256": "9c51d943448a420a4f6fae422c7e2af1a86ccb5c3856fb011fd692275bfae3c2"
+    },
+    "csp_Czsapp": {
+      "jar": "0f047745-FxzHm.jar",
+      "jarSha256": "4399167d2ec514bd99c73b09923711beeb4fbdb947131332fc635e0edb52e9c9",
+      "descriptorSha256": "a33e9c744d3fe5873f5f9e6ad44e1253f70b6c1b322441ff2678d060a94b7b3b"
+    },
+    "csp_Ddrk": {
+      "jar": "ddaf13d7-0206.jpg",
+      "jarSha256": "253450a7500979f6bbe9b4a5cf19aadb8bd372845db1c3d629ea3fd2293154e1",
+      "descriptorSha256": "13357b4d5fe140f7dcefd2f639de5eb40d480602f26da2f8ed82dc1dea90fe93"
+    },
+    "csp_Dm84": {
+      "jar": "0f047745-FxzHm.jar",
+      "jarSha256": "4399167d2ec514bd99c73b09923711beeb4fbdb947131332fc635e0edb52e9c9",
+      "descriptorSha256": "df8ae0cc251f6cd748a1eca77fbb49ece801a10a904333c350fecd69c3ea02ed"
+    },
+    "csp_Duanju": {
+      "jar": "0f047745-FxzHm.jar",
+      "jarSha256": "4399167d2ec514bd99c73b09923711beeb4fbdb947131332fc635e0edb52e9c9",
+      "descriptorSha256": "c939fa82225ce61ddb75dd201cd3004ae318a0d54bfdc3000d14f7dd48bde5c6"
+    },
+    "csp_FirstAid": {
+      "jar": "0f047745-FxzHm.jar",
+      "jarSha256": "4399167d2ec514bd99c73b09923711beeb4fbdb947131332fc635e0edb52e9c9",
+      "descriptorSha256": "1416d5280045207a4fc637ac4c3e9ed9b2abbde0af52c0077829c8eacb13710a"
+    },
+    "csp_Jianpian": {
+      "jar": "0f047745-FxzHm.jar",
+      "jarSha256": "4399167d2ec514bd99c73b09923711beeb4fbdb947131332fc635e0edb52e9c9",
+      "descriptorSha256": "838a48437d3af63da7118c293ce01a6fb6080e5c8f6033dae581730e3aed36d8"
+    },
+    "csp_Kanqiu": {
+      "jar": "5d982c72-阿里.jar",
+      "jarSha256": "bcf8bddc08de3f36d59b9cdf242081e854fd0f922338c10b5292e8a8cd423c71",
+      "descriptorSha256": "0de0f4f4c109a601c1a30f4039467e97ac97213bc1f0a94647c09074ad48245e"
+    },
+    "csp_Libvio": {
+      "jar": "88c55af0-fan.jar",
+      "jarSha256": "15608f0242933c60a41f3cdf224bfce0ba086ac505e1e9ce21ac7e7249bd9379",
+      "descriptorSha256": "7269974ec1857b6faf7900807db79423cf0d33341aa41229d3c19f2da913227e"
+    },
+    "csp_Meijumi": {
+      "jar": "5fc50e17-5199d8f8bcbe3c6d6938ded33cb90596.png",
+      "jarSha256": "19ca20400ffa9c32fd31d63ba91b1ac2d9809dabfa7b1288b33fe0bfc98625aa",
+      "descriptorSha256": "0cfb9d2c30adf351800b491a0c3f86043f6dcf5d324977cc3d04ce553caccaac"
+    },
+    "csp_Mp4Mov": {
+      "jar": "5fc50e17-5199d8f8bcbe3c6d6938ded33cb90596.png",
+      "jarSha256": "19ca20400ffa9c32fd31d63ba91b1ac2d9809dabfa7b1288b33fe0bfc98625aa",
+      "descriptorSha256": "170b736895b08c9851cb50ab86ff2b5fc3c2cc01836584798ae03ad27aec4190"
+    },
+    "csp_NanGua": {
+      "jar": "0f047745-FxzHm.jar",
+      "jarSha256": "4399167d2ec514bd99c73b09923711beeb4fbdb947131332fc635e0edb52e9c9",
+      "descriptorSha256": "87fb780c7ffa86848a396667d1ef7c377e7f791083e570c6f6b66069bda0dec5"
+    },
+    "csp_SixV": {
+      "jar": "69dadb9a-Yoursmile.jar",
+      "jarSha256": "cc3b06eb7b265eb7efbceac31da8d46381099e65e0e5f4becfe62d06c42f36e5",
+      "descriptorSha256": "ae03e382bb098300b1e53af43937c4f3953dc49e77d4360b10988d08230a8dcd"
+    },
+    "csp_TTian": {
+      "jar": "0f047745-FxzHm.jar",
+      "jarSha256": "4399167d2ec514bd99c73b09923711beeb4fbdb947131332fc635e0edb52e9c9",
+      "descriptorSha256": "577e5ffc61e33463c4dab4f0f2efa5c43449ad39ae80ec47c8d2d3e644b61556"
+    },
+    "csp_Tangrenjie": {
+      "jar": "ddaf13d7-0206.jpg",
+      "jarSha256": "253450a7500979f6bbe9b4a5cf19aadb8bd372845db1c3d629ea3fd2293154e1",
+      "descriptorSha256": "3cc14a8474ce6e34ffbe1fbdf2bad69278aa4cf35d09aa46fd5dc4cbc4a9bc8f"
+    },
+    "csp_Xb6v": {
+      "jar": "41c87635-custom_spider.jar",
+      "jarSha256": "646c5449e06bceea84eac4f42341a887187c4f09cfcb038820418719a898669f",
+      "descriptorSha256": "2ff5dc7093756f1789fa24098a6fa65516c07ff6e7796072e4fc7366a80751fb"
+    },
+    "csp_Kkys": {
+      "jar": "69dadb9a-Yoursmile.jar",
+      "jarSha256": "cc3b06eb7b265eb7efbceac31da8d46381099e65e0e5f4becfe62d06c42f36e5",
+      "descriptorSha256": "49b732c13368c360ff345ffeadeee9e5292d7fde202a82bda3933aea8b90c24b"
+    },
+    "csp_LiteApple": {
+      "jar": "5fc50e17-5199d8f8bcbe3c6d6938ded33cb90596.png",
+      "jarSha256": "19ca20400ffa9c32fd31d63ba91b1ac2d9809dabfa7b1288b33fe0bfc98625aa",
+      "descriptorSha256": "018cb52e362aa573f4f67eef1b6e5ac945aea293b0d92853eec02585832fabd2"
+    },
+    "csp_Ysj": {
+      "jar": "dffec63f-pg.jar",
+      "jarSha256": "0e622ce7b053bedfd476705c2883b608344117c6beac9b3e0dfbea3868c17e2b",
+      "descriptorSha256": "29d4bd44acac945daf42772fda56d5844f689669aaab581aa8f90187f711577a"
+    }
+  }
+}

@@ -1,0 +1,211 @@
+{
+  "schema": 1,
+  "api": "csp_Bttwoo",
+  "kind": "html",
+  "class": "com.github.catvod.spider.Bttwoo",
+  "jar": "88c55af0-fan.jar",
+  "jar_sha256": "15608f0242933c60a41f3cdf224bfce0ba086ac505e1e9ce21ac7e7249bd9379",
+  "evidence": [
+    {
+      "method": "homeContent",
+      "file": "_rea/decompiled/88c55af0-fan/deobf/com/github/catvod/spider/Bttwoo.java",
+      "lines": "258-323",
+      "note": "首页带出导航：ul.navlist > li.menu-item-type-custom > a，name 取锚点文本，id 取 href 去掉站点前缀后的首段，空分类报 Parse。原版 ext 可能是带 $$$ 分隔的多段配置，base.ext=token 覆盖纯 URL 形态，与手写遍历片段取首个 http 段的行为一致。categories 由描述接管（同一请求即首页）。"
+    },
+    {
+      "method": "categoryContent",
+      "file": "_rea/decompiled/88c55af0-fan/deobf/com/github/catvod/spider/Bttwoo.java",
+      "lines": "36-99",
+      "note": "分类页：路径 /cat/page/n，行 div.bt_img > ul > li，id 取 movie 或 v_play 链接末段，name 取标题锚点，cover 取 data-original 回退 src 并补基址，remark 取 div.jidi > span；翻页 a.extend 取最后一个数字为 pageCount，空条目且 pageCount 为 0 时报 Parse。描述层 list 没有 pageCount/limit 输出，且空行集合返回空结果而非报错（验收要求空分类页报 catvod.result.parse），因此 list 写 family_fallback=true，rows/fields 仅作尽力声明。"
+    },
+    {
+      "method": "detailContent",
+      "file": "_rea/decompiled/88c55af0-fan/deobf/com/github/catvod/spider/Bttwoo.java",
+      "lines": "101-256",
+      "note": "详情字段可表达（标题、封面、meta description 回退信息列表、每条 li 一个标签的年份/地区/导演/主演），但分集 URL 必须把 /v_play/7-1-2.html 双向裁剪成 7-1-2，GroupsHtml 只有 url_strip_prefix 的字符串替换，没有去后缀或正则捕获；线路名与播放列表按索引配对且越界复用最后一组、空标题回退第 n 集也无原语。detail 写 family_fallback=true，fields/meta/groups/require 仅作尽力声明。"
+    },
+    {
+      "method": "searchContent",
+      "file": "_rea/decompiled/88c55af0-fan/deobf/com/github/catvod/spider/Bttwoo.java",
+      "lines": "352-385",
+      "note": "搜索走 /xssearch?q=&f=_all&p=1（GET），关键词 URLEncoder 编码；响应含「没有找到您想要的结果」时返回空；行 div.mi_ne_kd > ul > li，id 取 movie/v_play 链接末段，name 取 img alt 回退锚点文本，remark 取 div.jidi > span。search 由描述接管。"
+    },
+    {
+      "method": "playerContent",
+      "file": "_rea/decompiled/88c55af0-fan/deobf/com/github/catvod/spider/Bttwoo.java",
+      "lines": "325-350",
+      "note": "播放必须抓 /v_play/id.html，用三段正则取 dncry 密文与 key/iv，Base64 后 AES-CBC 解密，再从明文正则取 url 直链；PlaySpec 只有分支规则、代理与 URL 模板，没有抓页、正则与解密原语，且手写结果键为 palyUrl。play 写 family_fallback=true，parse/url/header 仅作尽力声明。"
+    },
+    {
+      "method": "yq",
+      "file": "_rea/decompiled/88c55af0-fan/deobf/com/github/catvod/spider/Bttwoo.java",
+      "lines": "387-394",
+      "note": "请求头 helper：默认入口发桌面 UA 加当前请求 URL 作 Referer，搜索另用 Mac UA 并固定站点首页 Referer；描述 headers 是全局单组，无法按入口区分，故搜索请求也会带默认 UA（mock 不校验请求头，不影响验收）。"
+    }
+  ],
+  "base": {
+    "default": "https://www.bttwo.net",
+    "ext": "token"
+  },
+  "vars": [],
+  "headers": {
+    "User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36",
+    "Accept": "*/*",
+    "Referer": "{base}/"
+  },
+  "endpoints": {
+    "categories": {
+      "path": "/",
+      "rows": ["ul.navlist > li.menu-item-type-custom > a"],
+      "fields": {
+        "id": {
+          "self": true,
+          "attr": "href",
+          "split_on": "/",
+          "segment": 1,
+          "tail_non_empty": true,
+          "non_empty": true
+        },
+        "name": {
+          "self": true,
+          "non_empty": true
+        }
+      }
+    },
+    "list": {
+      "family_fallback": true,
+      "path": "/{cat}/page/{page}",
+      "rows": ["div.bt_img > ul > li"],
+      "fields": {
+        "id": {
+          "sel": ["h3.dytit > a"],
+          "attr": "href",
+          "replace": {".html": ""},
+          "segment": 99,
+          "tail_non_empty": true,
+          "non_empty": true
+        },
+        "name": {
+          "sel": ["h3.dytit > a"],
+          "non_empty": true
+        },
+        "cover": {
+          "sel": ["a > img"],
+          "attr": "data-original",
+          "join_base": true,
+          "non_empty": true,
+          "fallback": {
+            "sel": ["a > img"],
+            "attr": "src",
+            "join_base": true
+          }
+        },
+        "remark": {
+          "sel": ["div.jidi > span"],
+          "non_empty": true
+        }
+      }
+    },
+    "detail": {
+      "family_fallback": true,
+      "path": "/movie/{id}.html",
+      "fields": {
+        "name": {
+          "sel": ["div.moviedteail_tt > h1"],
+          "non_empty": true
+        },
+        "cover": {
+          "sel": ["div.dyimg > img"],
+          "attr": "src",
+          "join_base": true,
+          "non_empty": true,
+          "fallback": {
+            "sel": ["div.dyimg > img"],
+            "attr": "data-original",
+            "join_base": true
+          }
+        },
+        "desc": {
+          "sel": ["meta[name=description]"],
+          "attr": "content",
+          "non_empty": true,
+          "fallback": {
+            "sel": ["div.moviedteail_list"],
+            "non_empty": true
+          }
+        }
+      },
+      "meta_scope": "ul.moviedteail_list > li",
+      "meta": [
+        {"field": "year", "label": "年份", "cut": " "},
+        {"field": "area", "label": "地区", "cut": " "},
+        {"field": "director", "label": "导演", "cut": " "},
+        {"field": "actor", "label": "主演", "cut": " "}
+      ],
+      "groups": {
+        "tabs": "div.mi_paly_box > div > div.ypxingq_t",
+        "lists": "div.paly_list_btn",
+        "item": "a",
+        "url_strip_prefix": "/v_play/"
+      },
+      "require": [
+        {
+          "target": "name_and_episodes",
+          "error": "BT之家详情页缺少标题与播放线路：{id}"
+        }
+      ]
+    },
+    "search": {
+      "path": "/xssearch",
+      "params": [
+        {"key": "q", "value": "{kw}", "encode": "alnum"},
+        {"key": "f", "value": "_all"},
+        {"key": "p", "value": "1"}
+      ],
+      "rows": ["div.mi_ne_kd > ul > li"],
+      "fields": {
+        "id": {
+          "sel": ["a"],
+          "attr": "href",
+          "replace": {".html": ""},
+          "segment": 99,
+          "tail_non_empty": true,
+          "non_empty": true
+        },
+        "name": {
+          "sel": ["img"],
+          "attr": "alt",
+          "non_empty": true,
+          "fallback": {
+            "sel": ["a"],
+            "non_empty": true
+          }
+        },
+        "cover": {
+          "sel": ["img"],
+          "attr": "data-original",
+          "join_base": true,
+          "non_empty": true,
+          "fallback": {
+            "sel": ["img"],
+            "attr": "src",
+            "join_base": true
+          }
+        },
+        "remark": {
+          "sel": ["div.jidi > span"],
+          "non_empty": true
+        }
+      },
+      "empty_marker": "没有找到您想要的结果"
+    },
+    "play": {
+      "family_fallback": true,
+      "parse": 0,
+      "url": "{base}/v_play/{id}.html",
+      "header": {
+        "User-Agent": " Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36"
+      }
+    }
+  }
+}
