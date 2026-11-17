@@ -51,7 +51,7 @@ const detail = ref<CloudSearchItem | null>(null)
 
 // 状态/结果缓存统一放 store（W14 §7.3）：KeepAlive 返回本页不重复请求后端。
 const search = useCloudSearchStore()
-const { provider, sort, page, result, loading, error } = storeToRefs(search)
+const { provider, sort, page, pageSize, result, loading, error } = storeToRefs(search)
 const pageCount = computed(() => search.pageCount)
 const countsByProvider = computed(() => search.countsByProvider)
 const allCount = computed(() => search.allCount)
@@ -90,6 +90,17 @@ function setFilter(value: CloudSearchProvider | ''): void {
 
 function onSortChange(event: Event): void {
   search.setSort((event.target as HTMLSelectElement).value as CloudSortBy)
+}
+
+function onPageSizeChange(event: Event): void {
+  search.setPageSize(Number((event.target as HTMLSelectElement).value))
+}
+
+/** 分享被取消/过期的错误文案：标记失效，避免重复点击 */
+const DEAD_SHARE_PATTERN = /失效|已被取消|取消分享|已取消|不存在|已过期/
+
+function isDead(item: CloudSearchItem): boolean {
+  return search.deadLinkSet.has(item.shareUrl)
 }
 
 function submit(): void {
@@ -136,15 +147,23 @@ async function play(item: CloudSearchItem): Promise<void> {
   try {
     const resolved = await api.cloudResolvePlay(item.shareUrl, item.password)
     if (resolved?.url) {
+      search.unmarkDead(item.shareUrl)
       await api.playerOpen(resolved.url, resolved.headers)
       return
     }
   } catch (err) {
     // 未登录 / 夸克·UC 需转存等可操作错误：提示后回退打开原分享页
-    ElMessage.warning(api.formatError(err))
+    const message = api.formatError(err)
+    if (DEAD_SHARE_PATTERN.test(message)) {
+      search.markDead(item.shareUrl)
+      ElMessage.warning(`${message}（已标记为分享失效）`)
+    } else {
+      ElMessage.warning(message)
+    }
   } finally {
     playingId.value = ''
   }
+  if (isDead(item)) return
   await openExternal(item)
 }
 
@@ -295,6 +314,7 @@ onActivated(() => {
             </h3>
             <div class="result-meta">
               <span class="provider-tag">{{ filterLabel(item.provider) }}</span>
+              <span v-if="isDead(item)" class="dead-tag">分享失效</span>
               <span v-if="item.size">{{ formatBytes(item.size) }}</span>
               <span v-if="item.publishedAt">{{ formatTime(item.publishedAt) }}</span>
               <span class="result-sources">{{ item.sources.join(' · ') }}</span>
@@ -308,11 +328,11 @@ onActivated(() => {
             <button
               class="action-btn"
               type="button"
-              :disabled="!item.playable || playingId === item.id"
-              :title="item.playable ? '播放' : '暂不支持磁力/电驴播放'"
+              :disabled="!item.playable || isDead(item) || playingId === item.id"
+              :title="!item.playable ? '暂不支持磁力/电驴播放' : isDead(item) ? '分享链接已失效' : '播放'"
               @click="play(item)"
             >
-              播放
+              {{ isDead(item) ? '已失效' : '播放' }}
             </button>
             <button
               class="action-btn"
@@ -339,26 +359,45 @@ onActivated(() => {
       />
 
       <div
-        v-if="result && pageCount > 1"
+        v-if="result"
         class="search-pager"
       >
-        <button
-          class="pager-btn"
-          type="button"
-          :disabled="page <= 1"
-          @click="goPage(page - 1)"
-        >
-          上一页
-        </button>
-        <span class="pager-info">第 {{ page }} / {{ pageCount }} 页</span>
-        <button
-          class="pager-btn"
-          type="button"
-          :disabled="page >= pageCount"
-          @click="goPage(page + 1)"
-        >
-          下一页
-        </button>
+        <label class="page-size">
+          每页
+          <select
+            :model-value="pageSize"
+            @change="onPageSizeChange"
+          >
+            <option :value="20">
+              20
+            </option>
+            <option :value="30">
+              30
+            </option>
+            <option :value="50">
+              50
+            </option>
+          </select>
+        </label>
+        <template v-if="pageCount > 1">
+          <button
+            class="pager-btn"
+            type="button"
+            :disabled="page <= 1"
+            @click="goPage(page - 1)"
+          >
+            上一页
+          </button>
+          <span class="pager-info">第 {{ page }} / {{ pageCount }} 页</span>
+          <button
+            class="pager-btn"
+            type="button"
+            :disabled="page >= pageCount"
+            @click="goPage(page + 1)"
+          >
+            下一页
+          </button>
+        </template>
       </div>
 
       <el-dialog
@@ -425,6 +464,30 @@ onActivated(() => {
 .pager-info {
   font-size: 13px;
   opacity: 0.8;
+}
+
+.page-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.page-size select {
+  padding: 4px 8px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: inherit;
+}
+
+.dead-tag {
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--warning);
+  color: var(--warning);
+  font-size: 11px;
 }
 
 .cloud-search-page {
