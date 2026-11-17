@@ -23,6 +23,40 @@ pub mod tg;
 use crate::error::CoreError;
 use serde::{Deserialize, Serialize};
 
+
+/// W14 §6.8 云盘搜索错误码。
+///
+/// Tauri 命令在错误消息前携带 `code：`，前端据此给出「去配置 / 重试」等动作；
+/// 后端日志只记录 code 与条数，不记录关键词。
+pub mod codes {
+    /// 部分频道失败/超时：结果正常展示，仅提示。
+    pub const PARTIAL: &str = "cloudsearch.partial";
+    /// 内置源整体不可用（如 Telegram 不可达）。
+    pub const SOURCE_UNAVAILABLE: &str = "cloudsearch.source_unavailable";
+    /// 内置源与增强源均失败。
+    pub const ALL_SOURCES_FAILED: &str = "cloudsearch.all_sources_failed";
+    /// 增强源返回结构不符。
+    pub const PANSOU_INVALID: &str = "cloudsearch.pansou_invalid";
+    /// 全局超时（返回已有结果或错误页）。
+    pub const TIMEOUT: &str = "cloudsearch.timeout";
+}
+
+/// 把内核错误映射到 W14 §6.8 的错误码。
+pub fn code_of_error(error: &CoreError) -> &'static str {
+    match error {
+        CoreError::Json { path, .. } if path.starts_with("pansou") => codes::PANSOU_INVALID,
+        CoreError::Http(_) => codes::SOURCE_UNAVAILABLE,
+        CoreError::Config(message) if message.contains("Telegram 频道均不可达") => {
+            codes::SOURCE_UNAVAILABLE
+        }
+        CoreError::Config(message) if message.contains("整体预算") || message.contains("超时") => {
+            codes::TIMEOUT
+        }
+        CoreError::Json { .. } => codes::ALL_SOURCES_FAILED,
+        _ => codes::SOURCE_UNAVAILABLE,
+    }
+}
+
 /// 云盘 / 磁力服务商标识。
 ///
 /// 序列化名与前端 `providers` 入参一致（snake_case）：
@@ -570,5 +604,39 @@ mod tests {
         );
         assert_eq!(value["publishedAt"], serde_json::json!(1_700_000_000_i64));
         assert_eq!(value["provider"], serde_json::json!("quark"));
+    }
+
+    #[test]
+    fn maps_errors_to_w14_codes() {
+        use crate::error::CoreError;
+        assert_eq!(
+            code_of_error(&CoreError::Config("Telegram 频道均不可达（可能需要配置网络代理）".into())),
+            codes::SOURCE_UNAVAILABLE
+        );
+        assert_eq!(
+            code_of_error(&CoreError::Json { path: "pansou.merged_by_type".into(), msg: "x".into() }),
+            codes::PANSOU_INVALID
+        );
+        assert_eq!(
+            code_of_error(&CoreError::Json { path: "tg".into(), msg: "x".into() }),
+            codes::ALL_SOURCES_FAILED
+        );
+        assert_eq!(
+            code_of_error(&CoreError::Config("搜索整体预算超时".into())),
+            codes::TIMEOUT
+        );
+    }
+
+    #[test]
+    fn code_constants_are_namespaced() {
+        for code in [
+            codes::PARTIAL,
+            codes::SOURCE_UNAVAILABLE,
+            codes::ALL_SOURCES_FAILED,
+            codes::PANSOU_INVALID,
+            codes::TIMEOUT,
+        ] {
+            assert!(code.starts_with("cloudsearch."), "unexpected code: {code}");
+        }
     }
 }

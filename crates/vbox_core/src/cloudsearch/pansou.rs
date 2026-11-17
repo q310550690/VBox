@@ -87,6 +87,7 @@ impl PanSouSource {
 
         let response = request.send()?.error_for_status()?;
         let payload: Value = response.json()?;
+        validate_payload(&payload)?;
         Ok(parse_payload(&payload))
     }
 }
@@ -159,6 +160,19 @@ fn collect_entries<'a>(value: &'a Value, depth: usize) -> Vec<&'a Value> {
     match value {
         Value::Array(entries) => entries.iter().collect(),
         Value::Object(object) => {
+            // PanSou 官方响应：`merged_by_type: { "quark": [...], "aliyun": [...] }`
+            if let Some(grouped) = object.get("merged_by_type") {
+                let Some(groups) = grouped.as_object() else {
+                    return Vec::new();
+                };
+                let mut entries: Vec<&Value> = Vec::new();
+                for group in groups.values() {
+                    if let Value::Array(list) = group {
+                        entries.extend(list.iter());
+                    }
+                }
+                return entries;
+            }
             for key in ["data", "results", "items", "list", "hits"] {
                 if let Some(inner) = object.get(key) {
                     let entries = collect_entries(inner, depth + 1);
@@ -170,6 +184,29 @@ fn collect_entries<'a>(value: &'a Value, depth: usize) -> Vec<&'a Value> {
             Vec::new()
         }
         _ => Vec::new(),
+    }
+}
+
+/// 校验响应顶层结构：PanSou 不同版本可能用 `data` / `merged_by_type` 等字段，
+/// 但完全不认识的响应应报 `cloudsearch.pansou_invalid`，而不是静默空结果。
+fn validate_payload(value: &Value) -> Result<(), CoreError> {
+    match value {
+        Value::Array(_) => Ok(()),
+        Value::Object(object) => {
+            const KEYS: [&str; 6] = ["data", "results", "items", "list", "hits", "merged_by_type"];
+            if KEYS.iter().any(|key| object.contains_key(*key)) {
+                Ok(())
+            } else {
+                Err(CoreError::Json {
+                    path: "pansou.merged_by_type".to_string(),
+                    msg: "响应缺少 data/merged_by_type 等结果字段".to_string(),
+                })
+            }
+        }
+        _ => Err(CoreError::Json {
+            path: "pansou".to_string(),
+            msg: "响应不是 JSON 对象或数组".to_string(),
+        }),
     }
 }
 
@@ -496,5 +533,36 @@ mod tests {
             Some(1_609_459_200)
         );
         assert_eq!(parse_timestamp(&serde_json::json!(null)), None);
+    }
+
+    #[test]
+    fn parses_merged_by_type_payload() {
+        let payload = serde_json::json!({
+            "merged_by_type": {
+                "quark": [{
+                    "title": "三体 全季 4K",
+                    "share_url": "https://pan.quark.cn/s/abc123",
+                    "password": "8888",
+                    "size": "12.5 GB"
+                }],
+                "aliyun": [{
+                    "title": "流浪地球2",
+                    "share_url": "https://www.aliyundrive.com/s/xyz789"
+                }]
+            }
+        });
+        let items = parse_payload(&payload);
+        assert_eq!(items.len(), 2);
+        assert!(items.iter().any(|item| item.provider == SearchProvider::Quark));
+        assert!(items.iter().any(|item| item.provider == SearchProvider::Aliyun));
+    }
+
+    #[test]
+    fn rejects_unrecognized_payload_structure() {
+        let error = validate_payload(&serde_json::json!({"code": 0, "message": "ok"})).unwrap_err();
+        assert!(matches!(error, CoreError::Json { ref path, .. } if path == "pansou.merged_by_type"));
+        assert!(validate_payload(&serde_json::json!({"data": []})).is_ok());
+        assert!(validate_payload(&serde_json::json!([{"title": "x"}])).is_ok());
+        assert!(validate_payload(&serde_json::json!("plain text")).is_err());
     }
 }

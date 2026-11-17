@@ -134,7 +134,11 @@ impl CloudState {
     fn search(&self, query: &SearchQuery) -> Result<SearchPage, String> {
         // 只读地取出内核句柄后立即释放锁：单次搜索最多 8s，不应阻塞状态读取/改配置。
         let kernel = { self.lock().kernel.clone() };
-        kernel.search_checked(query).map_err(sanitize_error)
+        kernel.search_checked(query).map_err(|error| {
+            // W14 §6.8：错误消息前缀携带 code，前端据此给出「去配置 / 重试」动作提示。
+            let code = vbox_core::cloudsearch::code_of_error(&error);
+            format!("{code}：{}", sanitize_error(error))
+        })
     }
 
     fn statuses(&self) -> Vec<SourceStatus> {

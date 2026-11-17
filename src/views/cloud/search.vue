@@ -8,6 +8,7 @@ import { storeToRefs } from 'pinia'
 import SolarIcon from '@/components/SolarIcon.vue'
 import PageScroll from '@/components/PageScroll.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import { cloudSearchHint, detectCloudSearchCode } from '@/utils/cloudErrors'
 import HintBar from '@/components/HintBar.vue'
 import * as api from '@/api'
 import type { CloudSearchItem, CloudSearchProvider, CloudSortBy } from '@/api'
@@ -56,6 +57,9 @@ const pageCount = computed(() => search.pageCount)
 const countsByProvider = computed(() => search.countsByProvider)
 const allCount = computed(() => search.allCount)
 const sourceTrouble = computed(() => search.sourceTrouble)
+
+/** W14 §6.8：按后端错误码给动作提示（去配置 / 重试） */
+const errorHint = computed(() => cloudSearchHint(detectCloudSearchCode(error.value ?? '')))
 
 function chipCount(value: CloudSearchProvider | ''): number {
   if (value === '') return allCount.value
@@ -297,7 +301,29 @@ onActivated(() => {
         v-if="error"
         variant="error"
       >
-        {{ error }}
+        <div class="search-error">
+          <span>{{ errorHint.text || error }}</span>
+          <span
+            v-if="errorHint.text"
+            class="search-error-detail"
+          >{{ error }}</span>
+          <button
+            v-if="errorHint.action === 'settings'"
+            class="stats-refresh"
+            type="button"
+            @click="router.push('/settings?section=anchor-cloudsearch')"
+          >
+            去配置
+          </button>
+          <button
+            v-else-if="errorHint.action === 'retry'"
+            class="stats-refresh"
+            type="button"
+            @click="runSearch(true)"
+          >
+            重试
+          </button>
+        </div>
       </HintBar>
 
       <div
@@ -701,6 +727,18 @@ onActivated(() => {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
+}
+
+.search-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-error-detail {
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 .source-trouble {
