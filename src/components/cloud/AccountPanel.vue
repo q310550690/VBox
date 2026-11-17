@@ -1,6 +1,6 @@
 <!-- 设置页 · 网盘账号（W13）：115 / 夸克 / 迅雷 协议登录 + 阿里/UC/PikPak 网页授权兜底 -->
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import SolarIcon from '@/components/SolarIcon.vue'
 import HintBar from '@/components/HintBar.vue'
@@ -35,10 +35,17 @@ const STATUS_TAG: Record<PanAccountStatus, 'success' | 'warning' | 'info'> = {
   not_logged_in: 'info',
 }
 
+const props = defineProps<{
+  /** 打开时聚焦的 provider（云盘首页过期胶囊入口） */
+  focusProvider?: string
+}>()
+
 const providers = ref<PanLoginProvider[]>([])
 const accounts = ref<PanAccountView[]>([])
 const loading = ref(false)
 const error = ref('')
+const highlighted = ref('')
+let highlightTimer: number | undefined
 
 /* ---------------- 账号状态 ---------------- */
 
@@ -77,6 +84,30 @@ function formatTime(ts: number): string {
   if (!ts) return '—'
   return new Date(ts * 1000).toLocaleString()
 }
+
+/* ---------------- 外部聚焦（云盘首页过期胶囊 → 重新登录） ---------------- */
+
+/** 滚动到指定 provider 卡片并短暂高亮；账号列表加载完成后调用 */
+async function focusCard(provider: string | undefined): Promise<void> {
+  if (!provider) return
+  await nextTick()
+  const el = document.getElementById(`pan-card-${provider}`)
+  if (!el) return
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  highlighted.value = provider
+  if (highlightTimer !== undefined) window.clearTimeout(highlightTimer)
+  highlightTimer = window.setTimeout(() => {
+    highlighted.value = ''
+    highlightTimer = undefined
+  }, 2600)
+}
+
+watch(
+  () => props.focusProvider,
+  (provider) => {
+    if (provider) void focusCard(provider)
+  },
+)
 
 async function load() {
   if (api.demoMode) return
@@ -346,6 +377,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  if (highlightTimer !== undefined) window.clearTimeout(highlightTimer)
   stopTimers()
 })
 </script>
@@ -374,9 +406,13 @@ onBeforeUnmount(() => {
     <div class="pan-grid">
       <div
         v-for="meta in PROVIDER_META"
+        :id="`pan-card-${meta.provider}`"
         :key="meta.provider"
         class="pan-card"
-        :class="{ 'is-connected': statusOf(meta.provider) === 'connected' }"
+        :class="{
+          'is-connected': statusOf(meta.provider) === 'connected',
+          'is-highlighted': highlighted === meta.provider,
+        }"
       >
         <div class="pan-card-head">
           <div class="pan-card-title">
@@ -463,14 +499,21 @@ onBeforeUnmount(() => {
     >
       <div class="pan-login">
         <template v-if="loginError">
-          <p class="status-error">{{ loginError }}</p>
-          <el-button
-            type="primary"
-            :loading="loginStarting"
-            @click="refreshTicket"
-          >
-            刷新{{ actionText(loginProvider) }}
-          </el-button>
+          <p class="status-error">
+            ⚠ 登录失败：{{ loginError }}
+          </p>
+          <div class="pan-login-actions">
+            <el-button
+              type="primary"
+              :loading="loginStarting"
+              @click="refreshTicket"
+            >
+              重试
+            </el-button>
+            <el-button @click="loginVisible = false">
+              关闭
+            </el-button>
+          </div>
         </template>
         <template v-else-if="ticket">
           <!-- 115 / 扫码型：官方二维码图片 -->
@@ -570,6 +613,21 @@ onBeforeUnmount(() => {
   margin-top: var(--space-3);
 }
 
+.pan-card.is-highlighted {
+  box-shadow: 0 0 0 2px var(--accent);
+  animation: pan-card-pulse 1.1s ease-in-out 2;
+}
+
+@keyframes pan-card-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+  50% {
+    box-shadow: 0 0 0 4px var(--accent-weak);
+  }
+}
+
 .pan-card {
   display: flex;
   flex-direction: column;
@@ -638,6 +696,12 @@ onBeforeUnmount(() => {
   font-weight: 700;
   letter-spacing: 4px;
   word-break: break-all;
+}
+
+.pan-login-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
 }
 
 .pan-countdown {

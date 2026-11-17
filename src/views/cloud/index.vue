@@ -33,6 +33,8 @@ const keyword = ref('')
 const hot = ref<string[]>(DEFAULT_HOT)
 const accounts = ref<PanAccountView[]>([])
 const accountsOpen = ref(false)
+/** 过期胶囊入口：打开抽屉后要聚焦的 provider（W14 §8.2） */
+const accountsFocus = ref('')
 
 /** 只渲染已登录且凭据有效的网盘；过期也显示（置灰）以便提示重新登录 */
 const pills = computed(() =>
@@ -69,12 +71,14 @@ async function loadHot() {
 }
 
 function openAccountManage() {
+  accountsFocus.value = ''
   accountsOpen.value = true
 }
 
 function openPill(account: PanAccountView) {
   if (account.status === 'expired') {
-    // 过期胶囊：跳账号管理并让用户重新登录
+    // 过期胶囊：打开账号管理抽屉并聚焦该网盘的「重新登录」（W14 §8.2）
+    accountsFocus.value = account.provider
     accountsOpen.value = true
     return
   }
@@ -107,8 +111,11 @@ watch(
 )
 
 watch(accountsOpen, (open) => {
-  // 关闭时刷新胶囊（抽屉里可能刚登录/退出）
-  if (!open) void loadAccounts()
+  // 关闭时刷新胶囊（抽屉里可能刚登录/退出），并清空聚焦状态
+  if (!open) {
+    accountsFocus.value = ''
+    void loadAccounts()
+  }
 })
 </script>
 
@@ -202,7 +209,10 @@ watch(accountsOpen, (open) => {
         </HintBar>
       </div>
 
-      <AccountDrawer v-model="accountsOpen" />
+      <AccountDrawer
+        v-model="accountsOpen"
+        :focus-provider="accountsFocus"
+      />
     </div>
   </PageScroll>
 </template>

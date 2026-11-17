@@ -7,6 +7,8 @@ import '@/views/settings/sections.css'
 
 defineProps<{
   modelValue: boolean
+  /** 过期胶囊等入口：打开抽屉后聚焦并高亮该 provider 的卡片（W14 §8.2） */
+  focusProvider?: string
 }>()
 
 const emit = defineEmits<{
@@ -23,7 +25,7 @@ const emit = defineEmits<{
     @update:model-value="emit('update:modelValue', $event)"
   >
     <div class="settings-page pan-account-drawer">
-      <AccountPanel />
+      <AccountPanel :focus-provider="focusProvider" />
     </div>
   </el-drawer>
 </template>
