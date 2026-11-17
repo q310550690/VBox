@@ -22,6 +22,7 @@ use tauri::State;
 
 use vbox_core::cloudsearch::{
     builtin_channels, builtin_sources_json,
+    cache::DiskCache,
     kernel::SearchKernel,
     manifest::{channels_from_manifest, verify_sources_manifest, MAX_MANIFEST_BYTES},
     pansou::PanSouSource,
@@ -118,6 +119,14 @@ struct CloudInner {
 }
 
 impl CloudState {
+    /// 搜索磁盘缓存目录（与配置文件同级的 `cloudsearch-cache/`）。
+    fn disk_cache_dir(&self) -> PathBuf {
+        self.config_path
+            .parent()
+            .unwrap_or_else(|| Path::new("."))
+            .join("cloudsearch-cache")
+    }
+
     pub fn new(app_data_dir: &Path) -> Self {
         let config_path = app_data_dir.join("cloud-sources.json");
         let manifest_path = app_data_dir.join("cloud-sources-manifest.json");
@@ -125,7 +134,8 @@ impl CloudState {
         let config = load_config(&config_path).unwrap_or_default().normalized();
         let (channels, channels_version) =
             load_remote_channels(&manifest_path, config.sources_pubkey.as_deref());
-        let kernel = Arc::new(build_kernel(&config, &channels));
+        let disk_cache_dir = app_data_dir.join("cloudsearch-cache");
+        let kernel = Arc::new(build_kernel(&config, &channels, &disk_cache_dir));
         Self {
             config_path,
             manifest_path,
@@ -247,7 +257,7 @@ impl CloudState {
         save_config(&self.config_path, &config)?;
         let (channels, channels_version) =
             load_remote_channels(&self.manifest_path, config.sources_pubkey.as_deref());
-        let kernel = build_kernel(&config, &channels);
+        let kernel = build_kernel(&config, &channels, &self.disk_cache_dir());
         let mut guard = self.lock();
         guard.config = config;
         guard.channels = channels;
@@ -282,7 +292,7 @@ impl CloudState {
         save_config(&self.config_path, &config)?;
         let (channels, channels_version) =
             load_remote_channels(&self.manifest_path, config.sources_pubkey.as_deref());
-        let kernel = build_kernel(&config, &channels);
+        let kernel = build_kernel(&config, &channels, &self.disk_cache_dir());
         let mut guard = self.lock();
         guard.config = config;
         guard.channels = channels;
@@ -315,7 +325,7 @@ impl CloudState {
         .normalized();
         save_config(&self.config_path, &config)?;
         let channels = { self.lock().channels.clone() };
-        let kernel = build_kernel(&config, &channels);
+        let kernel = build_kernel(&config, &channels, &self.disk_cache_dir());
         {
             let mut guard = self.lock();
             guard.config = config;
@@ -358,7 +368,7 @@ impl CloudState {
             return Err("远端频道清单没有启用频道".to_string());
         }
         save_manifest(&self.manifest_path, &raw)?;
-        let kernel = build_kernel(&config, &channels);
+        let kernel = build_kernel(&config, &channels, &self.disk_cache_dir());
         let version = manifest.version.clone();
         let count = channels.len();
         {
@@ -513,8 +523,16 @@ fn save_manifest(path: &Path, raw: &str) -> Result<(), String> {
     std::fs::write(path, raw).map_err(|err| format!("写入频道清单缓存失败：{err}"))
 }
 
-fn build_kernel(config: &CloudSourcesConfig, channels: &[String]) -> SearchKernel {
-    let mut kernel = SearchKernel::default().with_timeout(KERNEL_TIMEOUT);
+fn build_kernel(
+    config: &CloudSourcesConfig,
+    channels: &[String],
+    disk_cache_dir: &Path,
+) -> SearchKernel {
+    // 磁盘分片缓存（W14 §6.6）：W14 §4 要求 cache.rs 支持内存 LRU + 可选磁盘缓存，
+    // 桌面端默认启用（64 MB / 6h），读写失败静默降级为纯内存缓存。
+    let mut kernel = SearchKernel::default()
+        .with_timeout(KERNEL_TIMEOUT)
+        .with_disk_cache(DiskCache::new(disk_cache_dir));
     let mut mode = config.priority_mode();
     if mode == "pansou_only" && config.pansou_url.is_none() {
         // 配置了「仅增强源」但服务地址被清除时回退内置，避免搜索完全不可用。

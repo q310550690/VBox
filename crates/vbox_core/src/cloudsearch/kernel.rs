@@ -20,7 +20,7 @@ use std::sync::mpsc;
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
-use super::cache::{CacheKey, SearchCache};
+use super::cache::{CacheKey, DiskCache, SearchCache};
 use super::rank;
 use super::{CloudSearchSource, SearchItem, SearchPage, SearchQuery};
 use crate::error::CoreError;
@@ -45,6 +45,8 @@ pub struct SearchKernel {
     cache: Arc<SearchCache>,
     inflight: Mutex<HashMap<CacheKey, Arc<Inflight>>>,
     per_source_timeout: Duration,
+    /// 可选磁盘分片缓存（W14 §6.6）；`None` 表示只用内存缓存。
+    disk: Option<Arc<DiskCache>>,
 }
 
 impl Default for SearchKernel {
@@ -54,6 +56,7 @@ impl Default for SearchKernel {
             cache: Arc::new(SearchCache::default()),
             inflight: Mutex::new(HashMap::new()),
             per_source_timeout: DEFAULT_SOURCE_TIMEOUT,
+            disk: None,
         }
     }
 }
@@ -82,6 +85,12 @@ impl SearchKernel {
     /// 覆盖缓存（容量 / TTL 由调用方决定）。
     pub fn with_cache(mut self, cache: SearchCache) -> Self {
         self.cache = Arc::new(cache);
+        self
+    }
+
+    /// 启用磁盘分片缓存（W14 §6.6）：内存未命中时回读磁盘，完整结果同时写盘。
+    pub fn with_disk_cache(mut self, disk: DiskCache) -> Self {
+        self.disk = Some(Arc::new(disk));
         self
     }
 
@@ -132,6 +141,14 @@ impl SearchKernel {
         if let Some(mut cached) = self.cache.get(&key) {
             cached.elapsed_ms = started.elapsed().as_millis() as u64;
             return Ok(cached);
+        }
+        // 内存未命中时回读磁盘缓存（跨进程/重启复用），命中后回填内存。
+        if let Some(disk) = &self.disk {
+            if let Some(mut cached) = disk.get(&key) {
+                cached.elapsed_ms = started.elapsed().as_millis() as u64;
+                self.cache.put(key.clone(), cached.clone());
+                return Ok(cached);
+            }
         }
 
         let (is_leader, inflight) = self.begin_flight(&key);
@@ -264,6 +281,9 @@ impl SearchKernel {
     fn cache_if_complete(&self, key: &CacheKey, page: &SearchPage) {
         if !page.partial {
             self.cache.put(key.clone(), page.clone());
+            if let Some(disk) = &self.disk {
+                disk.put(key, page);
+            }
         }
     }
 
@@ -641,5 +661,46 @@ mod tests {
             handle.join().expect("线程应正常结束").expect("搜索应成功");
         }
         assert_eq!(calls.load(Ordering::SeqCst), 2, "不同查询不应合并");
+    }
+
+    #[test]
+    fn disk_cache_is_reused_across_kernel_instances() {
+        let dir = std::env::temp_dir().join(format!(
+            "vbox-kernel-disk-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|duration| duration.as_nanos())
+                .unwrap_or(0)
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        let disk_dir = dir.clone();
+
+        let source = FakeSource::new("tg", vec![item("a", "标题A")]);
+        let calls = Arc::clone(&source.calls);
+        let kernel = SearchKernel::new(vec![Arc::new(source)])
+            .with_disk_cache(crate::cloudsearch::cache::DiskCache::new(&disk_dir));
+        let query = SearchQuery {
+            keyword: "关键词".to_string(),
+            ..SearchQuery::default()
+        };
+        let first = kernel.search_checked(&query).unwrap();
+        assert_eq!(first.total, 1);
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
+
+        // 新内核实例（模拟应用重启）：内存缓存为空，磁盘缓存应命中且不再调用 source。
+        let source2 = FakeSource::new("tg", vec![item("b", "标题B")]);
+        let calls2 = Arc::clone(&source2.calls);
+        let kernel2 = SearchKernel::new(vec![Arc::new(source2)])
+            .with_disk_cache(crate::cloudsearch::cache::DiskCache::new(&disk_dir));
+        let second = kernel2.search_checked(&query).unwrap();
+        assert_eq!(second.total, 1);
+        assert_eq!(second.items[0].id, "a", "应复用磁盘缓存结果");
+        assert_eq!(
+            calls2.load(Ordering::SeqCst),
+            0,
+            "命中磁盘缓存时不应调用 source"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

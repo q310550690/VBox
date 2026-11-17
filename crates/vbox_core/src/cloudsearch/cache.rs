@@ -8,11 +8,19 @@
 //! - 相同关键词的并发请求由内核做 in-flight dedupe（本模块只负责已算结果的缓存）。
 //!
 //! 时间统一用 [`std::time::Instant`]，测试可直接构造「过去时刻」的条目，无需 sleep。
+//!
+//! 另有可选的**磁盘分片缓存**（[`DiskCache`]，W14 §6.6）：按查询 hash 分片、
+//! 默认 TTL 6 小时 / 容量 64 MB，超限按最旧写入时间淘汰；读写失败一律视为未命中，
+//! 不影响搜索主流程。
 
 use std::collections::{HashMap, VecDeque};
+use std::fs;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+
+use serde::{Deserialize, Serialize};
 
 use super::{SearchPage, SearchProvider, SearchQuery, SortBy};
 
@@ -230,6 +238,216 @@ impl SearchCache {
     }
 }
 
+/// 磁盘分片缓存默认容量：64 MB（W14 §6.6）。
+pub const DISK_DEFAULT_MAX_BYTES: u64 = 64 * 1024 * 1024;
+/// 磁盘分片缓存默认 TTL：6 小时（W14 §6.6）。
+pub const DISK_DEFAULT_TTL: Duration = Duration::from_secs(6 * 60 * 60);
+
+/// 磁盘缓存条目（落盘 JSON）。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DiskEntry {
+    /// 写入时间（Unix 秒）。
+    saved_at: i64,
+    page: SearchPage,
+}
+
+/// 可选的磁盘分片缓存（W14 §6.6）。
+///
+/// 布局：`<root>/<shard_a>/<shard_b>/<hash>.json`，hash 为查询键的 FNV-1a 64 位；
+/// 分片前缀用于避免单目录文件过多。淘汰按 `saved_at` 从旧到新删除直至回到容量上限内。
+/// 所有 I/O 错误都静默降级（缓存是尽力而为的加速层，不影响搜索结果）。
+#[derive(Debug, Clone)]
+pub struct DiskCache {
+    root: PathBuf,
+    max_bytes: u64,
+    ttl: Duration,
+}
+
+impl DiskCache {
+    /// 使用默认容量/TTL 打开（目录按需创建）。
+    pub fn new(root: impl Into<PathBuf>) -> Self {
+        Self::with_limits(root, DISK_DEFAULT_MAX_BYTES, DISK_DEFAULT_TTL)
+    }
+
+    /// 指定容量（字节）与 TTL；`max_bytes == 0` 视为禁用（所有读取都未命中、写入被忽略）。
+    pub fn with_limits(root: impl Into<PathBuf>, max_bytes: u64, ttl: Duration) -> Self {
+        DiskCache {
+            root: root.into(),
+            max_bytes: max_bytes.max(1),
+            ttl,
+        }
+    }
+
+    /// 根目录。
+    pub fn root(&self) -> &Path {
+        &self.root
+    }
+
+    /// 容量上限（字节）。
+    pub fn max_bytes(&self) -> u64 {
+        self.max_bytes
+    }
+
+    /// TTL。
+    pub fn ttl(&self) -> Duration {
+        self.ttl
+    }
+
+    /// 读取；未命中、过期或读写失败都返回 `None`。
+    pub fn get(&self, key: &CacheKey) -> Option<SearchPage> {
+        let path = self.path_for(key);
+        let raw = fs::read(&path).ok()?;
+        let entry: DiskEntry = serde_json::from_slice(&raw).ok()?;
+        let now = unix_secs();
+        if now.saturating_sub(entry.saved_at) > self.ttl.as_secs() as i64 {
+            let _ = fs::remove_file(&path);
+            return None;
+        }
+        Some(entry.page)
+    }
+
+    /// 写入（尽力而为；失败静默）。写临时文件后 rename，避免并发读到半截 JSON。
+    pub fn put(&self, key: &CacheKey, page: &SearchPage) {
+        let path = self.path_for(key);
+        let Some(dir) = path.parent() else {
+            return;
+        };
+        if fs::create_dir_all(dir).is_err() {
+            return;
+        }
+        let entry = DiskEntry {
+            saved_at: unix_secs(),
+            page: page.clone(),
+        };
+        let Ok(raw) = serde_json::to_vec(&entry) else {
+            return;
+        };
+        let tmp = path.with_extension("json.tmp");
+        if fs::write(&tmp, &raw).is_err() {
+            return;
+        }
+        if fs::rename(&tmp, &path).is_err() {
+            let _ = fs::remove_file(&tmp);
+        }
+        self.prune();
+    }
+
+    /// 当前缓存文件数（观测/测试用）。
+    pub fn len(&self) -> usize {
+        self.files().len()
+    }
+
+    /// 是否为空。
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// 当前总字节数（观测/测试用）。
+    pub fn total_bytes(&self) -> u64 {
+        self.files().iter().map(|(_, size)| *size).sum()
+    }
+
+    /// 清空缓存目录下的条目（保留根目录）。
+    pub fn clear(&self) {
+        for (path, _) in self.files() {
+            let _ = fs::remove_file(path);
+        }
+    }
+
+    /// 按容量上限淘汰最旧条目（超过时从旧到新删除）。
+    pub fn prune(&self) {
+        let mut files = self.files();
+        let mut total: u64 = files.iter().map(|(_, size)| *size).sum();
+        if total <= self.max_bytes {
+            return;
+        }
+        files.sort_by_key(|(path, _)| {
+            fs::metadata(path)
+                .and_then(|meta| meta.modified())
+                .ok()
+                .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
+                .map(|duration| duration.as_secs())
+                .unwrap_or(0)
+        });
+        for (path, size) in files {
+            if total <= self.max_bytes {
+                break;
+            }
+            if fs::remove_file(&path).is_ok() {
+                total = total.saturating_sub(size);
+            }
+        }
+    }
+
+    /// 查询对应的缓存文件路径。
+    fn path_for(&self, key: &CacheKey) -> PathBuf {
+        let hash = fnv1a64(&canonical_key(key));
+        let shard_a = (hash & 0xff) as u8;
+        let shard_b = ((hash >> 8) & 0xff) as u8;
+        self.root
+            .join(format!("{shard_a:02x}"))
+            .join(format!("{shard_b:02x}"))
+            .join(format!("{hash:016x}.json"))
+    }
+
+    /// 递归列出缓存目录下的 `*.json` 文件及大小。
+    fn files(&self) -> Vec<(PathBuf, u64)> {
+        let mut files = Vec::new();
+        collect_files(&self.root, &mut files);
+        files
+    }
+}
+
+fn collect_files(dir: &Path, out: &mut Vec<(PathBuf, u64)>) {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            collect_files(&path, out);
+        } else if path.extension().and_then(|ext| ext.to_str()) == Some("json") {
+            if let Ok(meta) = entry.metadata() {
+                out.push((path, meta.len()));
+            }
+        }
+    }
+}
+
+/// 查询键的规范化字符串（参与磁盘分片 hash）。
+fn canonical_key(key: &CacheKey) -> String {
+    let providers: Vec<&str> = key
+        .providers
+        .iter()
+        .map(|provider| provider.as_str())
+        .collect();
+    format!(
+        "{}\x1f{}\x1f{}\x1f{}\x1f{:?}",
+        key.keyword,
+        key.page,
+        key.page_size,
+        providers.join(","),
+        key.sort
+    )
+}
+
+/// FNV-1a 64 位（稳定、跨进程一致；不依赖标准库哈希随机种子）。
+fn fnv1a64(input: &str) -> u64 {
+    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+    for byte in input.as_bytes() {
+        hash ^= *byte as u64;
+        hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+    }
+    hash
+}
+
+fn unix_secs() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_secs() as i64)
+        .unwrap_or(0)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -376,5 +594,89 @@ mod tests {
         assert_eq!(cache.len(), 1);
         cache.clear();
         assert!(cache.is_empty());
+    }
+
+    fn disk_dir(tag: &str) -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!(
+            "vbox-disk-cache-{tag}-{}-{}",
+            std::process::id(),
+            unix_secs()
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        dir
+    }
+
+    fn key_for(word: &str, page_no: u32) -> CacheKey {
+        let mut query = SearchQuery::default();
+        query.keyword = word.to_string();
+        query.page = page_no;
+        CacheKey::from_query(&query)
+    }
+
+    #[test]
+    fn disk_cache_roundtrip_and_shards() {
+        let dir = disk_dir("roundtrip");
+        let disk = DiskCache::new(&dir);
+        assert!(disk.get(&key_for("电影", 1)).is_none());
+        disk.put(&key_for("电影", 1), &page(2));
+        disk.put(&key_for("电影", 2), &page(3));
+        assert_eq!(disk.len(), 2);
+        assert!(disk.total_bytes() > 0);
+        assert_eq!(disk.get(&key_for("电影", 1)).unwrap().total, 2);
+        assert_eq!(disk.get(&key_for("电影", 2)).unwrap().total, 3);
+        // 分片：不同查询落在不同 shard 路径（不应共享同一文件）。
+        assert_ne!(
+            disk.path_for(&key_for("电影", 1)),
+            disk.path_for(&key_for("电影", 2))
+        );
+        disk.clear();
+        assert!(disk.is_empty());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn disk_cache_expired_entry_is_dropped() {
+        let dir = disk_dir("expired");
+        let disk = DiskCache::new(&dir);
+        let key = key_for("剧集", 1);
+        let path = disk.path_for(&key);
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        let stale = DiskEntry {
+            saved_at: unix_secs() - 7 * 60 * 60,
+            page: page(1),
+        };
+        std::fs::write(&path, serde_json::to_vec(&stale).unwrap()).unwrap();
+
+        assert!(disk.get(&key).is_none(), "超过 6 小时的条目应视为未命中");
+        assert!(!path.exists(), "过期条目读取时应被删除");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn disk_cache_ignores_corrupt_files() {
+        let dir = disk_dir("corrupt");
+        let disk = DiskCache::new(&dir);
+        let key = key_for("坏数据", 1);
+        let path = disk.path_for(&key);
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(&path, b"not json").unwrap();
+        assert!(disk.get(&key).is_none());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn disk_cache_prunes_to_max_bytes() {
+        let dir = disk_dir("prune");
+        let disk = DiskCache::with_limits(&dir, u64::MAX, DISK_DEFAULT_TTL);
+        for index in 0..5u32 {
+            disk.put(&key_for("关键词", index + 1), &page(20));
+        }
+        let total = disk.total_bytes();
+        assert!(total > 0);
+        let tight = DiskCache::with_limits(&dir, total / 2, DISK_DEFAULT_TTL);
+        tight.prune();
+        assert!(tight.total_bytes() <= total / 2, "prune 后应低于容量上限");
+        assert!(tight.len() < 5, "应删除部分条目");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
