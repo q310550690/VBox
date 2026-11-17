@@ -335,6 +335,7 @@ pub fn run() {
             commands_cloud::cloud_sources_update,
             commands_cloud::drive_list,
             commands_cloud::drive_download,
+            commands_cloud::cloud_resolve_play,
             commands_pan::login_start,
             commands_pan::login_poll,
             commands_pan::login_cancel,

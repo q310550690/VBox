@@ -594,6 +594,19 @@ pub fn drive_download(
     vbox_core::drive::DriveRead::download_url(&client, &entry_id).map_err(sanitize_drive_error)
 }
 
+/// 云盘搜索结果 → 播放直链（W14 P3：分享展开 + W13 登录凭据）。
+///
+/// 使用云盘首页「账号管理」中当前活跃的登录凭据（overlay）；未登录时返回可操作错误，
+/// 前端据此提示去登录并回退「打开原页」。返回值只含直链与防盗链请求头，不含凭据。
+#[tauri::command]
+pub fn cloud_resolve_play(
+    share_url: String,
+    password: Option<String>,
+) -> Result<vbox_core::cloudplay::ResolvedPlay, String> {
+    vbox_core::cloudplay::resolve_play(&share_url, password.as_deref())
+        .map_err(sanitize_drive_error)
+}
+
 /// 按 `account_id` 解析凭据并构造只读云盘客户端。
 fn drive_client(
     state: &AppState,

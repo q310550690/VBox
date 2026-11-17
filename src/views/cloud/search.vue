@@ -133,13 +133,32 @@ async function openExternal(item: CloudSearchItem): Promise<void> {
   }
 }
 
-function play(item: CloudSearchItem): void {
+const playingId = ref('')
+
+async function play(item: CloudSearchItem): Promise<void> {
   if (!item.playable) {
     ElMessage.info('该结果为磁力/电驴链接，暂不支持直接播放')
     return
   }
-  // 播放链路（分享解析 → 直链 → 播放器）在后续里程碑接入；先打开分享页
-  void openExternal(item)
+  if (playingId.value) return
+  if (api.demoMode) {
+    ElMessage.info('演示环境不执行播放')
+    return
+  }
+  playingId.value = item.id
+  try {
+    const resolved = await api.cloudResolvePlay(item.shareUrl, item.password)
+    if (resolved?.url) {
+      await api.playerOpen(resolved.url, resolved.headers)
+      return
+    }
+  } catch (err) {
+    // 未登录 / 夸克·UC 需转存等可操作错误：提示后回退打开原分享页
+    ElMessage.warning(api.formatError(err))
+  } finally {
+    playingId.value = ''
+  }
+  await openExternal(item)
 }
 
 watch(
@@ -293,7 +312,7 @@ onActivated(() => void runSearch())
             <button
               class="action-btn"
               type="button"
-              :disabled="!item.playable"
+              :disabled="!item.playable || playingId === item.id"
               :title="item.playable ? '播放' : '暂不支持磁力/电驴播放'"
               @click="play(item)"
             >
@@ -350,7 +369,7 @@ onActivated(() => void runSearch())
           </el-button>
           <el-button
             type="primary"
-            :disabled="!detail?.playable"
+            :disabled="!detail?.playable || (!!detail && playingId === detail.id)"
             @click="detail && play(detail)"
           >
             立即播放

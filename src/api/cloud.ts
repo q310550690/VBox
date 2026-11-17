@@ -111,3 +111,22 @@ export function cloudSourcesUpdate(url?: string | null): Promise<string> {
     url: url && url.trim() ? url.trim() : null,
   })
 }
+
+/** 云盘分享解析结果（`provider` 为登录 provider 键；直链仅进程内/播放器使用） */
+export interface CloudResolvedPlay {
+  provider: string
+  fileName: string
+  url: string
+  headers: Record<string, string>
+}
+
+/** 搜索结果 → 播放直链：分享展开 + W13 登录凭据（未登录/需转存时抛可操作错误） */
+export function cloudResolvePlay(
+  shareUrl: string,
+  password?: string | null,
+): Promise<CloudResolvedPlay> {
+  return invoke<CloudResolvedPlay>('cloud_resolve_play', {
+    shareUrl,
+    password: password ?? null,
+  })
+}
