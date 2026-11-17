@@ -3,7 +3,7 @@
 <script setup lang="ts">
 import { computed, onActivated, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { storeToRefs } from 'pinia'
 import SolarIcon from '@/components/SolarIcon.vue'
 import PageScroll from '@/components/PageScroll.vue'
@@ -99,6 +99,9 @@ function onPageSizeChange(event: Event): void {
 /** 分享被取消/过期的错误文案：标记失效，避免重复点击 */
 const DEAD_SHARE_PATTERN = /失效|已被取消|取消分享|已取消|不存在|已过期/
 
+/** 需要登录/凭据失效：引导到云盘首页账号管理抽屉（W14 §8.8） */
+const LOGIN_REQUIRED_PATTERN = /需要登录|未登录|登录后重试|账号管理|重新登录/
+
 function isDead(item: CloudSearchItem): boolean {
   return search.deadLinkSet.has(item.shareUrl)
 }
@@ -169,6 +172,15 @@ async function play(item: CloudSearchItem): Promise<void> {
     if (DEAD_SHARE_PATTERN.test(message)) {
       search.markDead(item.shareUrl)
       ElMessage.warning(`${message}（已标记为分享失效）`)
+    } else if (LOGIN_REQUIRED_PATTERN.test(message)) {
+      // 未登录播放：直接给「去登录」入口，跳到云盘首页并打开账号管理抽屉
+      void ElMessageBox.confirm(message, '需要登录网盘账号', {
+        confirmButtonText: '去登录',
+        cancelButtonText: '稍后',
+        type: 'warning',
+      })
+        .then(() => router.push({ path: '/cloud', query: { accounts: '1' } }))
+        .catch(() => undefined)
     } else {
       ElMessage.warning(message)
     }
@@ -298,6 +310,13 @@ onActivated(() => {
         <button
           class="stats-refresh"
           type="button"
+          @click="runSearch(true)"
+        >
+          重试
+        </button>
+        <button
+          class="stats-refresh"
+          type="button"
           @click="router.push('/settings?section=anchor-cloudsearch')"
         >
           去配置
@@ -308,7 +327,17 @@ onActivated(() => {
         v-if="loading"
         class="search-loading"
       >
-        正在聚合来源…
+        <div class="search-loading-text">
+          正在聚合来源…
+        </div>
+        <div
+          v-for="n in 3"
+          :key="n"
+          class="skeleton-row"
+        >
+          <span class="skeleton-bar skeleton-title" />
+          <span class="skeleton-bar skeleton-meta" />
+        </div>
       </div>
 
       <div
@@ -461,6 +490,44 @@ onActivated(() => {
 </template>
 
 <style scoped>
+.search-loading-text {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.skeleton-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 8px);
+  background: var(--surface);
+}
+
+.skeleton-bar {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--border) 25%, var(--surface) 50%, var(--border) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.2s ease-in-out infinite;
+}
+
+.skeleton-title {
+  width: 56%;
+  height: 14px;
+}
+
+.skeleton-meta {
+  width: 32%;
+}
+
+@keyframes skeleton-pulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 .search-pager {
   display: flex;
   align-items: center;
