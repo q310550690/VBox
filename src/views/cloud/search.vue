@@ -50,6 +50,12 @@ const sort = ref<CloudSortBy>('relevance')
 const page = ref(1)
 const pageSize = 20
 
+const pageCount = computed(() => {
+  const value = result.value
+  if (!value || value.total <= 0) return 1
+  return Math.max(1, Math.ceil(value.total / pageSize))
+})
+
 const result = ref<CloudSearchPage | null>(null)
 const loading = ref(false)
 const error = ref('')
@@ -79,8 +85,13 @@ function titleOf(item: CloudSearchItem): string {
   return item.title || item.shareUrl
 }
 
+function goPage(target: number): void {
+  const next = Math.min(Math.max(1, target), pageCount.value)
+  if (next !== page.value) page.value = next
+}
+
 async function runSearch(force = false): Promise<void> {
-  const key = `${keyword.value}|${provider.value}|${sort.value}`
+  const key = `${keyword.value}|${provider.value}|${sort.value}|${page.value}`
   if (!force && key === lastKey && result.value) return
   lastKey = key
   loading.value = true
@@ -165,8 +176,12 @@ watch(
   () => `${keyword.value}|${provider.value}|${sort.value}`,
   () => {
     input.value = keyword.value
-    page.value = 1
-    void runSearch()
+    if (page.value !== 1) {
+      // 页码变化会触发下方 watch(page) 的强制搜索，避免重复请求
+      page.value = 1
+      return
+    }
+    void runSearch(true)
   },
 )
 
@@ -342,6 +357,29 @@ onActivated(() => void runSearch())
         :desc="`没有找到与「${keyword}」相关的云盘资源，试试更短的关键词。`"
       />
 
+      <div
+        v-if="result && pageCount > 1"
+        class="search-pager"
+      >
+        <button
+          class="pager-btn"
+          type="button"
+          :disabled="page <= 1"
+          @click="goPage(page - 1)"
+        >
+          上一页
+        </button>
+        <span class="pager-info">第 {{ page }} / {{ pageCount }} 页</span>
+        <button
+          class="pager-btn"
+          type="button"
+          :disabled="page >= pageCount"
+          @click="goPage(page + 1)"
+        >
+          下一页
+        </button>
+      </div>
+
       <el-dialog
         :model-value="!!detail"
         title="资源详情"
@@ -381,6 +419,33 @@ onActivated(() => void runSearch())
 </template>
 
 <style scoped>
+.search-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 18px 0 6px;
+}
+
+.pager-btn {
+  padding: 6px 14px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: inherit;
+  cursor: pointer;
+}
+
+.pager-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.pager-info {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
 .cloud-search-page {
   display: flex;
   flex-direction: column;
