@@ -29,7 +29,7 @@ const GATE: &[&str] = &[
     "docs/审计报告/订阅漂移复核.md",
     "_rea/samples/inventory/gen-profiles.mjs",
     "_rea/samples/inventory/crawl-sites.mjs",
-    ".github/workflows/compat-audit.yml",
+    ".github/workflows/build.yml",
     "crates/vbox_core/src/spider/catvod/profiles.json",
     "_rea/samples/inventory/sites.json",
 ];
