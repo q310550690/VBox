@@ -5,7 +5,7 @@ members = ["crates/vbox_core", "crates/vbox_cli", "crates/vbox_player"]
 [workspace.package]
 version = "0.1.2"
 edition = "2021"
-license = "MIT"
+license = "AGPL-3.0-only"
 
 # 结合 173 个测试目标，完整调试信息会让 target 膨胀到 80G+；
 # 且当前 VS 18 BuildTools 的 cl.exe 在 -Z7 下会报 D8050（c1.dll 无法执行），故关闭 C 侧调试信息。

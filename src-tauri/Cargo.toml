@@ -3,7 +3,7 @@ name = "vbox-desktop"
 version = "0.1.2"
 description = "VBox 桌面端（Tauri 2 + Vue 3.6 前端）"
 authors = ["VBox contributors"]
-license = "MIT"
+license = "AGPL-3.0-only"
 edition = "2024"
 
 # 库目标：Tauri 2 推荐把主逻辑放在 lib crate（名称带 _lib 后缀），

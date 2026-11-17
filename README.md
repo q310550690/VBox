@@ -4,9 +4,7 @@
 
 [![Build](https://github.com/q310550690/VBox/actions/workflows/build.yml/badge.svg)](https://github.com/q310550690/VBox/actions/workflows/build.yml)
 [![Release](https://img.shields.io/github/v/release/q310550690/VBox)](https://github.com/q310550690/VBox/releases)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-
-> 文档说明：项目全部文档维护在私有仓库 [VBox-docs](https://github.com/q310550690/VBox-docs)，本仓库仅保留 README。
+[![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 
 ## 简介
 
@@ -24,12 +22,12 @@ VBox 是一个跨平台（Windows / macOS）的桌面视频播放客户端，兼
 - **搜索与解析**：当前源 / 全源并发搜索；type1 解析接口、type4 超级解析、type0 WebView 嗅探的解析链与进度提示。
 - **内嵌播放器**：libmpv 的视频画面 + HTML 控制条，支持进度、音量、倍速、全屏、小窗、循环、自动下一集，音轨/字幕轨切换、本地与在线字幕，以及 **Anime4K 实时超分**（播放器页面「画质」开关，三档可选）。
 - **边下边播与下载**：HLS 本地代理按需拉段、看过即缓存；「保存本集」支持暂停/继续；下载页支持直链 + HLS 合并、暂停/续传/重试、剧集分组与本地播放。
-- **直播与 EPG**：txt / m3u / JSON 直播源、多源换源、密码分组、XMLTV 节目单浏览（直播播放暂未接入，见文档「已知边界」）。
+- **直播与 EPG**：txt / m3u / JSON 直播源、多源换源、密码分组、XMLTV 节目单浏览（直播播放暂未接入）。
 - **收藏与历史**：SQLite 持久化，收藏页 / 历史页统一卡片网格与时间筛选，支持继续观看。
 - **自包含运行时**：libmpv / FFmpeg / Python / Node 可随包内置（打包时选择），安装包开箱即用。
-- **自动更新**：基于 Tauri updater，更新包验签后一键安装并自动重启（详见 [发布与自动更新](https://github.com/q310550690/VBox-docs/blob/main/发布与自动更新.md)）。
+- **自动更新**：基于 Tauri updater，更新包验签后一键安装并自动重启。
 - **调试能力**：网络请求日志与抓包面板、隐藏 WebView 媒体嗅探、本地 `/file` 与 `/proxy` 服务。
-- **跨平台**：Windows 全功能；macOS 已支持（依赖系统/Homebrew 的 libmpv，见文档）。
+- **跨平台**：Windows 全功能；macOS 已支持（依赖系统 / Homebrew 的 libmpv）。
 
 ## 技术栈
 
@@ -53,32 +51,21 @@ npm run tauri dev
 npm run tauri:build
 ```
 
-随包依赖、打包参数、macOS 构建与 CI 发布流程见 [VBox实现说明](https://github.com/q310550690/VBox-docs/blob/main/VBox实现说明.md)。
+随包依赖、打包参数、macOS 构建与 CI 发布流程见仓库内 `package.json` 脚本与 `.github/workflows/` 配置。
 
 > **安装提示**：Windows 安装包目前**未做代码签名**，SmartScreen 提示"Windows 已保护你的电脑"时
 > 选择「更多信息 → 仍要运行」即可；macOS 未公证，首次打开如被拦截请右键 App → 打开。
 > 自动更新不受影响（更新包有独立签名校验）。
 
-## 文档
-
-- [VBox 实现说明](https://github.com/q310550690/VBox-docs/blob/main/VBox实现说明.md)：能力清单、命令契约、运行验证与已知边界
-- [TVBoxOS 订阅解析分析报告](https://github.com/q310550690/VBox-docs/blob/main/TVBoxOS订阅链接解析与真实定制分析报告.md)：兼容行为依据
-- [完整开发方案](https://github.com/q310550690/VBox-docs/blob/main/完整开发方案.md)：架构与分阶段实现方案
-
 ## 开源协议
 
-本项目采用 **MIT License** 发布，详见 [LICENSE](LICENSE)。
+本项目采用 **GNU Affero 通用公共许可证第 3 版（AGPL-3.0-only）** 发布，详见 [LICENSE](LICENSE)。
 
 随安装包分发的第三方组件（libmpv / mpv、FFmpeg、CPython、Node.js 等）分别遵循其自身的开源协议，
-与 VBox 自身的 MIT 许可相互独立；分发或二次打包时请一并遵守。
+与 VBox 自身的 AGPL-3.0 许可相互独立；分发或二次打包时请一并遵守。
 内置的 Anime4K 超分着色器遵循其 MIT 许可（见 `src-tauri/resources/shaders/anime4k/LICENSE-Anime4K.txt`）。
 
 ## 免责声明
 
 VBox 不内置、不提供、不分发任何影视内容或订阅源，仅作为用户自备配置的解析与播放客户端。
 请只使用你拥有合法访问权的订阅与内容，并遵守当地法律法规及内容服务条款。
-
-## 鸣谢
-
-感谢 [TVBox / TVBoxOS](https://github.com/q215613905/TVBoxOS) 社区提供的格式与行为参考，
-以及 [mpv](https://mpv.io/)、[Tauri](https://tauri.app/)、[Vue](https://vuejs.org/)、[Element Plus](https://element-plus.org/) 等开源项目。
