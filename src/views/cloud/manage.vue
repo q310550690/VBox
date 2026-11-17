@@ -8,6 +8,7 @@ import PageScroll from '@/components/PageScroll.vue'
 import HintBar from '@/components/HintBar.vue'
 import * as api from '@/api'
 import type { CloudDriveEntry } from '@/api'
+import { useDownloadsStore } from '@/store/downloads'
 import { formatBytes, formatRelativeTime } from '@/utils/format'
 
 defineOptions({ name: 'CloudManageView' })
@@ -30,6 +31,8 @@ const path = ref<{ id: string; name: string }[]>([])
 const entries = ref<CloudDriveEntry[]>([])
 const loading = ref(false)
 const error = ref('')
+const busyId = ref('')
+const downloads = useDownloadsStore()
 
 const account = computed(() => accounts.value.find((item) => item.account_id === accountId.value))
 const providerName = computed(() => (account.value ? PROVIDER_NAME[account.value.provider] ?? account.value.provider : '云盘'))
@@ -72,6 +75,52 @@ function jumpTo(index: number): void {
 function formatTime(ts?: number | null): string {
   if (!ts) return '—'
   return formatRelativeTime(ts > 1e12 ? ts : ts * 1000)
+}
+
+/** 解析文件直链（按钮 busy 态；失败把错误写到页面提示）。 */
+async function resolveUrl(entry: CloudDriveEntry): Promise<string | null> {
+  if (api.demoMode) return null
+  busyId.value = entry.id
+  try {
+    return await api.driveDownload(accountId.value, entry.id)
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : String(err)
+    return null
+  } finally {
+    busyId.value = ''
+  }
+}
+
+/** 播放：取临时直链交给内置播放器。 */
+async function playFile(entry: CloudDriveEntry): Promise<void> {
+  const url = await resolveUrl(entry)
+  if (!url) return
+  try {
+    await api.playerOpen(url)
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : String(err)
+  }
+}
+
+/** 下载：优先交给下载中心；后端未就绪时回退浏览器打开直链。 */
+async function downloadFile(entry: CloudDriveEntry): Promise<void> {
+  const url = await resolveUrl(entry)
+  if (!url) return
+  try {
+    await downloads.start({
+      siteKey: `cloud:${accountId.value}`,
+      siteName: `${providerName.value}云盘`,
+      name: entry.name,
+      epTitle: entry.name,
+      url,
+    })
+  } catch {
+    try {
+      await api.pluginOpenUrl(url)
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : String(err)
+    }
+  }
 }
 
 onMounted(() => {
@@ -179,15 +228,24 @@ onActivated(() => void loadDir())
             >
               进入
             </button>
-            <button
-              v-else
-              class="action-btn"
-              type="button"
-              disabled
-              title="播放链路待接入"
-            >
-              播放
-            </button>
+            <template v-else>
+              <button
+                class="action-btn"
+                type="button"
+                :disabled="busyId === entry.id"
+                @click="playFile(entry)"
+              >
+                播放
+              </button>
+              <button
+                class="action-btn"
+                type="button"
+                :disabled="busyId === entry.id"
+                @click="downloadFile(entry)"
+              >
+                下载
+              </button>
+            </template>
           </span>
         </div>
       </div>

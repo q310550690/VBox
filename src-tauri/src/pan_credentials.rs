@@ -160,6 +160,15 @@ impl PanCredentialStore {
         login::overlay_active(provider).is_some()
     }
 
+    /// 按 `account_id` 取一份完整凭据（只读云盘管理用；调用方不得外传 cookie/token）。
+    pub fn credential(&self, account_id: &str) -> Result<Option<Credential>, String> {
+        let _guard = self.lock.lock().unwrap_or_else(|e| e.into_inner());
+        let creds = self.read_locked()?;
+        Ok(creds
+            .into_iter()
+            .find(|cred| cred.effective_account_id() == account_id))
+    }
+
     /// 读取并解密全部凭据（不含锁，调用方已持有）。
     fn read_locked(&self) -> Result<Vec<Credential>, String> {
         let text = match std::fs::read_to_string(&self.path) {

@@ -347,6 +347,62 @@ pub fn cloud_source_test(state: State<'_, AppState>) -> Result<String, String> {
 pub fn cloud_sources_update(_state: State<'_, AppState>) -> Result<String, String> {
     Err("远端频道清单热更新将在 W14 P3 接入，当前使用内置清单".to_string())
 }
+
+/* ---------------- 只读云盘管理（W14 P2 / §9） ---------------- */
+
+/// 列云盘目录（`parent_id` 为空 = 根目录）。
+///
+/// 凭据按 `account_id` 从本机加密存储读取，只在进程内交给 [`DriveClient`]；
+/// 返回值只有目录项，不含 cookie/token。
+#[tauri::command]
+pub fn drive_list(
+    state: State<'_, AppState>,
+    account_id: String,
+    parent_id: Option<String>,
+) -> Result<Vec<vbox_core::drive::DriveEntry>, String> {
+    let client = drive_client(&state, &account_id)?;
+    let parent = parent_id.as_deref().filter(|p| !p.trim().is_empty());
+    vbox_core::drive::DriveRead::list(&client, parent).map_err(sanitize_drive_error)
+}
+
+/// 取云盘文件下载直链（交给前端播放器/下载中心；不含 cookie/token）。
+#[tauri::command]
+pub fn drive_download(
+    state: State<'_, AppState>,
+    account_id: String,
+    entry_id: String,
+) -> Result<String, String> {
+    let client = drive_client(&state, &account_id)?;
+    vbox_core::drive::DriveRead::download_url(&client, &entry_id).map_err(sanitize_drive_error)
+}
+
+/// 按 `account_id` 解析凭据并构造只读云盘客户端。
+fn drive_client(
+    state: &AppState,
+    account_id: &str,
+) -> Result<vbox_core::drive::DriveClient, String> {
+    let account_id = account_id.trim();
+    if account_id.is_empty() {
+        return Err("缺少 account_id".to_string());
+    }
+    let cred = state.pan_credentials.credential(account_id)?.ok_or_else(|| {
+        format!("未找到账号 {account_id}：请在云盘首页右上角「账号管理」重新登录")
+    })?;
+    vbox_core::drive::DriveClient::from_credential(&cred).map_err(sanitize_drive_error)
+}
+
+/// 云盘错误脱敏：Config 已含可读指引；HTTP/JSON 不回显底层 URL。
+fn sanitize_drive_error(error: vbox_core::error::CoreError) -> String {
+    use vbox_core::error::CoreError;
+    match error {
+        CoreError::Config(message) => message,
+        CoreError::Http(_) => "云盘请求失败（请检查网络后重试）".to_string(),
+        CoreError::Json { .. } => "云盘响应解析失败".to_string(),
+        CoreError::Api { code, msg } => format!("云盘接口返回错误：{msg}（code={code}）"),
+        CoreError::Io(_) => "云盘本地读写失败".to_string(),
+        other => format!("云盘操作失败：{other}"),
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -15,6 +15,7 @@ pub mod http; // 带 rules 的客户端
 pub mod model; // 所有数据结构（与前端/TVBox JSON 对齐）
 pub mod normalize; // 脏 JSON 容错
 pub mod pan; // 网盘引擎（W9：Quark 等分享协议客户端）
+pub mod drive; // 云盘只读管理（W14 P2：个人网盘列目录 / 下载直链）
 pub mod cloudsearch; // 云盘聚合搜索（W14：Telegram / PanSou 多源聚合）
 pub mod probe; // 直链可用性探测（HEAD + Range GET 兜底）
 pub mod progress; // 解析/抓包进度事件（桌面端进度面板数据源）
