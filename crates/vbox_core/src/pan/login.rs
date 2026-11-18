@@ -24,6 +24,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::{CoreError, Result};
 
+pub mod ali;
 pub mod p115;
 pub mod quark;
 pub mod uc;
@@ -605,7 +606,8 @@ pub fn default_hub() -> Result<LoginHub> {
     hub.register(Arc::new(p115::P115Login::new(client.clone())));
     hub.register(Arc::new(xunlei::XunleiLogin::new(client.clone())));
     hub.register(Arc::new(quark::QuarkLogin::new(client.clone())));
-    hub.register(Arc::new(uc::UcLogin::new(client)));
+    hub.register(Arc::new(uc::UcLogin::new(client.clone())));
+    hub.register(Arc::new(ali::AliLogin::new(client)));
     Ok(hub)
 }
 

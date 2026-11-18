@@ -19,10 +19,10 @@ import type {
 const PROVIDER_META: { provider: string; name: string; desc: string }[] = [
   { provider: 'p115', name: '115 网盘', desc: '扫码登录；用于 115 分享解析与播放' },
   { provider: 'quark', name: '夸克网盘', desc: '扫码登录；用于夸克分享解析' },
-  { provider: 'xunlei', name: '迅雷云盘', desc: '设备码授权；用于迅雷/PikPak 分享解析' },
-  { provider: 'ali', name: '阿里云盘', desc: '网页扫码（官方登录页二维码）' },
+  { provider: 'xunlei', name: '迅雷云盘', desc: '设备码/扫码授权（二维码为官方授权链接）；用于迅雷/PikPak 分享解析' },
+  { provider: 'ali', name: '阿里云盘', desc: '扫码登录；官方登录二维码（本地渲染，用阿里云盘 App 扫）' },
   { provider: 'uc', name: 'UC 网盘', desc: '扫码登录；用于 UC 分享解析' },
-  { provider: 'pikpak', name: 'PikPak', desc: '网页扫码（官方登录页二维码）' },
+  { provider: 'pikpak', name: 'PikPak', desc: '网页授权（PikPak 未提供网页扫码接口）' },
 ]
 
 const STATUS_TEXT: Record<PanAccountStatus, string> = {

@@ -175,7 +175,7 @@ pub fn login_providers(state: State<'_, AppState>) -> Vec<LoginProviderView> {
 
 /// 网页登录入口：打开可见登录窗口，等待用户登录后从 WebView 取回 Cookie 并加密落盘。
 ///
-/// 这是阿里 / UC / PikPak 的唯一可行路径，也作为 115 / 夸克的兜底。
+/// PikPak 目前只有这条路径（无网页扫码接口）；115 / 夸克 / UC / 阿里 / 迅雷 均已有站内扫码协议，这里作为兜底。
 /// 返回 `Ok(None)` 表示用户关闭了窗口（取消）；超时返回错误。
 #[tauri::command]
 pub async fn open_web_login(
