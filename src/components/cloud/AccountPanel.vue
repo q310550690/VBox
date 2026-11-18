@@ -1,4 +1,4 @@
-<!-- 设置页 · 网盘账号（W13）：115 / 夸克 / 迅雷 协议登录 + 阿里/UC/PikPak 网页授权兜底 -->
+<!-- 设置页 · 网盘账号（W13）：六家均站内扫码/设备码授权（115/夸克/UC/阿里/迅雷/PikPak） -->
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -22,7 +22,7 @@ const PROVIDER_META: { provider: string; name: string; desc: string }[] = [
   { provider: 'xunlei', name: '迅雷云盘', desc: '设备码/扫码授权（二维码为官方授权链接）；用于迅雷/PikPak 分享解析' },
   { provider: 'ali', name: '阿里云盘', desc: '扫码登录；官方登录二维码（本地渲染，用阿里云盘 App 扫）' },
   { provider: 'uc', name: 'UC 网盘', desc: '扫码登录；用于 UC 分享解析' },
-  { provider: 'pikpak', name: 'PikPak', desc: '网页授权（PikPak 未提供网页扫码接口）' },
+  { provider: 'pikpak', name: 'PikPak', desc: '扫码登录；官方扫码页（本地渲染二维码，用 PikPak App 扫）' },
 ]
 
 const STATUS_TEXT: Record<PanAccountStatus, string> = {
@@ -151,10 +151,13 @@ function primaryLogin(provider: string) {
   else void webLogin(provider)
 }
 
-/** 登录方式文案（115/夸克/UC=扫码，迅雷=设备码） */
-function actionText(provider: string): string {
-  return provider === 'xunlei' ? '设备码登录' : '扫码登录'
+/** 登录方式文案：六家均为扫码（迅雷/PikPak 为设备码型扫码授权） */
+function actionText(): string {
+  return '扫码登录'
 }
+
+/** 设备码型登录的扫码 App 名称（迅雷 / PikPak） */
+const scanAppName = computed(() => (loginProvider.value === 'pikpak' ? 'PikPak' : '迅雷'))
 
 function stopTimers() {
   if (tickTimer !== undefined) {
@@ -419,7 +422,7 @@ onBeforeUnmount(() => {
       <h2 id="settings-pan" class="section-title">网盘账号</h2>
       <p class="section-desc">
         登录网盘账号后，云盘分享可直接解析播放（115 / 夸克 / UC 扫码、迅雷设备码；
-        阿里 / PikPak 走官方网页扫码）。凭据仅保存在本机。
+        六家均为站内扫码）。凭据仅保存在本机。
       </p>
     </header>
 
@@ -484,7 +487,7 @@ onBeforeUnmount(() => {
                 @click="primaryLogin(meta.provider)"
               >
                 <template #icon><SolarIcon name="refresh-circle" /></template>
-                {{ actionText(meta.provider) }}
+                {{ actionText() }}
               </el-button>
               <el-button
                 size="small"
@@ -548,17 +551,17 @@ onBeforeUnmount(() => {
             :src="ticket.image_url || ticket.qr_image"
             alt="登录二维码"
           />
-          <!-- 迅雷 / 设备码型：手机迅雷扫码授权（本地渲染二维码）+ 用户码兜底 -->
+          <!-- 设备码型（迅雷 / PikPak）：官方扫码页本地渲染二维码 + 用户码兜底 -->
           <template v-else-if="ticket.kind === 'device_code'">
             <img
               v-if="ticket.qr_image"
               class="pan-qr"
               :src="ticket.qr_image"
-              alt="用手机迅雷扫码授权"
+              :alt="`用手机${scanAppName}扫码授权`"
             />
             <p class="pan-device-code">{{ ticket.content }}</p>
             <p class="status-label">
-              用手机迅雷 App 扫码并在手机上确认授权；也可以打开授权页输入上面的用户码。
+              用手机 {{ scanAppName }} App 扫码并在手机上确认授权；也可以打开授权页输入上面的用户码。
             </p>
             <el-button
               type="primary"
@@ -591,7 +594,7 @@ onBeforeUnmount(() => {
           :disabled="loginStarting"
           @click="refreshTicket"
         >
-          刷新{{ actionText(loginProvider) }}
+          刷新扫码登录
         </el-button>
       </template>
     </el-dialog>

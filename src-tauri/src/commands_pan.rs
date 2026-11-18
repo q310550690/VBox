@@ -2,7 +2,7 @@
 //!
 //! 命令与 W13 §4 / W14 §7.2 对齐：
 //! - 协议登录：`login_start` / `login_poll` / `login_cancel`（115、夸克、迅雷）；
-//! - WebView 兜底：`open_web_login`（阿里 / UC / PikPak，夸克与 115 也可作为兜底）；
+//! - WebView 兜底：`open_web_login`（六家均可，作为扫码协议不可用时的兜底）；
 //! - 手动：`login_manual`；
 //! - 账号管理：`accounts_list` / `credentials_list` / `account_remove` /
 //!   `credentials_clear` / `credentials_verify`。
@@ -175,7 +175,7 @@ pub fn login_providers(state: State<'_, AppState>) -> Vec<LoginProviderView> {
 
 /// 网页登录入口：打开可见登录窗口，等待用户登录后从 WebView 取回 Cookie 并加密落盘。
 ///
-/// PikPak 目前只有这条路径（无网页扫码接口）；115 / 夸克 / UC / 阿里 / 迅雷 均已有站内扫码协议，这里作为兜底。
+/// 六家均有站内扫码协议（115/夸克/UC/阿里/迅雷/PikPak），这里仅作兜底。
 /// 返回 `Ok(None)` 表示用户关闭了窗口（取消）；超时返回错误。
 #[tauri::command]
 pub async fn open_web_login(
