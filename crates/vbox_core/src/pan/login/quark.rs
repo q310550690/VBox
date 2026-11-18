@@ -14,7 +14,7 @@
 //! 4. 换 Cookie：`GET https://pan.quark.cn/account/info?st=<service_ticket>&lw=scan`
 //!    → 响应 `Set-Cookie`（`__pus`/`__puus` 等）+ body `{"success":true}`。
 //!
-//! 与 115 的差异：夸克没有独立二维码图片接口，`image_url` 留空，由前端用 `content` 本地渲染。
+//! 与 115 的差异：夸克没有独立二维码图片接口，`image_url` 由本地 `qr_data_url(content)` 渲染成 SVG 二维码。
 //! 安全：Cookie 只进入 [`Credential`]，不打日志、不返回前端明文。
 
 use std::collections::HashMap;
@@ -237,8 +237,9 @@ impl LoginFlow for QuarkLogin {
         let scan_page = self.scan_login_page();
         let content = format!("{scan_page}?token={token}{QR_SUFFIX}");
 
-        // 夸克没有独立二维码图片接口：image_url 留空，前端用 content 本地渲染。
-        let mut ticket = QrTicket::new("", QrKind::QrCode, content, "", TTL_SECS);
+        // 夸克没有独立二维码图片接口：本地把扫码链接渲染成二维码 SVG data URL。
+        let image_url = super::qr_data_url(&content);
+        let mut ticket = QrTicket::new("", QrKind::QrCode, content, &image_url, TTL_SECS);
         ticket.state.insert("token".to_string(), token.to_string());
         Ok(ticket)
     }
@@ -439,7 +440,7 @@ mod tests {
         assert!(ticket
             .content
             .starts_with("https://su.quark.cn/4_eMHBJ?token=qt-1"));
-        assert!(ticket.image_url.is_empty());
+        assert!(ticket.image_url.starts_with("data:image/svg+xml;base64,"));
         assert_eq!(ticket.state.get("token").map(String::as_str), Some("qt-1"));
 
         assert_eq!(flow.poll(&ticket).unwrap(), LoginOutcome::Waiting);

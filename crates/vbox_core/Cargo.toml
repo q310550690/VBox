@@ -23,6 +23,8 @@ cipher = "0.4"
 # DES（csp_NiNi 的 Nivod 签名/响应解密）
 des = "0.8"
 base64 = "0.22"
+# 二维码本地渲染（夸克/UC 扫码登录：把扫码链接渲染成 SVG data URL，前端 <img> 直接显示）
+qrcodegen = "1.8"
 hex = "0.4"
 md5 = "0.7"
 # RSA（csp_Kuaikan 的 ticket 签名与响应解密；W14 远端频道清单签名校验）

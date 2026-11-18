@@ -26,6 +26,7 @@ use crate::error::{CoreError, Result};
 
 pub mod p115;
 pub mod quark;
+pub mod uc;
 pub mod xunlei;
 
 /// 已支持的 provider id（小写；与 `PanProvider::name()`、W14 的 provider 字段一致）。
@@ -63,6 +64,35 @@ pub fn now_unix() -> i64 {
 }
 
 /// 把 provider 字符串规范化为已知的小写 id；未知放回 `None`。
+/// 把扫码链接本地渲染成二维码 SVG data URL。
+///
+/// 夸克 / UC 没有官方二维码图片接口（只有扫码页链接），由此在桌面端本地生成二维码，
+/// 前端 `<img :src="ticket.image_url">` 直接显示，无需外网二维码服务。
+pub fn qr_data_url(content: &str) -> String {
+    use base64::Engine as _;
+    let Ok(qr) = qrcodegen::QrCode::encode_text(content, qrcodegen::QrCodeEcc::Medium) else {
+        return String::new();
+    };
+    let size = qr.size();
+    let border = 2;
+    let dim = size + border * 2;
+    let mut path = String::new();
+    for y in 0..size {
+        for x in 0..size {
+            if qr.get_module(x, y) {
+                path.push_str(&format!("M{},{}h1v1h-1z", x + border, y + border));
+            }
+        }
+    }
+    let svg = format!(
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 {dim} {dim}\" shape-rendering=\"crispEdges\"><rect width=\"{dim}\" height=\"{dim}\" fill=\"#ffffff\"/><path d=\"{path}\" fill=\"#000000\"/></svg>"
+    );
+    format!(
+        "data:image/svg+xml;base64,{}",
+        base64::engine::general_purpose::STANDARD.encode(svg.as_bytes())
+    )
+}
+
 pub fn normalize_provider(raw: &str) -> Option<String> {
     let id = raw.trim().to_ascii_lowercase();
     if KNOWN_PROVIDERS.contains(&id.as_str()) {
@@ -563,14 +593,15 @@ fn new_ticket_id(provider: &str) -> String {
     )
 }
 
-/// 按 W13 §5 组装默认登录中心：115 / 迅雷 / 夸克 三家支持站内扫码或设备码，
-/// 其余 provider（uc/ali/pikpak）继续走前端 WebView 兜底，不在此注册。
+/// 按 W13 §5 + W14 补齐组装默认登录中心：115 / 迅雷 / 夸克 / UC 支持站内扫码或设备码，
+/// 其余 provider（ali/pikpak）继续走前端 WebView 兜底，不在此注册。
 pub fn default_hub() -> Result<LoginHub> {
     let client = login_client()?;
     let hub = LoginHub::new();
     hub.register(Arc::new(p115::P115Login::new(client.clone())));
     hub.register(Arc::new(xunlei::XunleiLogin::new(client.clone())));
-    hub.register(Arc::new(quark::QuarkLogin::new(client)));
+    hub.register(Arc::new(quark::QuarkLogin::new(client.clone())));
+    hub.register(Arc::new(uc::UcLogin::new(client)));
     Ok(hub)
 }
 

@@ -20,9 +20,9 @@ const PROVIDER_META: { provider: string; name: string; desc: string }[] = [
   { provider: 'p115', name: '115 网盘', desc: '扫码登录；用于 115 分享解析与播放' },
   { provider: 'quark', name: '夸克网盘', desc: '扫码登录；用于夸克分享解析' },
   { provider: 'xunlei', name: '迅雷云盘', desc: '设备码授权；用于迅雷/PikPak 分享解析' },
-  { provider: 'ali', name: '阿里云盘', desc: '网页授权（WebView 登录后取回 Cookie）' },
-  { provider: 'uc', name: 'UC 网盘', desc: '网页授权（WebView 登录后取回 Cookie）' },
-  { provider: 'pikpak', name: 'PikPak', desc: '网页授权（WebView 登录后取回凭据）' },
+  { provider: 'ali', name: '阿里云盘', desc: '网页扫码（官方登录页二维码）' },
+  { provider: 'uc', name: 'UC 网盘', desc: '扫码登录；用于 UC 分享解析' },
+  { provider: 'pikpak', name: 'PikPak', desc: '网页扫码（官方登录页二维码）' },
 ]
 
 const STATUS_TEXT: Record<PanAccountStatus, string> = {
@@ -145,7 +145,13 @@ const loginProviderName = computed(
   () => PROVIDER_META.find((item) => item.provider === loginProvider.value)?.name ?? loginProvider.value,
 )
 
-/** 登录方式文案（115/夸克=扫码，迅雷=设备码） */
+/** 未登录主按钮：有协议扫码走站内弹窗，否则走官方网页扫码（WebView） */
+function primaryLogin(provider: string) {
+  if (capabilityOf(provider)?.protocol) void startLogin(provider)
+  else void webLogin(provider)
+}
+
+/** 登录方式文案（115/夸克/UC=扫码，迅雷=设备码） */
 function actionText(provider: string): string {
   return provider === 'xunlei' ? '设备码登录' : '扫码登录'
 }
@@ -338,6 +344,30 @@ const manualProvider = ref('p115')
 const manualSaving = ref(false)
 const manualForm = ref({ cookie: '', token: '', refreshToken: '', displayName: '' })
 
+/** 各网盘手动凭据的关键 Cookie/Token 字段说明（W14 补齐：扫码同源字段） */
+const MANUAL_FIELD_HINT: Record<string, string> = {
+  p115: '115：粘贴整段 Cookie，关键字段 UID / CID / SEID（115.com 登录后 F12 → Network 任一请求的 Cookie）。',
+  quark: '夸克：关键 Cookie 字段 __pus / __puus（pan.quark.cn 登录后复制整段 Cookie）。',
+  uc: 'UC：关键 Cookie 字段 __pus / __puus（drive.uc.cn 登录后复制整段 Cookie）。',
+  xunlei: '迅雷：填 Token（access_token）与 refresh_token（设备码授权后获得），Cookie 可留空。',
+  ali: '阿里：填 refresh_token（openapi 授权）或整段 Cookie（alipan.com）。',
+  pikpak: 'PikPak：填 Token（access_token）与 refresh_token，Cookie 可留空。',
+}
+const manualHint = computed(
+  () => MANUAL_FIELD_HINT[manualProvider.value] ?? '从浏览器或第三方工具导出后粘贴；至少填写 Cookie 或 Token。',
+)
+const manualCookiePlaceholder = computed(() => {
+  switch (manualProvider.value) {
+    case 'quark':
+    case 'uc':
+      return 'Cookie（关键 __pus=…; __puus=…）'
+    case 'p115':
+      return 'Cookie（如 UID=…; CID=…; SEID=…）'
+    default:
+      return 'Cookie（整段粘贴，可选）'
+  }
+})
+
 function openManual(provider: string) {
   manualProvider.value = provider
   manualForm.value = { cookie: '', token: '', refreshToken: '', displayName: '' }
@@ -388,8 +418,8 @@ onBeforeUnmount(() => {
     <header class="section-head">
       <h2 id="settings-pan" class="section-title">网盘账号</h2>
       <p class="section-desc">
-        登录网盘账号后，云盘分享可直接解析播放（115 / 夸克 / 迅雷扫码或设备码；
-        阿里 / UC / PikPak 走网页授权兜底）。凭据仅保存在本机。
+        登录网盘账号后，云盘分享可直接解析播放（115 / 夸克 / UC 扫码、迅雷设备码；
+        阿里 / PikPak 走官方网页扫码）。凭据仅保存在本机。
       </p>
     </header>
 
@@ -413,17 +443,58 @@ onBeforeUnmount(() => {
         }"
       >
         <div class="pan-card-head">
-          <div class="pan-card-title">
-            <strong>{{ meta.name }}</strong>
-            <el-tag
-              size="small"
-              :type="statusTag(meta.provider)"
-              effect="plain"
-            >
-              {{ statusText(meta.provider) }}
-            </el-tag>
+          <div class="pan-card-headmain">
+            <div class="pan-card-title">
+              <strong>{{ meta.name }}</strong>
+              <el-tag
+                size="small"
+                :type="statusTag(meta.provider)"
+                effect="plain"
+              >
+                {{ statusText(meta.provider) }}
+              </el-tag>
+            </div>
+            <span class="pan-card-desc">{{ meta.desc }}</span>
           </div>
-          <span class="pan-card-desc">{{ meta.desc }}</span>
+          <div class="pan-card-actions">
+            <template v-if="statusOf(meta.provider) === 'connected'">
+              <el-button
+                size="small"
+                :loading="verifyBusy === meta.provider"
+                :disabled="api.demoMode"
+                @click="verify(meta.provider)"
+              >
+                <template #icon><SolarIcon name="check-circle" /></template>
+                检查状态
+              </el-button>
+              <el-button
+                size="small"
+                :disabled="api.demoMode"
+                @click="logout(meta.provider)"
+              >
+                <template #icon><SolarIcon name="trash-bin-minimalistic" /></template>
+                登出
+              </el-button>
+            </template>
+            <template v-else>
+              <el-button
+                size="small"
+                type="primary"
+                :disabled="api.demoMode"
+                @click="primaryLogin(meta.provider)"
+              >
+                <template #icon><SolarIcon name="refresh-circle" /></template>
+                {{ actionText(meta.provider) }}
+              </el-button>
+              <el-button
+                size="small"
+                :disabled="api.demoMode"
+                @click="openManual(meta.provider)"
+              >
+                手动凭据
+              </el-button>
+            </template>
+          </div>
         </div>
 
         <div class="pan-card-body">
@@ -433,52 +504,6 @@ onBeforeUnmount(() => {
           </span>
         </div>
 
-        <div class="pan-card-actions">
-          <el-button
-            v-if="capabilityOf(meta.provider)?.protocol"
-            size="small"
-            type="primary"
-            :disabled="api.demoMode"
-            @click="startLogin(meta.provider)"
-          >
-            <template #icon><SolarIcon name="refresh-circle" /></template>
-            {{ actionText(meta.provider) }}
-          </el-button>
-          <el-button
-            v-if="capabilityOf(meta.provider)?.webLogin"
-            size="small"
-            :loading="webLoginBusy === meta.provider"
-            :disabled="api.demoMode"
-            @click="webLogin(meta.provider)"
-          >
-            <template #icon><SolarIcon name="square-arrow-right-up" /></template>
-            网页授权
-          </el-button>
-          <el-button
-            size="small"
-            :disabled="api.demoMode"
-            @click="openManual(meta.provider)"
-          >
-            手动凭据
-          </el-button>
-          <el-button
-            size="small"
-            :loading="verifyBusy === meta.provider"
-            :disabled="api.demoMode"
-            @click="verify(meta.provider)"
-          >
-            <template #icon><SolarIcon name="check-circle" /></template>
-            验证
-          </el-button>
-          <el-button
-            size="small"
-            :disabled="api.demoMode"
-            @click="logout(meta.provider)"
-          >
-            <template #icon><SolarIcon name="trash-bin-minimalistic" /></template>
-            退出
-          </el-button>
-        </div>
       </div>
     </div>
 
@@ -567,9 +592,7 @@ onBeforeUnmount(() => {
       width="460px"
     >
       <div class="manual-form">
-        <p class="status-label">
-          从浏览器或第三方工具导出后粘贴；至少填写 Cookie 或 Token。
-        </p>
+        <p class="status-label">{{ manualHint }}</p>
         <el-input
           v-model="manualForm.displayName"
           placeholder="显示名称（可选，如：我的 115）"
@@ -578,7 +601,7 @@ onBeforeUnmount(() => {
           v-model="manualForm.cookie"
           type="textarea"
           :rows="3"
-          placeholder="Cookie（如 UID=…; CID=…; SEID=…）"
+          :placeholder="manualCookiePlaceholder"
         />
         <el-input
           v-model="manualForm.token"
@@ -642,8 +665,16 @@ onBeforeUnmount(() => {
 
 .pan-card-head {
   display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.pan-card-headmain {
+  display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 
 .pan-card-title {
@@ -665,9 +696,8 @@ onBeforeUnmount(() => {
 
 .pan-card-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-top: auto;
+  flex-shrink: 0;
+  gap: 6px;
 }
 
 .pan-login {

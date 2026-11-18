@@ -49,7 +49,7 @@ const emit = defineEmits<{
 }
 
 .pan-account-scroll {
-  max-height: calc(80vh - 120px);
+  height: 100%;
 }
 
 .pan-account-dialog .pan-account-dialog-body :deep(.section-head) {
