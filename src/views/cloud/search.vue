@@ -86,6 +86,25 @@ const sourceLabel = computed(() => {
   return sources.pansouConfigured ? '内置内核 + PanSou' : '内置内核'
 })
 
+/** 各网盘品牌色（取自家图标主色），用于结果/详情标签着色区分 */
+const PROVIDER_COLOR: Record<string, string> = {
+  quark: '#0D53FF',
+  aliyun: '#637DFF',
+  p115: '#00A0E9',
+  xunlei: '#0086F6',
+  pikpak: '#00C1DE',
+  uc: '#FF6A00',
+  baidu: '#4E6EF2',
+  tianyi: '#E60012',
+  mobile: '#0085D0',
+  p123: '#1E90FF',
+  magnet: '#8B5CF6',
+  ed2k: '#A16207',
+  other: '#6B7280',
+}
+function providerColor(providerKey: string): string {
+  return PROVIDER_COLOR[providerKey] ?? 'var(--accent)'
+}
 function filterLabel(providerKey: string): string {
   return PROVIDER_LABEL[providerKey] ?? providerKey
 }
@@ -402,7 +421,7 @@ onActivated(() => {
               {{ titleOf(item) }}
             </h3>
             <div class="result-meta">
-              <span class="provider-tag">{{ filterLabel(item.provider) }}</span>
+              <span class="provider-tag" :style="{ '--provider-color': providerColor(item.provider) }">{{ filterLabel(item.provider) }}</span>
               <span v-if="isDead(item)" class="dead-tag">分享失效</span>
               <span v-if="item.size">{{ formatBytes(item.size) }}</span>
               <span v-if="item.publishedAt">{{ formatTime(item.publishedAt) }}</span>
@@ -486,7 +505,7 @@ onActivated(() => {
           class="detail-grid"
         >
           <span class="detail-label">标题</span><span>{{ titleOf(detail) }}</span>
-          <span class="detail-label">网盘</span><span>{{ filterLabel(detail.provider) }}</span>
+          <span class="detail-label">网盘</span><span class="provider-tag" :style="{ '--provider-color': providerColor(detail.provider) }">{{ filterLabel(detail.provider) }}</span>
           <span class="detail-label">大小</span><span>{{ detail.size ? formatBytes(detail.size) : '—' }}</span>
           <span class="detail-label">分享链接</span><span class="detail-link">{{ detail.shareUrl }}</span>
           <span class="detail-label">提取码</span>
@@ -803,8 +822,8 @@ onActivated(() => {
 .provider-tag {
   padding: 1px 8px;
   border-radius: var(--radius-pill);
-  background: var(--accent-weak);
-  color: var(--accent);
+  background: color-mix(in srgb, var(--provider-color, var(--accent)) 12%, transparent);
+  color: var(--provider-color, var(--accent));
 }
 
 .password-chip {
