@@ -34,25 +34,29 @@ const emit = defineEmits<{
   </el-dialog>
 </template>
 
-<style scoped>
-.pan-account-dialog :deep(.el-dialog) {
+<!-- 弹窗 append-to-body  teleport 到 body，scoped/:deep 选择器无法命中，
+     故这里用全局样式约束外壳：弹窗本体限高 80vh 且不整体滚动，
+     账号内容交给内部 el-scrollbar 滚动。 -->
+<style>
+.pan-account-dialog {
   display: flex;
   flex-direction: column;
   max-height: 80vh;
+  overflow: hidden;
 }
 
-.pan-account-dialog :deep(.el-dialog__body) {
+.pan-account-dialog .el-dialog__body {
   flex: 1;
   min-height: 0;
   padding: 4px 16px 16px;
   overflow: hidden;
 }
 
-.pan-account-scroll {
+.pan-account-dialog .pan-account-scroll {
   height: 100%;
 }
 
-.pan-account-dialog .pan-account-dialog-body :deep(.section-head) {
+.pan-account-dialog .pan-account-dialog-body .section-head {
   /* 弹窗标题已显示「账号管理」，面板内的分区标题不再重复 */
   display: none;
 }
