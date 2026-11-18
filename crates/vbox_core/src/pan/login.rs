@@ -133,6 +133,9 @@ pub struct QrTicket {
     pub content: String,
     #[serde(default)]
     pub image_url: String,
+    /// 供前端直接展示的可扫二维码（data URL；设备码型由授权链接本地生成）。
+    #[serde(default)]
+    pub qr_image: String,
     /// 有效期（秒）
     pub expires_in: u64,
     /// 过期时刻（Unix 秒；0 表示未知）
@@ -159,6 +162,7 @@ impl QrTicket {
             kind,
             content: content.into(),
             image_url: image_url.into(),
+            qr_image: String::new(),
             expires_in,
             expires_at: if expires_in == 0 {
                 0

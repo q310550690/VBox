@@ -27,7 +27,8 @@ use crate::error::{CoreError, Result};
 use crate::pan::xunlei::{AUTH_BASE, XUNLEI_CLIENT_ID};
 
 use super::{
-    mask_identity, now_unix, Credential, LoginFlow, LoginOutcome, QrKind, QrTicket, XUNLEI,
+    mask_identity, now_unix, qr_data_url, Credential, LoginFlow, LoginOutcome, QrKind, QrTicket,
+    XUNLEI,
 };
 
 const DEVICE_CODE_PATH: &str = "/auth/device/code";
@@ -120,8 +121,15 @@ impl LoginFlow for XunleiLogin {
             .unwrap_or(FALLBACK_VERIFY);
 
         // DeviceCode 语义：content = 用户要输入/确认的 user_code，
-        // image_url = 验证页地址（含 user_code 的 complete 链接）。
+        // image_url = 验证页地址（含 user_code 的 complete 链接），
+        // qr_image = 该验证链接本地渲染的二维码（手机迅雷扫码后在手机上确认授权）。
+        let scan_target = value
+            .get("short_uri_complete")
+            .and_then(Value::as_str)
+            .filter(|s| !s.is_empty())
+            .unwrap_or(verify_url);
         let mut ticket = QrTicket::new("", QrKind::DeviceCode, user_code, verify_url, expires_in);
+        ticket.qr_image = qr_data_url(scan_target);
         ticket
             .state
             .insert("device_code".to_string(), device_code.to_string());
@@ -301,6 +309,12 @@ mod tests {
         assert_eq!(ticket.kind, QrKind::DeviceCode);
         assert_eq!(ticket.content, "UC-1");
         assert!(ticket.image_url.contains("user_code=UC-1"));
+        // 设备码型同样给出可扫二维码（内容为 complete 短链或验证页链接）。
+        assert!(
+            ticket.qr_image.starts_with("data:image/svg+xml;base64,"),
+            "qr_image={}",
+            ticket.qr_image
+        );
         assert_eq!(ticket.expires_in, 120);
         assert_eq!(
             ticket.state.get("device_code").map(String::as_str),

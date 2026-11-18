@@ -541,15 +541,23 @@ onBeforeUnmount(() => {
         <template v-else-if="ticket">
           <!-- 115 / 扫码型：官方二维码图片 -->
           <img
-            v-if="ticket.kind === 'qr_code' && ticket.image_url"
+            v-if="ticket.kind === 'qr_code' && (ticket.image_url || ticket.qr_image)"
             class="pan-qr"
-            :src="ticket.image_url"
+            :src="ticket.image_url || ticket.qr_image"
             alt="登录二维码"
           />
-          <!-- 迅雷 / 设备码型：展示 user_code + 打开授权页 -->
+          <!-- 迅雷 / 设备码型：手机迅雷扫码授权（本地渲染二维码）+ 用户码兜底 -->
           <template v-else-if="ticket.kind === 'device_code'">
+            <img
+              v-if="ticket.qr_image"
+              class="pan-qr"
+              :src="ticket.qr_image"
+              alt="用手机迅雷扫码授权"
+            />
             <p class="pan-device-code">{{ ticket.content }}</p>
-            <p class="status-label">在浏览器打开授权页，输入上面的设备码并确认。</p>
+            <p class="status-label">
+              用手机迅雷 App 扫码并在手机上确认授权；也可以打开授权页输入上面的用户码。
+            </p>
             <el-button
               type="primary"
               @click="openExternal(ticket.image_url || ticket.content)"

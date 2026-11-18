@@ -1034,8 +1034,10 @@ export interface PanQrTicket {
   kind: 'qr_code' | 'device_code'
   /** 二维码要编码的 URL，或设备码验证地址 */
   content: string
-  /** 二维码图片地址（115 官方接口；夸克/迅雷为空串） */
+  /** 二维码图片地址（115 官方接口） */
   image_url: string
+  /** 本地渲染的可扫二维码 data URL（夸克/UC/迅雷设备码均有） */
+  qr_image: string
   /** 有效期（秒） */
   expires_in: number
   /** 过期时刻（Unix 秒；0 表示未知） */
