@@ -157,3 +157,16 @@
   --el-tag-hover-color: var(--el-color-primary-light-3);
   --el-tag-text-color: var(--el-color-white);
 }
+
+/* ---------------- 4. 确认弹窗：主操作实心主色，与次操作（默认底）明确区分 ---------------- */
+.el-message-box__btns .vbox-msgbox-confirm,
+.el-message-box__btns .vbox-msgbox-confirm:hover,
+.el-message-box__btns .vbox-msgbox-confirm:focus {
+  background-color: var(--el-color-primary);
+  border-color: var(--el-color-primary);
+  color: var(--el-color-white);
+}
+.el-message-box__btns .vbox-msgbox-confirm:hover {
+  background-color: var(--el-color-primary-light-3);
+  border-color: var(--el-color-primary-light-3);
+}

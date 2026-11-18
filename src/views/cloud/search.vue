@@ -210,10 +210,13 @@ async function play(item: CloudSearchItem): Promise<void> {
       void ElMessageBox.confirm(message, '需要登录网盘账号', {
         confirmButtonText: '去登录',
         cancelButtonText: '稍后',
+        confirmButtonClass: 'vbox-msgbox-confirm',
         type: 'warning',
       })
         .then(() => router.push({ path: '/cloud', query: { accounts: '1' } }))
         .catch(() => undefined)
+      // 未登录只给「去登录」入口，不再回退打开原分享页（避免额外弹出 webview）
+      return
     } else {
       ElMessage.warning(message)
     }
