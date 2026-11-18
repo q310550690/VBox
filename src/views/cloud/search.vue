@@ -114,8 +114,9 @@ function setFilter(value: CloudSearchProvider | ''): void {
   search.setFilter(value)
 }
 
-function onSortPick(value: CloudSortBy): void {
-  search.setSort(value)
+function toggleSort(): void {
+  const next: CloudSortBy = sort.value === 'relevance' ? 'time' : 'relevance'
+  search.setSort(next)
 }
 
 function onPageSizeChange(event: Event): void {
@@ -301,22 +302,15 @@ onActivated(() => {
         <template v-if="result.elapsedMs">
           · {{ (result.elapsedMs / 1000).toFixed(1) }}s
         </template>
-        <button
-          class="stats-refresh"
-          type="button"
-          @click="runSearch(true)"
+        <el-button
+          circle
+          class="stats-sort-btn"
+          :title="sort === 'relevance' ? '排序：相关度（点击切换为时间）' : '排序：时间（点击切换为相关度）'"
+          :aria-label="sort === 'relevance' ? '排序：相关度' : '排序：时间'"
+          @click="toggleSort"
         >
-          ⟳ 刷新
-        </button>
-        <el-select
-          :model-value="sort"
-          class="sort-select stats-sort"
-          aria-label="排序"
-          @change="onSortPick"
-        >
-          <el-option label="相关度" value="relevance" />
-          <el-option label="时间" value="time" />
-        </el-select>
+          <template #icon><SolarIcon :name="sort === 'relevance' ? 'star' : 'clock-circle'" :size="16" /></template>
+        </el-button>
       </div>
 
       <HintBar v-if="api.demoMode">
@@ -427,6 +421,7 @@ onActivated(() => {
           <div class="result-actions">
             <el-button
               circle
+              class="act-play"
               :disabled="!item.playable || isDead(item) || playingId === item.id"
               :title="!item.playable ? '暂不支持磁力/电驴播放' : isDead(item) ? '分享链接已失效' : '播放'"
               :aria-label="isDead(item) ? '已失效' : '播放'"
@@ -436,6 +431,7 @@ onActivated(() => {
             </el-button>
             <el-button
               circle
+              class="act-copy"
               title="复制链接"
               aria-label="复制链接"
               @click="copyLink(item)"
@@ -444,6 +440,7 @@ onActivated(() => {
             </el-button>
             <el-button
               circle
+              class="act-info"
               title="详情"
               aria-label="详情"
               @click="detail = item"
@@ -701,13 +698,9 @@ onActivated(() => {
   flex-shrink: 0;
 }
 
-.sort-select {
-  width: 104px;
-  flex-shrink: 0;
-}
-
-.stats-sort {
+.stats-sort-btn {
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 .search-stats {
@@ -877,6 +870,23 @@ onActivated(() => {
   flex: 0 0 auto;
   align-self: center;
   gap: var(--space-2);
+}
+
+/* 播放/复制/详情 三色区分（禁用时保持灰） */
+.result-actions .act-play:not(.is-disabled) {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-weak);
+}
+.result-actions .act-copy:not(.is-disabled) {
+  color: #2f7fd6;
+  border-color: #2f7fd6;
+  background: rgba(47, 127, 214, 0.12);
+}
+.result-actions .act-info:not(.is-disabled) {
+  color: #b7791f;
+  border-color: #b7791f;
+  background: rgba(183, 121, 31, 0.12);
 }
 
 .detail-grid {
