@@ -683,7 +683,7 @@ onActivated(() => {
     <el-dialog
       v-model="siteDialogVisible"
       title="选择点播站点"
-      width="620px"
+      width="860px"
       append-to-body
       align-center
     >
@@ -1138,8 +1138,8 @@ onActivated(() => {
 }
 
 .site-item-name {
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 auto;
+  min-width: 4em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1151,9 +1151,14 @@ onActivated(() => {
 }
 
 .site-item-badge {
-  flex-shrink: 0;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 120px;
+  overflow: hidden;
   font-size: 11px;
   color: var(--text-faint);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .site-item-retry {
@@ -1173,7 +1178,8 @@ onActivated(() => {
 }
 
 .site-item-note {
-  flex-shrink: 0;
+  flex: 0 1 auto;
+  min-width: 0;
   max-width: 120px;
   overflow: hidden;
   font-size: 10.5px;
