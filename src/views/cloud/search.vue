@@ -302,15 +302,16 @@ onActivated(() => {
         <template v-if="result.elapsedMs">
           · {{ (result.elapsedMs / 1000).toFixed(1) }}s
         </template>
-        <el-button
-          circle
+        <button
           class="stats-sort-btn"
+          type="button"
           :title="sort === 'relevance' ? '排序：相关度（点击切换为时间）' : '排序：时间（点击切换为相关度）'"
           :aria-label="sort === 'relevance' ? '排序：相关度' : '排序：时间'"
           @click="toggleSort"
         >
-          <template #icon><SolarIcon :name="sort === 'relevance' ? 'star' : 'clock-circle'" :size="16" /></template>
-        </el-button>
+          <SolarIcon :name="sort === 'relevance' ? 'star' : 'clock-circle'" :size="14" />
+          <span>{{ sort === 'relevance' ? '相关度' : '时间' }}</span>
+        </button>
       </div>
 
       <HintBar v-if="api.demoMode">
@@ -699,8 +700,22 @@ onActivated(() => {
 }
 
 .stats-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   margin-left: auto;
   flex-shrink: 0;
+  padding: 2px 6px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.stats-sort-btn:hover {
+  color: var(--accent);
 }
 
 .search-stats {
