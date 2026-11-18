@@ -155,13 +155,6 @@ function statusOf(item: CloudSearchItem): string {
   return isDead(item) ? '分享失效' : '可解析（未验证）'
 }
 
-/** 转存按 provider 灰度：目前没有 provider 通过风控评估，按钮统一置灰「暂不支持」 */
-const TRANSFER_ENABLED: ReadonlySet<string> = new Set<string>()
-
-function transferAllowed(providerKey: string): boolean {
-  return TRANSFER_ENABLED.has(providerKey)
-}
-
 function submit(): void {
   const word = input.value.trim()
   if (!word) return
@@ -498,6 +491,8 @@ onActivated(() => {
         :model-value="!!detail"
         title="资源详情"
         width="560px"
+        align-center
+        append-to-body
         @update:model-value="detail = null"
       >
         <div
@@ -507,7 +502,22 @@ onActivated(() => {
           <span class="detail-label">标题</span><span>{{ titleOf(detail) }}</span>
           <span class="detail-label">网盘</span><span class="provider-tag" :style="{ '--provider-color': providerColor(detail.provider) }">{{ filterLabel(detail.provider) }}</span>
           <span class="detail-label">大小</span><span>{{ detail.size ? formatBytes(detail.size) : '—' }}</span>
-          <span class="detail-label">分享链接</span><span class="detail-link">{{ detail.shareUrl }}</span>
+          <span class="detail-label">分享链接</span>
+          <span class="detail-link-row">
+            <button
+              class="detail-link-open"
+              type="button"
+              title="打开原页"
+              @click="openExternal(detail)"
+            >{{ detail.shareUrl }}</button>
+            <button
+              class="detail-copy"
+              type="button"
+              title="复制链接"
+              aria-label="复制链接"
+              @click="copyLink(detail)"
+            ><SolarIcon name="copy" :size="14" /></button>
+          </span>
           <span class="detail-label">提取码</span>
           <span>
             <button
@@ -526,29 +536,6 @@ onActivated(() => {
           <span class="detail-label">状态</span>
           <span :class="isDead(detail) ? 'detail-status is-dead' : 'detail-status'">{{ statusOf(detail) }}</span>
         </div>
-        <template #footer>
-          <el-button @click="detail && copyLink(detail)">
-            复制链接
-          </el-button>
-          <el-button @click="detail && openExternal(detail)">
-            打开原页
-          </el-button>
-          <span
-            class="transfer-wrap"
-            :title="detail && transferAllowed(detail.provider) ? '转存到我的网盘' : '转存功能按 provider 灰度，当前暂不支持'"
-          >
-            <el-button :disabled="!detail || !transferAllowed(detail.provider)">
-              转存到我的网盘
-            </el-button>
-          </span>
-          <el-button
-            type="primary"
-            :disabled="!detail?.playable || (!!detail && playingId === detail.id)"
-            @click="detail && play(detail)"
-          >
-            立即播放
-          </el-button>
-        </template>
       </el-dialog>
   </div>
 </template>
@@ -893,7 +880,48 @@ onActivated(() => {
   color: var(--text-muted);
 }
 
-.detail-link {
-  word-break: break-all;
+.detail-grid .provider-tag {
+  justify-self: start;
+}
+
+.detail-link-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.detail-link-open {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-link-open:hover {
+  text-decoration: underline;
+}
+
+.detail-copy {
+  flex-shrink: 0;
+  margin-left: auto;
+  display: inline-flex;
+  padding: 2px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.detail-copy:hover {
+  color: var(--accent);
 }
 </style>
