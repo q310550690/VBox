@@ -504,9 +504,12 @@ fn write_cache(
  * ============================================================ */
 
 pub fn find_site<'a>(cfg: &'a TvConfig, key: &str) -> Result<&'a Site> {
+    // 订阅源里的 key 常带前后空格（如「一起看 」「 在线┃直播1」），加载时已归一化；
+    // 查找两侧都 trim，避免调用方传原始 key 时 SiteNotFound。
+    let want = key.trim();
     cfg.sites
         .iter()
-        .find(|s| s.key == key)
+        .find(|s| s.key.trim() == want)
         .ok_or_else(|| CoreError::SiteNotFound(key.to_string()))
 }
 
@@ -524,6 +527,17 @@ mod tests {
         let cfg = load_config(json).unwrap();
         assert_eq!(cfg.sites.len(), 1);
         assert_eq!(cfg.sites[0].kind, 1);
+    }
+
+    #[test]
+    fn find_site_trims_whitespace_on_both_sides() {
+        // 订阅源 key 常带前后空格；加载归一化后，调用方传原始 key 也应命中。
+        let json = r#"{"sites":[{"key":" 一起看 ","name":"A","type":3,"api":"csp_YQKan"}],"lives":[],"parses":[]}"#;
+        let cfg = load_config(json).unwrap();
+        assert!(find_site(&cfg, "一起看").is_ok());
+        assert!(find_site(&cfg, " 一起看 ").is_ok());
+        assert!(find_site(&cfg, "一起看 ").is_ok());
+        assert!(find_site(&cfg, "不存在").is_err());
     }
 
     #[test]

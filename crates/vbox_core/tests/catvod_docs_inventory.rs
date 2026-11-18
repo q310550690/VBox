@@ -41,6 +41,7 @@ const MANUAL: &[&str] = &[
     "docs/type3兼容/type3-翻译层与引擎工作包.md",
     "docs/研发计划/W13-网盘账号登录面板.md",
     "docs/研发计划/W14-云盘聚合搜索.md",
+    "docs/审计报告/REA原生站点实测.md",
     "docs/归档/归档摘要-aspirecode-workbuddy-2026-11-06.md",
     "docs/归档/早期分析草稿/draft-1-config.md",
     "docs/归档/早期分析草稿/draft-2-sites.md",
