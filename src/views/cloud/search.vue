@@ -6,7 +6,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { storeToRefs } from 'pinia'
 import SolarIcon from '@/components/SolarIcon.vue'
-import PageScroll from '@/components/PageScroll.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import SearchInput from '@/views/search/components/SearchInput.vue'
 import { cloudSearchHint, detectCloudSearchCode } from '@/utils/cloudErrors'
@@ -57,7 +56,6 @@ const detail = ref<CloudSearchItem | null>(null)
 // 状态/结果缓存统一放 store（W14 §7.3）：KeepAlive 返回本页不重复请求后端。
 const search = useCloudSearchStore()
 const { provider, sort, page, pageSize, result, loading, error } = storeToRefs(search)
-const pageCount = computed(() => search.pageCount)
 const countsByProvider = computed(() => search.countsByProvider)
 const allCount = computed(() => search.allCount)
 const sourceTrouble = computed(() => search.sourceTrouble)
@@ -119,8 +117,8 @@ function toggleSort(): void {
   search.setSort(next)
 }
 
-function onPageSizeChange(event: Event): void {
-  search.setPageSize(Number((event.target as HTMLSelectElement).value))
+function onPageSizeChange(size: number): void {
+  search.setPageSize(size)
 }
 
 /** 分享被取消/过期的错误文案：标记失效，避免重复点击 */
@@ -244,8 +242,7 @@ onActivated(() => {
 </script>
 
 <template>
-  <PageScroll>
-    <div class="page cloud-search-page">
+  <div class="page cloud-search-page">
       <header class="search-top">
         <div class="search-left">
           <section class="search-bar panel">
@@ -390,6 +387,8 @@ onActivated(() => {
         v-else-if="result && result.items.length"
         class="result-list"
       >
+        <el-scrollbar class="result-scroll">
+          <div class="result-rows">
         <article
           v-for="item in result.items"
           :key="item.id"
@@ -450,6 +449,8 @@ onActivated(() => {
             </el-button>
           </div>
         </article>
+          </div>
+        </el-scrollbar>
       </div>
 
       <EmptyState
@@ -458,47 +459,18 @@ onActivated(() => {
         :desc="`没有找到与「${keyword}」相关的云盘资源，试试更短的关键词。`"
       />
 
-      <div
+      <el-pagination
         v-if="result && result.items.length"
         class="search-pager"
-      >
-        <label class="page-size">
-          每页
-          <select
-            :model-value="pageSize"
-            @change="onPageSizeChange"
-          >
-            <option :value="20">
-              20
-            </option>
-            <option :value="30">
-              30
-            </option>
-            <option :value="50">
-              50
-            </option>
-          </select>
-        </label>
-        <template v-if="pageCount > 1">
-          <button
-            class="pager-btn"
-            type="button"
-            :disabled="page <= 1"
-            @click="goPage(page - 1)"
-          >
-            上一页
-          </button>
-          <span class="pager-info">第 {{ page }} / {{ pageCount }} 页</span>
-          <button
-            class="pager-btn"
-            type="button"
-            :disabled="page >= pageCount"
-            @click="goPage(page + 1)"
-          >
-            下一页
-          </button>
-        </template>
-      </div>
+        background
+        layout="total, sizes, prev, pager, next"
+        :total="result.total"
+        :current-page="page"
+        :page-size="pageSize"
+        :page-sizes="[20, 30, 50]"
+        @current-change="goPage"
+        @size-change="onPageSizeChange"
+      />
 
       <el-dialog
         :model-value="!!detail"
@@ -556,8 +528,7 @@ onActivated(() => {
           </el-button>
         </template>
       </el-dialog>
-    </div>
-  </PageScroll>
+  </div>
 </template>
 
 <style scoped>
@@ -600,46 +571,10 @@ onActivated(() => {
 }
 
 .search-pager {
+  flex-shrink: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 18px 0 6px;
-}
-
-.pager-btn {
-  padding: 6px 14px;
-  border-radius: var(--radius-md, 8px);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: inherit;
-  cursor: pointer;
-}
-
-.pager-btn:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
-.pager-info {
-  font-size: 13px;
-  opacity: 0.8;
-}
-
-.page-size {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  opacity: 0.8;
-}
-
-.page-size select {
-  padding: 4px 8px;
-  border-radius: var(--radius-md, 8px);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: inherit;
+  justify-content: flex-end;
+  padding-top: var(--space-2);
 }
 
 .detail-status {
@@ -665,7 +600,17 @@ onActivated(() => {
 
 /* 与其它内容页统一：内边距与块间距由全局 .page 提供 */
 .cloud-search-page {
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.cloud-search-page > * {
+  flex-shrink: 0;
+}
+
+.cloud-search-page > .result-list {
+  flex-shrink: 1;
 }
 
 .search-top {
@@ -803,9 +748,19 @@ onActivated(() => {
 }
 
 .result-list {
+  flex: 1;
+  min-height: 0;
+}
+
+.result-scroll {
+  height: 100%;
+}
+
+.result-rows {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  padding-right: 4px;
 }
 
 .result-row {
