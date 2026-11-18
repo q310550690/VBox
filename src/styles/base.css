@@ -150,6 +150,16 @@ img {
   margin-left: 0;
 }
 
+/* 分页：页码 / 前后翻页按钮与长方形按钮统一 --radius-md（每页条数选择器走 .el-select__wrapper 已有圆角） */
+.el-pagination .btn-prev,
+.el-pagination .btn-next,
+.el-pagination .el-pager li,
+.el-pagination.is-background .btn-prev,
+.el-pagination.is-background .btn-next,
+.el-pagination.is-background .el-pager li {
+  border-radius: var(--radius-md);
+}
+
 /* 弹窗类底部按钮：改用 gap 控制间距（上面去掉了相邻按钮的 margin） */
 .el-dialog__footer,
 .el-message-box__btns,
