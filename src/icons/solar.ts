@@ -18,6 +18,7 @@ import arrowDown from '@/assets/solar-linear/solar--arrow-down-linear.svg?raw'
 import arrowLeft from '@/assets/solar-linear/solar--arrow-left-linear.svg?raw'
 import arrowRight from '@/assets/solar-linear/solar--arrow-right-linear.svg?raw'
 import arrowUp from '@/assets/solar-linear/solar--arrow-up-linear.svg?raw'
+import sortVertical from '@/assets/solar-linear/solar--sort-vertical-linear.svg?raw'
 import box from '@/assets/solar-linear/solar--box-linear.svg?raw'
 import chatRoundLine from '@/assets/solar-linear/solar--chat-round-line-linear.svg?raw'
 import checkCircle from '@/assets/solar-linear/solar--check-circle-linear.svg?raw'
@@ -131,6 +132,7 @@ export const solarIcons = {
   'skip-previous': skipPrevious,
   'square-arrow-right-up': squareArrowRightUp,
   star,
+  'sort-vertical': sortVertical,
   subtitles,
   sun,
   'trash-bin-minimalistic': trashBinMinimalistic,

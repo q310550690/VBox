@@ -309,7 +309,7 @@ onActivated(() => {
           :aria-label="sort === 'relevance' ? '排序：相关度' : '排序：时间'"
           @click="toggleSort"
         >
-          <SolarIcon :name="sort === 'relevance' ? 'star' : 'clock-circle'" :size="14" />
+          <SolarIcon name="sort-vertical" :size="14" />
           <span>{{ sort === 'relevance' ? '相关度' : '时间' }}</span>
         </button>
       </div>
