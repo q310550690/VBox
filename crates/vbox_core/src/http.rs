@@ -39,6 +39,9 @@ fn build_client(rules: &Rules, insecure: bool) -> Result<reqwest::blocking::Clie
     if insecure {
         builder = builder.danger_accept_invalid_certs(true);
     }
+    // 桌面端系统代理（Windows 设置里的代理 / HTTPS_PROXY 等）自动套用，
+    // 保证订阅、搜索、解析在需要代理的网络环境下可用。
+    builder = crate::net::apply_system_proxy(builder);
     builder.build().map_err(CoreError::Http)
 }
 
@@ -349,9 +352,7 @@ pub fn post_json_text(
     extra: &HashMap<String, String>,
     body: &str,
 ) -> Result<String> {
-    let mut req = client
-        .post(url)
-        .header("Content-Type", "application/json");
+    let mut req = client.post(url).header("Content-Type", "application/json");
     for (k, v) in extra {
         req = req.header(k, v);
     }
@@ -493,7 +494,11 @@ mod tests_retry {
         let client = client_for(&Rules::default()).expect("client");
         let err = get_text(&client, &format!("{base}/boom"), &HashMap::new(), 2)
             .expect_err("500 must fail");
-        assert_eq!(hits.load(Ordering::SeqCst), 3, "500 应按 retries=2 重试三次");
+        assert_eq!(
+            hits.load(Ordering::SeqCst),
+            3,
+            "500 应按 retries=2 重试三次"
+        );
         assert!(err.to_string().contains("HTTP 500"), "{err}");
     }
 }

@@ -5,7 +5,8 @@
 // - 后续支持：type3 jar（需 Android Host）
 // 页面（源 tab / 站点弹窗 / 设置页线路统计 / 搜索空态 / 错误态）都从这里取结论，
 // 避免再出现“暂不支持”这类绝对措辞。
-import type { Site, SiteStats, SiteSupportLevel } from '@/types'
+import { shallowRef } from 'vue'
+import type { Site, SiteApiSupport, SiteStats, SiteSupportLevel } from '@/types'
 
 /**
  * Python spider 能力开关。
@@ -120,6 +121,35 @@ export function isJarSpider(site: Site): boolean {
   )
 }
 
+/**
+ * REA 画像缓存（api → 支持画像）。
+ *
+ * 站点选择器/统计用到的 `classifySite` 是纯函数，这里用 shallowRef 保存画像：
+ * 在 computed/模板中调用时会自动建立响应式依赖，画像异步加载完成后自动重算。
+ */
+const apiSupport = shallowRef<Record<string, SiteApiSupport>>({})
+
+/** 写入 REA 画像（`site_api_support` 命令结果）；重复调用整体替换。 */
+export function setSiteApiSupport(rows: SiteApiSupport[]): void {
+  const map: Record<string, SiteApiSupport> = {}
+  for (const row of rows) {
+    if (row.api) map[row.api] = row
+  }
+  apiSupport.value = map
+}
+
+/** 当前 api 的画像（无画像返回 undefined）。 */
+function supportOf(site: Site): SiteApiSupport | undefined {
+  const api = apiOf(site)
+  return api ? apiSupport.value[api] : undefined
+}
+
+/** 待移植/不支持原因：优先 REA 阻塞原因解释，其次画像 reason。 */
+function blockedText(profile: SiteApiSupport | undefined, fallback: string): string {
+  if (!profile) return fallback
+  return profile.blockedHint || profile.reason || fallback
+}
+
 /** 判定单个源的本机支持能力与展示文案 */
 export function classifySite(site: Site): SiteCapability {
   switch (site.type) {
@@ -171,11 +201,40 @@ export function classifySite(site: Site): SiteCapability {
               reason: '后续支持（需系统 Python 运行时）',
             }
       }
+      const profile = supportOf(site)
+      // REA 画像已判定为原生实现（规则引擎 / 原生解析家族）：不再误标「待移植」。
+      if (profile?.native || profile?.strategy === 'rulepack') {
+        return { level: 'local', local: true, rank: 0, note: '原生实现（REA 画像）' }
+      }
+      if (profile?.strategy === 'unported') {
+        return {
+          level: 'jar',
+          local: false,
+          rank: 2,
+          reason: blockedText(profile, '待移植（需 Android Host）'),
+        }
+      }
+      if (profile?.strategy === 'unsupported') {
+        return {
+          level: 'unsupported',
+          local: false,
+          rank: 3,
+          reason: blockedText(profile, 'REA 画像判定为不支持'),
+        }
+      }
+      if (profile) {
+        return {
+          level: 'jar',
+          local: false,
+          rank: 2,
+          reason: blockedText(profile, '待移植（需 Android Host）'),
+        }
+      }
       return {
         level: 'jar',
         local: false,
         rank: 2,
-        reason: '后续支持（需 Android Host）',
+        reason: '待评估（未在 REA 画像中命中）',
       }
     }
     default:

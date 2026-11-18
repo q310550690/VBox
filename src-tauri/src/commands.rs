@@ -1363,6 +1363,56 @@ pub async fn refresh_node_status() -> vbox_core::node::NodeStatus {
     }
 }
 
+/* ---------------- 站点 api 支持画像（REA 产物，供站点选择器联动） ---------------- */
+
+/// 单个 api 的 REA 画像摘要（前端站点选择器据此区分「原生实现 / 待移植 / 不支持」，
+/// 避免只按 type/api 前缀猜测导致把已原生实现的源误标「后续支持」）。
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SiteApiSupport {
+    pub api: String,
+    /// 已有原生实现（规则引擎 / 原生解析家族）
+    pub native: bool,
+    /// rulepack / script / unported / unsupported
+    pub strategy: String,
+    pub class: Option<String>,
+    pub jars: Vec<String>,
+    pub difficulty: Option<String>,
+    pub reason: Option<String>,
+    pub blocked_reason: Option<String>,
+    /// 阻塞原因的用户可读解释（待移植/不支持时展示）
+    pub blocked_hint: Option<String>,
+    /// 画像覆盖的站点数
+    pub sites: u32,
+}
+
+#[tauri::command]
+pub fn site_api_support() -> Vec<SiteApiSupport> {
+    use vbox_core::spider::catvod::registry;
+    let mut rows: Vec<SiteApiSupport> = registry::profiles()
+        .apis
+        .iter()
+        .map(|(api, profile)| SiteApiSupport {
+            api: api.clone(),
+            native: registry::is_native_ready(api),
+            strategy: profile.strategy.clone(),
+            class: profile.class.clone(),
+            jars: profile.jars.clone(),
+            difficulty: profile.difficulty.clone(),
+            reason: profile.reason.clone(),
+            blocked_reason: profile.blocked_reason.clone(),
+            blocked_hint: profile
+                .blocked_reason
+                .as_deref()
+                .map(registry::blocked_reason_hint)
+                .map(str::to_string),
+            sites: profile.sites,
+        })
+        .collect();
+    rows.sort_by(|a, b| a.api.cmp(&b.api));
+    rows
+}
+
 /* ---------------- 播放器（libmpv，后续阶段） ---------------- */
 
 #[tauri::command]

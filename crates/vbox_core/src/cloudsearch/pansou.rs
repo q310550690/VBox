@@ -36,8 +36,8 @@ pub struct PanSouSource {
 impl PanSouSource {
     /// 构造（`base_url` 允许不带 scheme，缺省会补 `http://`）。
     pub fn new(base_url: impl Into<String>, token: Option<String>) -> Result<Self, CoreError> {
-        let client = reqwest::blocking::Client::builder()
-            .timeout(Duration::from_secs(10))
+        let builder = reqwest::blocking::Client::builder().timeout(Duration::from_secs(10));
+        let client = crate::net::apply_system_proxy(builder)
             .build()
             .map_err(CoreError::Http)?;
         Ok(Self::with_client(base_url, token, client))
@@ -553,14 +553,20 @@ mod tests {
         });
         let items = parse_payload(&payload);
         assert_eq!(items.len(), 2);
-        assert!(items.iter().any(|item| item.provider == SearchProvider::Quark));
-        assert!(items.iter().any(|item| item.provider == SearchProvider::Aliyun));
+        assert!(items
+            .iter()
+            .any(|item| item.provider == SearchProvider::Quark));
+        assert!(items
+            .iter()
+            .any(|item| item.provider == SearchProvider::Aliyun));
     }
 
     #[test]
     fn rejects_unrecognized_payload_structure() {
         let error = validate_payload(&serde_json::json!({"code": 0, "message": "ok"})).unwrap_err();
-        assert!(matches!(error, CoreError::Json { ref path, .. } if path == "pansou.merged_by_type"));
+        assert!(
+            matches!(error, CoreError::Json { ref path, .. } if path == "pansou.merged_by_type")
+        );
         assert!(validate_payload(&serde_json::json!({"data": []})).is_ok());
         assert!(validate_payload(&serde_json::json!([{"title": "x"}])).is_ok());
         assert!(validate_payload(&serde_json::json!("plain text")).is_err());

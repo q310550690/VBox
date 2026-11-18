@@ -10,6 +10,7 @@ import SolarIcon from '@/components/SolarIcon.vue'
 import PageScroll from '@/components/PageScroll.vue'
 import HintBar from '@/components/HintBar.vue'
 import AccountDrawer from '@/components/cloud/AccountDrawer.vue'
+import StatusTabs from '@/components/StatusTabs.vue'
 import DoubanCard from '@/views/vod/components/DoubanCard.vue'
 import { proxyImage } from '@/utils/image'
 import * as api from '@/api'
@@ -145,6 +146,24 @@ function selectDouban(item: DoubanItem) {
 
 /** 只渲染已登录且凭据有效的网盘；过期也显示（置灰）以便提示重新登录 */
 const pills = computed(() => cloudAccounts.pills)
+/** 左上网盘 tab：与下载/设置页同款 StatusTabs；过期凭据置灰 + 「!」角标 */
+const pillTabs = computed(() =>
+  pills.value.map((account) => ({
+    value: account.account_id,
+    label: providerName(account.provider),
+    muted: account.status === 'expired',
+    badge: account.status === 'expired' ? '!' : undefined,
+    title:
+      account.status === 'expired'
+        ? '凭据已过期，点击重新登录'
+        : `打开 ${providerName(account.provider)} 云盘`,
+  })),
+)
+
+function onPillTab(accountId: string) {
+  const account = pills.value.find((a) => a.account_id === accountId)
+  if (account) openPill(account)
+}
 const providerName = (provider: string): string => cloudAccounts.providerName(provider)
 
 async function loadAccounts() {
@@ -243,26 +262,16 @@ watch(accountsOpen, (open) => {
       </div>
 
       <header class="cloud-top">
-        <div class="cloud-pills">
-          <button
-            v-for="account in pills"
-            :key="account.account_id"
-            class="cloud-pill"
-            :class="{ 'is-expired': account.status === 'expired' }"
-            type="button"
-            :title="account.status === 'expired' ? '凭据已过期，点击重新登录' : `打开 ${providerName(account.provider)} 云盘`"
-            @click="openPill(account)"
-          >
-            <SolarIcon
-              name="cloud-storage"
-              :size="14"
-            />
-            <span>{{ providerName(account.provider) }}</span>
-            <span
-              v-if="account.status === 'expired'"
-              class="cloud-pill-badge"
-            >!</span>
-          </button>
+        <div
+          v-if="pillTabs.length"
+          class="cloud-pills"
+        >
+          <StatusTabs
+            :items="pillTabs"
+            model-value=""
+            aria-label="已登录网盘"
+            @change="onPillTab"
+          />
         </div>
 
         <div class="site-btn">
@@ -438,7 +447,7 @@ watch(accountsOpen, (open) => {
   min-height: 32px;
 }
 
-/* 左上胶囊：与点播页分类 chip 同款（无边框、surface-2 底），但页面不加渐变背景 */
+/* 左上网盘 tab：与下载/设置页同款 StatusTabs（页面不加渐变背景） */
 .cloud-pills {
   display: flex;
   align-items: center;
@@ -451,46 +460,8 @@ watch(accountsOpen, (open) => {
   display: none;
 }
 
-.cloud-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex: 0 0 auto;
-  padding: 7px 14px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-pill);
-  background: var(--surface-2);
-  color: var(--text-regular);
-  font-size: 13px;
-  line-height: 1;
-  white-space: nowrap;
-  cursor: pointer;
-  transition:
-    background-color 0.16s ease,
-    color 0.16s ease;
-}
-
-.cloud-pill:hover {
-  background: var(--surface-3);
-  color: var(--text);
-}
-
-.cloud-pill.is-expired {
-  opacity: 0.68;
-}
-
-.cloud-pill-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--warning);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
+.cloud-pills :deep(.status-tabs) {
+  flex-wrap: nowrap;
 }
 
 /* 右上角圆形按钮：与点播页搜索按钮（.site-btn > el-button circle）一致 */

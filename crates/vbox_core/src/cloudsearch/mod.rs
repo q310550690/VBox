@@ -23,7 +23,6 @@ pub mod tg;
 use crate::error::CoreError;
 use serde::{Deserialize, Serialize};
 
-
 /// W14 §6.8 云盘搜索错误码。
 ///
 /// Tauri 命令在错误消息前携带 `code：`，前端据此给出「去配置 / 重试」等动作；
@@ -396,8 +395,8 @@ mod builtin_sources_tests {
             .and_then(|v| v.as_array())
             .expect("channels 必须是数组");
         assert!(
-            (6..=10).contains(&channels.len()),
-            "内置频道数量应在 6~10 之间，实际 {}",
+            (6..=40).contains(&channels.len()),
+            "内置频道数量应在合理范围（6~40），实际 {}",
             channels.len()
         );
         for channel in channels {
@@ -417,7 +416,9 @@ mod builtin_sources_tests {
     fn builtin_channels_filters_disabled_and_normalizes() {
         let handles = builtin_channels();
         assert!(!handles.is_empty());
-        assert!((6..=10).contains(&handles.len()));
+        // 频道清单会随 PanSou 上游变更，只约束大致规模，避免每次校准都改测试。
+        assert!((6..=40).contains(&handles.len()));
+        assert!(handles.iter().any(|handle| handle == "tgsearchers7"));
         assert!(
             !handles.iter().any(|handle| handle == "legacy_channel"),
             "enabled=false 的频道不应返回"
@@ -610,15 +611,23 @@ mod tests {
     fn maps_errors_to_w14_codes() {
         use crate::error::CoreError;
         assert_eq!(
-            code_of_error(&CoreError::Config("Telegram 频道均不可达（可能需要配置网络代理）".into())),
+            code_of_error(&CoreError::Config(
+                "Telegram 频道均不可达（可能需要配置网络代理）".into()
+            )),
             codes::SOURCE_UNAVAILABLE
         );
         assert_eq!(
-            code_of_error(&CoreError::Json { path: "pansou.merged_by_type".into(), msg: "x".into() }),
+            code_of_error(&CoreError::Json {
+                path: "pansou.merged_by_type".into(),
+                msg: "x".into()
+            }),
             codes::PANSOU_INVALID
         );
         assert_eq!(
-            code_of_error(&CoreError::Json { path: "tg".into(), msg: "x".into() }),
+            code_of_error(&CoreError::Json {
+                path: "tg".into(),
+                msg: "x".into()
+            }),
             codes::ALL_SOURCES_FAILED
         );
         assert_eq!(

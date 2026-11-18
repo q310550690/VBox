@@ -68,6 +68,8 @@ async function resetOne(item: SourceHealth) {
   try {
     await api.sourceHealthReset(item.kind, item.key)
     await load()
+    // 同步全局健康快照：站点选择器/首页的 isSiteDisabled 依赖 store.config.health
+    await config.loadHealth()
   } catch (e) {
     error.value = api.formatError(e)
   } finally {
@@ -81,6 +83,7 @@ async function resetAll() {
   try {
     await api.sourceHealthResetAll()
     await load()
+    await config.loadHealth()
   } catch (e) {
     error.value = api.formatError(e)
   } finally {

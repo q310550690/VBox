@@ -8,8 +8,8 @@
 //! 说明：Telegram 网页没有稳定公开 API，这里只做「HTML 结构容错解析」，
 //! 选择器一旦失效只会导致结果变少，不会 panic（找不到文本块就跳过）。
 
-use std::sync::Arc;
 use std::sync::mpsc;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use scraper::{ElementRef, Html, Selector};
@@ -417,9 +417,10 @@ impl TgKernelSource {
 
     /// 按默认 UA / 超时构造 client。
     pub fn with_default_client(channels: Vec<String>) -> Result<Self, CoreError> {
-        let client = reqwest::blocking::Client::builder()
+        let builder = reqwest::blocking::Client::builder()
             .timeout(Duration::from_secs(15))
-            .user_agent(DEFAULT_UA)
+            .user_agent(DEFAULT_UA);
+        let client = crate::net::apply_system_proxy(builder)
             .build()
             .map_err(CoreError::Http)?;
         Ok(Self::new(client, channels))
@@ -446,7 +447,6 @@ impl TgKernelSource {
             sort: Default::default(),
         }
     }
-
 }
 
 /// 抓取单个频道并解析；HTTP / 解析失败都返回 `CoreError`（由调用方决定降级）。
@@ -757,6 +757,24 @@ mod tests {
         assert_eq!(
             TgChannel::new("t.me/yunpan_channel/").search_url("电影"),
             "https://t.me/s/yunpan_channel?q=%E7%94%B5%E5%BD%B1"
+        );
+    }
+
+    #[test]
+    #[ignore = "live: 需要可访问 t.me 的网络（桌面端可用系统代理）"]
+    fn live_builtin_channels_return_results() {
+        let source = TgKernelSource::with_default_client(crate::cloudsearch::builtin_channels())
+            .expect("client");
+        let query = SearchQuery {
+            keyword: "可能".to_string(),
+            page: 1,
+            page_size: 20,
+            ..SearchQuery::default()
+        };
+        let page = source.search(&query).expect("search");
+        assert!(
+            !page.items.is_empty(),
+            "内置频道没有返回结果：检查网络/代理与频道清单是否失效"
         );
     }
 

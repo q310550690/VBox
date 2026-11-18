@@ -241,6 +241,7 @@ pub fn run() {
             logs::open_log_window,
             commands::douban_home,
             commands::douban_home_cached,
+            commands::site_api_support,
             commands::sniff,
             commands::live_sources,
             commands::live_groups,

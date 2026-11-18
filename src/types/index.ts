@@ -784,6 +784,23 @@ export interface UiPersist {
 /** 源的本机支持级别：local=本机可加载；python=Python 运行时未就绪；jar=需 Android Host（后续）；unsupported=其它 */
 export type SiteSupportLevel = 'local' | 'python' | 'jar' | 'unsupported'
 
+/** 站点 api 的 REA 画像摘要（后端 site_api_support 返回，用于站点选择器联动） */
+export interface SiteApiSupport {
+  api: string
+  /** 已有原生实现（规则引擎 / 原生解析家族） */
+  native: boolean
+  /** rulepack / script / unported / unsupported */
+  strategy: string
+  class?: string | null
+  jars: string[]
+  difficulty?: string | null
+  reason?: string | null
+  blockedReason?: string | null
+  /** 阻塞原因的用户可读解释 */
+  blockedHint?: string | null
+  sites: number
+}
+
 /** 一条线路 / 一个站点集合的源能力统计（设置页展示“本机可用 / jar”） */
 export interface SiteStats {
   total: number

@@ -26,17 +26,30 @@ const emit = defineEmits<{
     align-center
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <div class="settings-page pan-account-dialog-body">
-      <AccountPanel :focus-provider="focusProvider" />
-    </div>
+    <el-scrollbar class="pan-account-scroll">
+      <div class="settings-page pan-account-dialog-body">
+        <AccountPanel :focus-provider="focusProvider" />
+      </div>
+    </el-scrollbar>
   </el-dialog>
 </template>
 
 <style scoped>
+.pan-account-dialog :deep(.el-dialog) {
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+}
+
 .pan-account-dialog :deep(.el-dialog__body) {
-  max-height: 62vh;
-  overflow-y: auto;
-  padding-top: 4px;
+  flex: 1;
+  min-height: 0;
+  padding: 4px 16px 16px;
+  overflow: hidden;
+}
+
+.pan-account-scroll {
+  max-height: calc(80vh - 120px);
 }
 
 .pan-account-dialog .pan-account-dialog-body :deep(.section-head) {

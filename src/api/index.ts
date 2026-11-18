@@ -1084,6 +1084,12 @@ export async function sourceHealthList(): Promise<SourceHealth[]> {
   return core.sourceHealthList()
 }
 
+/** 站点 api 支持画像（REA 产物）；demo 返回空数组 */
+export async function siteApiSupport(): Promise<import('@/types').SiteApiSupport[]> {
+  if (demoMode) return []
+  return core.siteApiSupport()
+}
+
 /** 记录一次源请求结果（前端记录解析/搜索等失败） */
 export async function sourceHealthRecord(
   kind: string,

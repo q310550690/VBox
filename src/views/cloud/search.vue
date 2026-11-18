@@ -8,6 +8,8 @@ import { storeToRefs } from 'pinia'
 import SolarIcon from '@/components/SolarIcon.vue'
 import PageScroll from '@/components/PageScroll.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import SearchInput from '@/views/search/components/SearchInput.vue'
+import HotSearch from '@/views/search/components/HotSearch.vue'
 import { cloudSearchHint, detectCloudSearchCode } from '@/utils/cloudErrors'
 import HintBar from '@/components/HintBar.vue'
 import * as api from '@/api'
@@ -52,6 +54,8 @@ const CORE_FILTER_SET = new Set<string>(CORE_FILTERS)
 const keyword = computed(() => String(route.params.keyword ?? ''))
 const input = ref(keyword.value)
 const detail = ref<CloudSearchItem | null>(null)
+const hotKeywords = ref<string[]>([])
+const hotLoading = ref(false)
 
 // 状态/结果缓存统一放 store（W14 §7.3）：KeepAlive 返回本页不重复请求后端。
 const search = useCloudSearchStore()
@@ -113,8 +117,28 @@ function setFilter(value: CloudSearchProvider | ''): void {
   search.setFilter(value)
 }
 
-function onSortChange(event: Event): void {
-  search.setSort((event.target as HTMLSelectElement).value as CloudSortBy)
+function onSortPick(value: CloudSortBy): void {
+  search.setSort(value)
+}
+
+function onPickHot(word: string): void {
+  input.value = word
+  if (word === keyword.value) {
+    void search.run(true)
+    return
+  }
+  void router.push(`/cloud/search/${encodeURIComponent(word)}`)
+}
+
+async function loadHot(): Promise<void> {
+  hotLoading.value = true
+  try {
+    hotKeywords.value = await api.cloudHotSearches()
+  } catch {
+    hotKeywords.value = []
+  } finally {
+    hotLoading.value = false
+  }
 }
 
 function onPageSizeChange(event: Event): void {
@@ -234,6 +258,7 @@ onMounted(() => {
   search.initialize(keyword.value)
   void search.run()
   void sources.load()
+  void loadHot()
 })
 onActivated(() => {
   search.initialize(keyword.value)
@@ -245,41 +270,59 @@ onActivated(() => {
   <PageScroll>
     <div class="page cloud-search-page">
       <header class="search-top">
-        <el-button
-          circle
-          class="back-btn"
-          aria-label="返回"
-          @click="router.push('/cloud')"
+        <div class="search-left">
+          <section class="search-bar panel">
+            <el-button
+              circle
+              class="back-btn"
+              aria-label="返回云盘"
+              @click="router.push('/cloud')"
+            >
+              <template #icon>
+                <SolarIcon name="arrow-left" />
+              </template>
+            </el-button>
+            <SearchInput
+              :model-value="input"
+              :loading="loading"
+              placeholder="搜索全网云盘资源…"
+              @update:model-value="input = $event"
+              @search="submit"
+              @clear="input = ''"
+            />
+            <el-select
+              :model-value="sort"
+              class="sort-select"
+              aria-label="排序"
+              @change="onSortPick"
+            >
+              <el-option label="相关度" value="relevance" />
+              <el-option label="时间" value="time" />
+            </el-select>
+          </section>
+      <div class="filter-chips">
+        <button
+          v-for="item in filters"
+          :key="item.value"
+          class="filter-chip"
+          :class="{ 'is-active': provider === item.value }"
+          type="button"
+          @click="setFilter(item.value)"
         >
-          <template #icon>
-            <SolarIcon name="arrow-left" />
-          </template>
-        </el-button>
-        <div class="search-box">
-          <input
-            v-model="input"
-            class="search-input"
-            type="text"
-            placeholder="搜索全网云盘资源…"
-            @keydown.enter="submit"
-          >
-          <button
-            class="search-submit"
-            type="button"
-            @click="submit"
-          >
-            搜索
-          </button>
+          {{ item.label }}
+          <span
+            v-if="chipCount(item.value)"
+            class="filter-count"
+          >{{ chipCount(item.value) }}</span>
+        </button>
+      </div>
         </div>
-        <select
-          :model-value="sort"
-          class="search-select"
-          aria-label="排序"
-          @change="onSortChange"
-        >
-          <option value="relevance">相关度</option>
-          <option value="time">时间</option>
-        </select>
+        <HotSearch
+          class="hot-panel"
+          :items="hotKeywords"
+          :loading="hotLoading"
+          @pick="onPickHot"
+        />
       </header>
 
       <div
@@ -303,23 +346,6 @@ onActivated(() => {
           @click="runSearch(true)"
         >
           ⟳ 刷新
-        </button>
-      </div>
-
-      <div class="filter-chips">
-        <button
-          v-for="item in filters"
-          :key="item.value"
-          class="filter-chip"
-          :class="{ 'is-active': provider === item.value }"
-          type="button"
-          @click="setFilter(item.value)"
-        >
-          {{ item.label }}
-          <span
-            v-if="chipCount(item.value)"
-            class="filter-count"
-          >{{ chipCount(item.value) }}</span>
         </button>
       </div>
 
@@ -673,59 +699,44 @@ onActivated(() => {
 }
 
 .search-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 30%);
+  align-items: stretch;
+  gap: var(--space-4);
+  flex-shrink: 0;
+}
+
+.search-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.search-bar {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-2);
+}
+
+.search-bar :deep(.search-input) {
+  flex: 1;
+  min-width: 0;
 }
 
 .back-btn {
   flex-shrink: 0;
 }
 
-.search-box {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 4px 4px 4px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface);
+.sort-select {
+  width: 104px;
+  flex-shrink: 0;
 }
 
-.search-box:focus-within {
-  border-color: var(--accent);
-}
-
-.search-input {
-  flex: 1;
-  min-width: 0;
-  border: 0;
-  outline: none;
-  background: transparent;
-  color: var(--text);
-  font-size: 14px;
-  line-height: 28px;
-}
-
-.search-submit {
-  padding: 5px 16px;
-  border: 0;
-  border-radius: 6px;
-  background: var(--accent);
-  color: var(--text-on-accent);
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.search-select {
-  height: 32px;
-  padding: 0 8px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface);
-  color: var(--text);
-  font-size: 13px;
+.hot-panel {
+  min-height: 0;
 }
 
 .search-stats {

@@ -1,16 +1,58 @@
 {
-  "version": "2026.11.17",
+  "version": "2026.11.18",
   "updated_at": 0,
   "channels": [
-    { "handle": "yunpan_channel", "enabled": true },
-    { "handle": "aliyunpan_share", "enabled": true },
-    { "handle": "quark_share", "enabled": true },
-    { "handle": "baidu_share", "enabled": true },
-    { "handle": "tianyi_pan", "enabled": true },
-    { "handle": "xunlei_share", "enabled": true },
-    { "handle": "pikpak_channel", "enabled": true },
-    { "handle": "uc_share", "enabled": true },
-    { "handle": "res_115", "enabled": true },
-    { "handle": "legacy_channel", "enabled": false }
+    {
+      "handle": "tgsearchers7",
+      "enabled": true
+    },
+    {
+      "handle": "Q66Share",
+      "enabled": true
+    },
+    {
+      "handle": "Aliyun_4K_Movies",
+      "enabled": true
+    },
+    {
+      "handle": "Quark_Movies",
+      "enabled": true
+    },
+    {
+      "handle": "dianying4k",
+      "enabled": true
+    },
+    {
+      "handle": "PanjClub",
+      "enabled": true
+    },
+    {
+      "handle": "yunpanx",
+      "enabled": true
+    },
+    {
+      "handle": "yunpanquark",
+      "enabled": true
+    },
+    {
+      "handle": "XunLeiPinDao",
+      "enabled": true
+    },
+    {
+      "handle": "shareAliyun",
+      "enabled": true
+    },
+    {
+      "handle": "movielover8888_film3",
+      "enabled": true
+    },
+    {
+      "handle": "quark_share",
+      "enabled": true
+    },
+    {
+      "handle": "pikpakshare",
+      "enabled": true
+    }
   ]
 }

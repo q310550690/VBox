@@ -7,7 +7,7 @@ import { computed, onActivated, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import SolarIcon from '@/components/SolarIcon.vue'
 import * as api from '@/api'
-import CategoryChips from './components/CategoryChips.vue'
+import StatusTabs from '@/components/StatusTabs.vue'
 import DoubanHome from './components/DoubanHome.vue'
 import ContinueWatching from './components/ContinueWatching.vue'
 import VideoGrid from '@/components/VideoGrid.vue'
@@ -317,6 +317,12 @@ function retry() {
 
 /* ---------------- 交互 ---------------- */
 
+/** 顶部分类 tab：内置「首页」+ 后端分类（与下载/设置页同款 StatusTabs） */
+const categoryTabs = computed(() => [
+  { value: '', label: '首页' },
+  ...categories.value.map((c) => ({ value: c.type_id, label: c.type_name })),
+])
+
 function onCategorySelect(typeId: string) {
   if (typeId === category.value) return
   category.value = typeId
@@ -415,6 +421,8 @@ function reload() {
 /** 打开站点选择弹窗（多仓时弹窗内也会展示仓库切换） */
 function openSiteDialog() {
   siteKeyword.value = ''
+  // 进入弹窗前刷新源健康：设置页重置后首页/弹窗立即联动
+  void config.loadHealth()
   siteDialogVisible.value = true
 }
 
@@ -432,6 +440,41 @@ function onSiteHealthBlocked(site: SourceTabItem) {
     `源「${site.name}」连续失败 ${record?.failures ?? 3} 次${reason}；可在 设置 → 源健康 重置`,
     'warning',
   )
+}
+
+/** 站点徽标文案：按 REA 画像给出「待移植 / 需 Python / 不支持 / 待评估」。 */
+function siteBadge(site: SourceTabItem): string {
+  if (site.supported) return ''
+  if (site.level === 'jar') return '待移植'
+  if (site.level === 'python') return '需 Python'
+  if (site.level === 'unsupported') return '不支持'
+  return '待评估'
+}
+
+/** 站点按钮 tooltip：本机可用给能力范围，不可用给 REA 画像原因（避免省略号看不到全文）。 */
+function siteTitle(site: SourceTabItem): string {
+  if (!site.supported) return `${site.name} · ${site.reason ?? '暂不可用'}`
+  return site.note ? `${site.name} · ${site.note}` : site.name
+}
+
+/** 源健康禁用项的「重试」：清空该站点失败记录并重新加载全局健康快照。 */
+async function retrySite(site: SourceTabItem) {
+  if (api.demoMode) {
+    ui.notify('演示模式不支持重试源健康', 'info')
+    return
+  }
+  try {
+    await api.sourceHealthReset('site', site.key)
+    await config.loadHealth()
+    if (siteDisabled(site.key)) {
+      ui.notify(`源「${site.name}」仍处于禁用状态，请稍后再试`, 'warning')
+      return
+    }
+    ui.notify(`已重置源「${site.name}」健康记录`, 'success')
+    pickSite(site.key)
+  } catch (e) {
+    ui.notify('重置源健康记录失败：' + api.formatError(e), 'error')
+  }
 }
 
 function pickSite(key: string) {
@@ -527,6 +570,8 @@ watch(
 onActivated(() => {
   // 从播放页 / 历史页返回时刷新「继续观看」（KeepAlive 缓存期间数据可能已变化）
   if (history.initialized) void history.load()
+  // 设置页可能刚重置源健康：回到点播页时刷新禁用快照
+  void config.loadHealth()
 })
 </script>
 
@@ -557,10 +602,11 @@ onActivated(() => {
           v-else
           class="cat-scrollbar"
         >
-          <CategoryChips
-            :categories="categories"
-            :active="category"
-            @select="onCategorySelect"
+          <StatusTabs
+            :items="categoryTabs"
+            :model-value="category"
+            aria-label="首页与当前站点分类"
+            @change="onCategorySelect"
           />
         </el-scrollbar>
       </div>
@@ -658,10 +704,11 @@ onActivated(() => {
         </button>
       </div>
 
-      <!-- 能力顺序说明：本机源优先，jar 源标记后续支持 -->
+      <!-- 能力说明：本机源优先；不可用源按 REA 画像标注原因（待移植 / 需 Python / 不支持） -->
       <p class="dlg-hint">
-        本机可用源排在前面（XML / 苹果CMS / HTTP 远程接口 / JS spider / 原生规则引擎 XYQHiker、XBPQ /
-        Python，需系统 Python）；Android jar 源标记“后续支持（需 Android Host）”。
+        支持情况与 REA 站点画像联动：本机可用的源排在前面（XML / 苹果CMS / HTTP 远程接口 / JS spider /
+        原生规则引擎 / 原生解析家族 / Python，需系统 Python）；画像判定为待移植的源会标注具体原因，
+        鼠标悬停可查看完整说明。
       </p>
 
       <el-input
@@ -693,6 +740,7 @@ onActivated(() => {
             class="site-item"
             :class="{ 'is-active': s.key === siteKey, 'is-disabled': !s.supported || siteDisabled(s.key) }"
             :aria-pressed="s.key === siteKey"
+            :title="siteTitle(s)"
             @click="!s.supported ? onSiteBlocked(s) : siteDisabled(s.key) ? onSiteHealthBlocked(s) : pickSite(s.key)"
           >
             <span
@@ -702,19 +750,28 @@ onActivated(() => {
             <span
               v-if="s.supported && s.note"
               class="site-item-note"
+              :title="s.note"
             >{{ s.note }}</span>
             <span
               v-if="!s.supported"
               class="site-item-badge"
+              :title="s.reason"
             >
-              {{ s.level === 'jar' || s.level === 'python' ? '后续支持' : '暂未适配' }}
+              {{ siteBadge(s) }}
             </span>
-            <span
-              v-else-if="siteDisabled(s.key)"
-              class="site-item-badge site-item-badge--health"
-            >
-              连续失败 {{ config.healthOf('site', s.key)?.failures ?? 3 }} 次
-            </span>
+            <template v-else-if="siteDisabled(s.key)">
+              <span class="site-item-badge site-item-badge--health">
+                连续失败 {{ config.healthOf('site', s.key)?.failures ?? 3 }} 次
+              </span>
+              <span
+                class="site-item-retry"
+                role="button"
+                tabindex="0"
+                title="重置该站点失败记录并切换过去"
+                @click.stop="retrySite(s)"
+                @keydown.enter.stop="retrySite(s)"
+              >重试</span>
+            </template>
             <SolarIcon
               v-else-if="s.key === siteKey"
               class="site-item-check"
@@ -949,7 +1006,7 @@ onActivated(() => {
 
 .cat-scrollbar {
   width: 100%;
-  height: 32px;
+  height: 34px;
 }
 
 /* 分类标签在 32px 高度内垂直居中（el-scrollbar 的滚动容器默认是块级） */
@@ -958,7 +1015,7 @@ onActivated(() => {
   align-items: center;
 }
 
-.cat-scrollbar :deep(.category-chips) {
+.cat-scrollbar :deep(.status-tabs) {
   flex-wrap: nowrap;
 }
 
@@ -967,7 +1024,7 @@ onActivated(() => {
   display: none;
 }
 
-.cat-strip :deep(.chip) {
+.cat-strip :deep(.status-tab) {
   flex-shrink: 0;
   padding: 5px 12px;
   font-size: 12.5px;
@@ -1097,6 +1154,22 @@ onActivated(() => {
   flex-shrink: 0;
   font-size: 11px;
   color: var(--text-faint);
+}
+
+.site-item-retry {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  color: var(--accent);
+  font-size: 11px;
+  line-height: 16px;
+  cursor: pointer;
+}
+
+.site-item-retry:hover {
+  border-color: var(--accent);
+  background: var(--accent-weak);
 }
 
 .site-item-note {

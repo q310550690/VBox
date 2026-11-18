@@ -601,6 +601,11 @@ export function sourceHealthReset(kind: string, key: string) {
 export function sourceHealthResetAll() {
   return invoke<void>('source_health_reset_all')
 }
+
+// 站点 api 支持画像（REA 产物；站点选择器据此区分原生实现/待移植/不支持）
+export function siteApiSupport() {
+  return invoke<import('@/types').SiteApiSupport[]>('site_api_support')
+}
 // 源健康度：按 catvod 稳定码聚合失败（错误码分布）
 export function sourceHealthCodeStats() {
   return invoke<import('@/types').ErrorCodeStat[]>('source_health_code_stats')
