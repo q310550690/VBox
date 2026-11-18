@@ -515,6 +515,8 @@ onBeforeUnmount(() => {
     <!-- 协议登录弹窗：二维码 / 设备码 -->
     <el-dialog
       v-model="loginVisible"
+      align-center
+      append-to-body
       :title="`${loginProviderName} 登录`"
       width="380px"
       :close-on-click-modal="false"
@@ -585,6 +587,7 @@ onBeforeUnmount(() => {
       <template #footer>
         <el-button :disabled="loginStarting" @click="closeLogin">取消</el-button>
         <el-button
+          type="primary"
           :disabled="loginStarting"
           @click="refreshTicket"
         >
@@ -596,6 +599,8 @@ onBeforeUnmount(() => {
     <!-- 手动凭据弹窗 -->
     <el-dialog
       v-model="manualVisible"
+      align-center
+      append-to-body
       title="手动填写凭据"
       width="460px"
     >

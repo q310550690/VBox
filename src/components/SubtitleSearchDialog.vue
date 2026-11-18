@@ -118,6 +118,7 @@ async function load(item: OnlineSubtitle) {
 
 <template>
   <el-dialog
+    align-center
     v-model="visible"
     width="720px"
     top="8vh"
