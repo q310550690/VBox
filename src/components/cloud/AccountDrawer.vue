@@ -45,15 +45,30 @@ const emit = defineEmits<{
   overflow: hidden;
 }
 
+/* 不加自定义 padding：间距沿用 el-dialog 自带 padding。
+   高度链路全部走 flex（不用 height:100%）：dialog 80vh 限高 → body flex:1 →
+   el-scrollbar 根与内部 wrap 各 flex:1 + min-height:0，wrap 才有确定可视高度并真正滚动。 */
 .pan-account-dialog .el-dialog__body {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
-  padding: 4px 16px 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
 .pan-account-dialog .pan-account-scroll {
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.pan-account-dialog .pan-account-scroll .el-scrollbar__wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
 }
 
 .pan-account-dialog .pan-account-dialog-body .section-head {
