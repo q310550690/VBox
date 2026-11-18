@@ -9,7 +9,6 @@ import SolarIcon from '@/components/SolarIcon.vue'
 import PageScroll from '@/components/PageScroll.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import SearchInput from '@/views/search/components/SearchInput.vue'
-import HotSearch from '@/views/search/components/HotSearch.vue'
 import { cloudSearchHint, detectCloudSearchCode } from '@/utils/cloudErrors'
 import HintBar from '@/components/HintBar.vue'
 import * as api from '@/api'
@@ -54,8 +53,6 @@ const CORE_FILTER_SET = new Set<string>(CORE_FILTERS)
 const keyword = computed(() => String(route.params.keyword ?? ''))
 const input = ref(keyword.value)
 const detail = ref<CloudSearchItem | null>(null)
-const hotKeywords = ref<string[]>([])
-const hotLoading = ref(false)
 
 // 状态/结果缓存统一放 store（W14 §7.3）：KeepAlive 返回本页不重复请求后端。
 const search = useCloudSearchStore()
@@ -119,26 +116,6 @@ function setFilter(value: CloudSearchProvider | ''): void {
 
 function onSortPick(value: CloudSortBy): void {
   search.setSort(value)
-}
-
-function onPickHot(word: string): void {
-  input.value = word
-  if (word === keyword.value) {
-    void search.run(true)
-    return
-  }
-  void router.push(`/cloud/search/${encodeURIComponent(word)}`)
-}
-
-async function loadHot(): Promise<void> {
-  hotLoading.value = true
-  try {
-    hotKeywords.value = await api.cloudHotSearches()
-  } catch {
-    hotKeywords.value = []
-  } finally {
-    hotLoading.value = false
-  }
 }
 
 function onPageSizeChange(event: Event): void {
@@ -258,7 +235,6 @@ onMounted(() => {
   search.initialize(keyword.value)
   void search.run()
   void sources.load()
-  void loadHot()
 })
 onActivated(() => {
   search.initialize(keyword.value)
@@ -290,15 +266,6 @@ onActivated(() => {
               @search="submit"
               @clear="input = ''"
             />
-            <el-select
-              :model-value="sort"
-              class="sort-select"
-              aria-label="排序"
-              @change="onSortPick"
-            >
-              <el-option label="相关度" value="relevance" />
-              <el-option label="时间" value="time" />
-            </el-select>
           </section>
       <div class="filter-chips">
         <button
@@ -317,12 +284,6 @@ onActivated(() => {
         </button>
       </div>
         </div>
-        <HotSearch
-          class="hot-panel"
-          :items="hotKeywords"
-          :loading="hotLoading"
-          @pick="onPickHot"
-        />
       </header>
 
       <div
@@ -347,6 +308,15 @@ onActivated(() => {
         >
           ⟳ 刷新
         </button>
+        <el-select
+          :model-value="sort"
+          class="sort-select stats-sort"
+          aria-label="排序"
+          @change="onSortPick"
+        >
+          <el-option label="相关度" value="relevance" />
+          <el-option label="时间" value="time" />
+        </el-select>
       </div>
 
       <HintBar v-if="api.demoMode">
@@ -455,29 +425,31 @@ onActivated(() => {
             </div>
           </div>
           <div class="result-actions">
-            <button
-              class="action-btn"
-              type="button"
+            <el-button
+              circle
               :disabled="!item.playable || isDead(item) || playingId === item.id"
               :title="!item.playable ? '暂不支持磁力/电驴播放' : isDead(item) ? '分享链接已失效' : '播放'"
+              :aria-label="isDead(item) ? '已失效' : '播放'"
               @click="play(item)"
             >
-              {{ isDead(item) ? '已失效' : '播放' }}
-            </button>
-            <button
-              class="action-btn"
-              type="button"
+              <template #icon><SolarIcon name="play" :size="16" /></template>
+            </el-button>
+            <el-button
+              circle
+              title="复制链接"
+              aria-label="复制链接"
               @click="copyLink(item)"
             >
-              复制
-            </button>
-            <button
-              class="action-btn"
-              type="button"
+              <template #icon><SolarIcon name="copy" :size="16" /></template>
+            </el-button>
+            <el-button
+              circle
+              title="详情"
+              aria-label="详情"
               @click="detail = item"
             >
-              详情
-            </button>
+              <template #icon><SolarIcon name="info-circle" :size="16" /></template>
+            </el-button>
           </div>
         </article>
       </div>
@@ -699,10 +671,9 @@ onActivated(() => {
 }
 
 .search-top {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 30%);
-  align-items: stretch;
-  gap: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
   flex-shrink: 0;
 }
 
@@ -735,8 +706,8 @@ onActivated(() => {
   flex-shrink: 0;
 }
 
-.hot-panel {
-  min-height: 0;
+.stats-sort {
+  margin-left: auto;
 }
 
 .search-stats {
@@ -905,26 +876,6 @@ onActivated(() => {
   display: flex;
   flex: 0 0 auto;
   gap: var(--space-2);
-}
-
-.action-btn {
-  padding: 4px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--text-regular);
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.action-btn:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.action-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
 }
 
 .detail-grid {
