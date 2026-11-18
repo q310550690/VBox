@@ -39,9 +39,8 @@ fn build_client(rules: &Rules, insecure: bool) -> Result<reqwest::blocking::Clie
     if insecure {
         builder = builder.danger_accept_invalid_certs(true);
     }
-    // 桌面端系统代理（Windows 设置里的代理 / HTTPS_PROXY 等）自动套用，
-    // 保证订阅、搜索、解析在需要代理的网络环境下可用。
-    builder = crate::net::apply_system_proxy(builder);
+    // 通用客户端保持直连：国内点播/网盘站点经海外代理反而可能被阻断或改版。
+    // 系统代理只套用在确实需要翻墙的出网源（云盘搜索 TG / PanSou，见 cloudsearch）。
     builder.build().map_err(CoreError::Http)
 }
 

@@ -29,13 +29,22 @@ pub fn apply_system_proxy(
         return builder;
     };
     match reqwest::Proxy::all(&url) {
-        Ok(proxy) => {
-            builder.proxy(proxy.no_proxy(reqwest::NoProxy::from_string("localhost,127.0.0.1,::1")))
-        }
+        Ok(proxy) => builder.proxy(proxy.no_proxy(reqwest::NoProxy::from_string(&no_proxy_list()))),
         Err(err) => {
             tracing::warn!(%url, %err, "系统代理地址无效，已忽略");
             builder
         }
+    }
+}
+
+/// 不走代理的主机列表：本机回环 + 用户 `NO_PROXY` / `no_proxy` 环境变量。
+///
+/// 尊重 `NO_PROXY` 让「某些域名直连」成为可能（也便于测试模拟纯直连的 DNS 失败）。
+fn no_proxy_list() -> String {
+    const LOOPBACK: &str = "localhost,127.0.0.1,::1";
+    match std::env::var("NO_PROXY").or_else(|_| std::env::var("no_proxy")) {
+        Ok(extra) if !extra.trim().is_empty() => format!("{},{}", extra.trim(), LOOPBACK),
+        _ => LOOPBACK.to_string(),
     }
 }
 
