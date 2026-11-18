@@ -875,6 +875,7 @@ onActivated(() => {
 .result-actions {
   display: flex;
   flex: 0 0 auto;
+  align-self: center;
   gap: var(--space-2);
 }
 
