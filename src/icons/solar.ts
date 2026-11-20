@@ -57,8 +57,11 @@ import playbackSpeed from '@/assets/solar-linear/solar--playback-speed-linear.sv
 import playlist from '@/assets/solar-linear/solar--playlist-linear.svg?raw'
 import quitFullScreen from '@/assets/solar-linear/solar--quit-full-screen-linear.svg?raw'
 import quitPip from '@/assets/solar-linear/solar--quit-pip-linear.svg?raw'
+import panelLeftClose from '@/assets/solar-linear/solar--panel-left-close-linear.svg?raw'
+import panelLeftOpen from '@/assets/solar-linear/solar--panel-left-open-linear.svg?raw'
 import refresh from '@/assets/solar-linear/solar--refresh-linear.svg?raw'
 import refreshCircle from '@/assets/solar-linear/solar--refresh-circle-linear.svg?raw'
+import linkRound from '@/assets/solar-linear/solar--link-round-linear.svg?raw'
 import repeat from '@/assets/solar-linear/solar--repeat-linear.svg?raw'
 import restart from '@/assets/solar-linear/solar--restart-linear.svg?raw'
 import settings from '@/assets/solar-linear/solar--settings-linear.svg?raw'
@@ -122,9 +125,12 @@ export const solarIcons = {
   'playback-speed': playbackSpeed,
   playlist,
   'quit-full-screen': quitFullScreen,
+  'panel-left-close': panelLeftClose,
+  'panel-left-open': panelLeftOpen,
   'quit-pip': quitPip,
   refresh,
   'refresh-circle': refreshCircle,
+  'link-round': linkRound,
   repeat,
   restart,
   settings,

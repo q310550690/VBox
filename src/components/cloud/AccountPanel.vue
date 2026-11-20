@@ -521,7 +521,7 @@ onBeforeUnmount(() => {
       align-center
       append-to-body
       :title="`${loginProviderName} 登录`"
-      width="380px"
+      class="dlg-sm"
       :close-on-click-modal="false"
       @closed="closeLogin"
     >
@@ -605,7 +605,7 @@ onBeforeUnmount(() => {
       align-center
       append-to-body
       title="手动填写凭据"
-      width="460px"
+      class="dlg-md"
     >
       <div class="manual-form">
         <p class="status-label">{{ manualHint }}</p>
@@ -670,9 +670,9 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3);
-  border: 1px solid var(--el-border-color);
+  border: 0;
   border-radius: var(--radius-md);
-  background: var(--el-fill-color-lighter);
+  background: var(--surface-inset);
 }
 
 .pan-card.is-connected {
@@ -728,7 +728,7 @@ onBeforeUnmount(() => {
   width: 200px;
   height: 200px;
   image-rendering: pixelated;
-  border: 1px solid var(--el-border-color);
+  border: 0;
   border-radius: var(--radius-md);
   background: #fff;
 }

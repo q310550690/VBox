@@ -371,9 +371,9 @@ onMounted(() => {
   justify-content: space-between;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--border-lighter);
+  border: 0;
   border-radius: var(--radius-md);
-  background: var(--surface-2);
+  background: var(--surface-inset);
 }
 
 .health-main {

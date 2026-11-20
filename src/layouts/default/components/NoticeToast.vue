@@ -59,8 +59,8 @@ const LEVEL_ICONS: Record<ToastLevel, SolarIconName> = {
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
-  border: 1px solid var(--border);
+  padding: 10px 12px 10px 13px;
+  border: 1px solid var(--edge);
   border-left: 3px solid var(--accent);
   border-radius: var(--radius-md);
   background: var(--surface);

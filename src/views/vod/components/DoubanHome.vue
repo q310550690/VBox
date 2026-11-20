@@ -234,7 +234,7 @@ function updatedText(ms: number): string {
   align-items: center;
   min-height: 356px;
   padding: var(--space-5) var(--space-6);
-  border: 1px solid var(--border-light);
+  border: 0;
   border-radius: var(--radius-lg);
   background: var(--surface);
 }
@@ -295,12 +295,12 @@ function updatedText(ms: number): string {
   display: none;
 }
 
+/* 二级 tab：不再用下划线（与一级分段器区分靠"没有底板"），选中只见颜色与字重 */
 .douban-tab {
   flex-shrink: 0;
   padding: 7px 12px;
   border: 0;
-  border-bottom: 2px solid transparent;
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  border-radius: var(--radius-pill);
   background: none;
   color: var(--text-muted);
   font: inherit;
@@ -308,9 +308,8 @@ function updatedText(ms: number): string {
   white-space: nowrap;
   cursor: pointer;
   transition:
-    color 0.16s ease,
-    background-color 0.16s ease,
-    border-color 0.16s ease;
+    color var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease);
 }
 
 .douban-tab:hover {
@@ -319,8 +318,7 @@ function updatedText(ms: number): string {
 }
 
 .douban-tab.is-active {
-  border-bottom-color: var(--accent);
-  color: var(--accent);
+  color: var(--text-strong);
   font-weight: 600;
 }
 

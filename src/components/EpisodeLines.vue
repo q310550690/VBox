@@ -68,9 +68,9 @@ function handleSelect(index: number) {
 
 .line-chip {
   padding: 7px 14px;
-  border: 1px solid transparent;
+  border: 0;
   border-radius: var(--radius-pill);
-  background: var(--surface-2);
+  background: var(--surface-inset);
   color: var(--text-regular);
   font: inherit;
   font-size: 13px;
@@ -83,14 +83,15 @@ function handleSelect(index: number) {
 }
 
 .line-chip:hover {
-  background: var(--surface-3);
+  background: color-mix(in srgb, var(--el-color-primary) 10%, var(--surface-inset));
   color: var(--text);
 }
 
-/* 当前线路：--accent 高亮 */
+/* 当前线路：主色染底 + 提亮文字，不实心（实心只给"正在播放"和主按钮） */
 .line-chip--active,
 .line-chip--active:hover {
-  background: var(--accent);
-  color: var(--text-on-accent);
+  background: color-mix(in srgb, var(--el-color-primary) 16%, var(--surface-card));
+  color: var(--text-strong);
+  font-weight: 600;
 }
 </style>

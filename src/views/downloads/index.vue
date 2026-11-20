@@ -249,7 +249,7 @@ onMounted(() => {
   <PageScroll>
     <div class="page downloads-page">
     <!-- 页头：标题 + 状态筛选 tab + 统计/目录 + 全局圆形操作 -->
-    <header class="page-header">
+    <header class="page-header head-sticky">
       <div class="header-left">
         <StatusTabs v-model="activeTab" :items="TABS" aria-label="下载状态筛选" />
       </div>
@@ -262,6 +262,7 @@ onMounted(() => {
         <span class="dir" :title="store.settings.dir">
           目录：{{ store.settings.dir || '加载中…' }}
         </span>
+        <div class="page-toolbar">
         <el-tooltip content="播放本地文件：把视频/音频拖到窗口任意位置" placement="bottom">
           <el-button circle aria-label="播放本地文件" @click="onLocalFileTips">
             <template #icon><SolarIcon name="play" :size="16" /></template>
@@ -280,6 +281,7 @@ onMounted(() => {
         <el-tooltip content="全部暂停" placement="bottom">
           <el-button
             circle
+            type="warning"
             :disabled="!canPauseAll"
             aria-label="全部暂停"
             @click="onPauseAll"
@@ -292,6 +294,7 @@ onMounted(() => {
             <template #icon><SolarIcon name="folder-open" :size="16" /></template>
           </el-button>
         </el-tooltip>
+      </div>
       </div>
     </header>
 

@@ -45,7 +45,8 @@ async function loadEnv() {
   try {
     pansouEnv.value = await api.cloudPansouEnv()
   } catch (e) {
-    ui.notify('检测 Docker 环境失败：' + api.formatError(e), 'error')
+    // 浏览器预览没有 Tauri 运行时：这是预期内的不可用，不要弹错误提示
+    if (!api.demoMode) ui.notify('检测 Docker 环境失败：' + api.formatError(e), 'error')
   } finally {
     detectingEnv.value = false
   }
@@ -65,7 +66,7 @@ async function load() {
   try {
     await sources.load(true)
   } catch (e) {
-    ui.notify('读取云盘搜索源状态失败：' + api.formatError(e), 'error')
+    if (!api.demoMode) ui.notify('读取云盘搜索源状态失败：' + api.formatError(e), 'error')
   }
 }
 

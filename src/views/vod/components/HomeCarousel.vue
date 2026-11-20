@@ -433,7 +433,7 @@ onDeactivated(() => {
   height: 100%;
   padding: 0;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--surface) 60%, var(--border));
+  border: 0;
   border-radius: var(--radius-lg);
   background: var(--surface-2);
   box-shadow: 0 18px 40px color-mix(in srgb, var(--bg) 65%, transparent);
@@ -588,9 +588,9 @@ onDeactivated(() => {
   width: 26px;
   height: 26px;
   padding: 0;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  background: var(--surface-2);
   color: var(--text-muted);
   cursor: pointer;
   transition:

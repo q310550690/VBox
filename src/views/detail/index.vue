@@ -1159,7 +1159,7 @@ function goList() {
   <PageScroll>
     <div class="page detail-page">
     <!-- 顶部操作条：返回（圆形图标按钮）+ 影视名称 + 站点名（纯文字，不用 tag）+ 刷新 -->
-    <header class="page-header">
+    <header class="page-header page-header--card">
       <div class="heading">
         <el-button circle aria-label="返回上一页" @click="goBack">
           <template #icon><SolarIcon name="arrow-left" /></template>
@@ -1168,14 +1168,16 @@ function goList() {
         <span v-if="detail?.name && siteName" class="heading-sep" aria-hidden="true">·</span>
         <span v-if="siteName" class="heading-site ellipsis-1">{{ siteName }}</span>
       </div>
-      <el-button
-        circle
-        :disabled="loading"
-        aria-label="重新加载详情"
-        @click="loadDetail"
-      >
-        <template #icon><SolarIcon name="refresh" :size="14" /></template>
-      </el-button>
+      <div class="head-actions">
+        <el-button
+          circle
+          :disabled="loading"
+          aria-label="重新加载详情"
+          @click="loadDetail"
+        >
+          <template #icon><SolarIcon name="refresh" :size="15" /></template>
+        </el-button>
+      </div>
     </header>
 
     <!-- 演示数据提示条 -->
@@ -1394,7 +1396,8 @@ function goList() {
   font-size: 12px;
   color: var(--text-muted);
   background: var(--info-weak);
-  border: 1px solid var(--border-lighter);
+  border: 0;
+  border-left: 3px solid var(--info);
   border-radius: var(--radius-md);
 }
 
@@ -1516,7 +1519,7 @@ function goList() {
 .watch-skeleton {
   padding: var(--space-3);
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-lg);
 }
 

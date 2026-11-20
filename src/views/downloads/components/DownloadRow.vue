@@ -183,12 +183,12 @@ const metaText = computed(() => {
       <div class="actions" @click.stop>
         <template v-if="task.status === 'downloading'">
           <el-tooltip content="暂停" placement="top">
-            <el-button circle aria-label="暂停" @click="emit('control', task.id, 'pause')">
+            <el-button circle type="warning" aria-label="暂停" @click="emit('control', task.id, 'pause')">
               <template #icon><SolarIcon name="pause" :size="16" /></template>
             </el-button>
           </el-tooltip>
           <el-tooltip content="取消" placement="top">
-            <el-button circle aria-label="取消" @click="emit('control', task.id, 'cancel')">
+            <el-button circle type="danger" aria-label="取消" @click="emit('control', task.id, 'cancel')">
               <template #icon><SolarIcon name="close" :size="16" /></template>
             </el-button>
           </el-tooltip>
@@ -200,14 +200,14 @@ const metaText = computed(() => {
             </el-button>
           </el-tooltip>
           <el-tooltip content="取消" placement="top">
-            <el-button circle aria-label="取消" @click="emit('control', task.id, 'cancel')">
+            <el-button circle type="danger" aria-label="取消" @click="emit('control', task.id, 'cancel')">
               <template #icon><SolarIcon name="close" :size="16" /></template>
             </el-button>
           </el-tooltip>
         </template>
         <template v-else-if="task.status === 'queued'">
           <el-tooltip content="取消" placement="top">
-            <el-button circle aria-label="取消" @click="emit('control', task.id, 'cancel')">
+            <el-button circle type="danger" aria-label="取消" @click="emit('control', task.id, 'cancel')">
               <template #icon><SolarIcon name="close" :size="16" /></template>
             </el-button>
           </el-tooltip>

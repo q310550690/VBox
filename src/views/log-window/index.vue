@@ -250,9 +250,10 @@ onBeforeUnmount(() => {
   gap: 1px;
   overflow: auto;
   padding: var(--space-2);
-  border: 1px solid var(--border-lighter);
+  border: 0;
+  box-shadow: var(--shadow-1);
   border-radius: var(--radius-md);
-  background: var(--surface-2);
+  background: var(--surface-card);
   font-family: var(--font-mono);
 }
 

@@ -201,7 +201,7 @@ watch([groupKey, channelName], () => {
 <template>
   <PageScroll>
     <div class="page live-detail-page">
-    <header class="page-header">
+    <header class="page-header page-header--card">
       <div class="heading">
         <el-button circle aria-label="返回直播" @click="goBack">
           <template #icon><SolarIcon name="arrow-left" /></template>
@@ -210,6 +210,16 @@ watch([groupKey, channelName], () => {
           {{ channel?.name || channelName || '直播详情' }}
         </h1>
         <span v-if="group" class="muted">{{ group.name }}</span>
+      </div>
+      <div class="head-actions">
+        <el-button
+          circle
+          :loading="loading"
+          aria-label="刷新节目单"
+          @click="retry"
+        >
+          <template #icon><SolarIcon name="refresh" :size="15" /></template>
+        </el-button>
       </div>
     </header>
 
@@ -311,9 +321,10 @@ watch([groupKey, channelName], () => {
 .channel-panel {
   margin-top: var(--space-3);
   padding: var(--space-4);
-  border: 1px solid var(--border);
+  border: 0;
+  box-shadow: var(--shadow-1);
   border-radius: var(--radius-lg);
-  background: var(--surface);
+  background: var(--surface-card);
 }
 
 .channel-head {
@@ -374,9 +385,9 @@ watch([groupKey, channelName], () => {
   gap: var(--space-3);
   width: 100%;
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-md);
-  background: var(--surface);
+  background: var(--surface-inset);
   color: var(--text-regular);
   text-align: left;
   cursor: pointer;

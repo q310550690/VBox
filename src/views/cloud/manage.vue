@@ -153,7 +153,6 @@ onActivated(() => void loadDir())
       <header class="manage-top">
         <el-button
           circle
-          class="back-btn"
           aria-label="返回云盘首页"
           @click="router.push('/cloud')"
         >
@@ -321,9 +320,6 @@ onActivated(() => void loadDir())
   gap: var(--space-2);
 }
 
-.back-btn {
-  flex-shrink: 0;
-}
 
 .manage-title {
   margin: 0;
@@ -343,9 +339,9 @@ onActivated(() => void loadDir())
 
 .provider-select {
   padding: 3px 8px;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-pill);
-  background: var(--surface);
+  background: var(--surface-2);
   color: var(--text-muted);
   font-size: 12px;
 }
@@ -384,9 +380,9 @@ onActivated(() => void loadDir())
 .refresh-btn {
   margin-left: auto;
   padding: 2px 10px;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-pill);
-  background: transparent;
+  background: var(--surface-2);
   color: var(--text-muted);
   cursor: pointer;
 }
@@ -396,8 +392,10 @@ onActivated(() => void loadDir())
 .manage-table {
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-1);
   overflow: hidden;
 }
 
@@ -407,8 +405,8 @@ onActivated(() => void loadDir())
   grid-template-columns: minmax(0, 1fr) 110px 150px 90px;
   gap: var(--space-2);
   align-items: center;
-  padding: 8px var(--space-3);
-  font-size: 13px;
+  padding: 12px var(--space-3);
+  font-size: var(--fs-body);
 }
 
 .table-head {
@@ -417,10 +415,17 @@ onActivated(() => void loadDir())
   font-size: 12px;
 }
 
+/* 表格去线：靠斑马行 + 行高分区（56px → 64px），不再画分隔线 */
 .table-row {
-  border-top: 1px solid var(--border-light);
   background: var(--surface);
   color: var(--text-regular);
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.table-row:nth-child(even) {
+  background: color-mix(in srgb, var(--el-text-color-primary) 3%, var(--surface));
+}
+.table-row:hover {
+  background: var(--surface-2);
 }
 
 .entry-name {
@@ -439,9 +444,9 @@ onActivated(() => void loadDir())
 
 .action-btn {
   padding: 2px 10px;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-md);
-  background: transparent;
+  background: var(--surface-2);
   color: var(--text-regular);
   font-size: 12px;
   cursor: pointer;

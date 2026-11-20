@@ -8,6 +8,9 @@
    --bg: var(--el-bg-color-page);
    --surface: var(--el-bg-color);
    --surface-2: var(--el-fill-color);
+   /* 凹槽：卡片里"陷下去"的子块（输入框、提示条、分区底）。
+      亮色用比白卡更暗的 fill；暗色要反过来 —— 比卡片再压黑一档，否则会读成"浮起"。 */
+   --surface-inset: var(--el-fill-color);
    --surface-3: var(--el-fill-color-light);
    --surface-4: var(--el-fill-color-lighter);
    --overlay: var(--el-bg-color-overlay);
@@ -18,7 +21,8 @@
    --text-muted: var(--el-text-color-secondary);
    --text-faint: var(--el-text-color-placeholder);
    --text-disabled: var(--el-text-color-disabled);
-   --text-on-accent: var(--el-color-white);
+   /* 主色/实心底上的文字：亮色白、暗色深（自动跟随 --accent-on，7 套主题都达标） */
+   --text-on-accent: var(--accent-on, var(--el-color-white));
 
    /* —— 描边 —— */
    --border: var(--el-border-color);
@@ -40,16 +44,40 @@
    --info: var(--el-color-info);
    --info-weak: color-mix(in srgb, var(--el-color-info) 12%, transparent);
 
-   /* —— 阴影 —— */
+   /* —— 阴影（方向光 + 接触影，定义在 theme.scss 的 layout mixin 里） —— */
    --shadow-1: var(--el-box-shadow-lighter);
    --shadow-2: var(--el-box-shadow-light);
    --shadow-3: var(--el-box-shadow);
+
+   /* —— 派生层级（跨 14 套主题一套公式，不逐主题手写） —— */
+   /* 描边：用文字色的透明度派生 —— 亮色得到淡黑线、暗色得到淡白线 */
+   --edge: color-mix(in srgb, var(--el-text-color-primary) 11%, transparent);
+   --edge-strong: color-mix(in srgb, var(--el-text-color-primary) 24%, transparent);
+   --edge-accent: color-mix(in srgb, var(--el-color-primary) 45%, transparent);
+   /* 标题：掺 22% 主色，7 套主题各有表情，主题色本身不动 */
+   --text-strong: color-mix(in srgb, var(--el-color-primary) 22%, var(--el-text-color-primary));
+   /* 键盘焦点环：与按钮 / 输入框 / 卡片共用一套语言 */
+   --ring: 0 0 0 3px color-mix(in srgb, var(--el-color-primary) 26%, transparent);
+   /* 动效缓动：入快出慢，收尾不弹 */
+   --ease: cubic-bezier(.32, .72, 0, 1);
+   --dur-fast: .12s;
+   --dur-base: .18s;
+   --dur-slow: .24s;
 
    /* —— 圆角 —— */
    --radius-sm: 4px;
    --radius-md: 8px;
    --radius-lg: 12px;
+   /* 大容器（内容区 / 页面级面板）：面积大，圆角要跟着放大才不显得局促 */
+   --radius-xl: 16px;
    --radius-pill: 999px;
+
+   /* —— 字号阶梯（四级：页面标题 / 区块标题 / 正文 / 说明） —— */
+   /* 层级靠字号拉开，而不是靠灰度与描边：24 / 15 / 13 / 12 */
+   --fs-display: 24px;
+   --fs-title: 16px;
+   --fs-body: 13px;
+   --fs-meta: 12px;
 
    /* —— 间距 —— */
    --space-1: 4px;
@@ -68,13 +96,29 @@
    /* 等宽字体：耗时 / 时间戳 / trace 等需要对齐的数字 */
    --font-mono: ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, 'Courier New', monospace;
 
-   /* —— 布局层级（只用颜色区分，不做留白/阴影/分割线） —— */
-   /* 外壳（TitleBar / SideNav）一层底色：偏亮一档的表面色 */
-   --shell-bg: var(--el-bg-color);
+   /* —— 布局层级：相邻两层必须看得见（颜色 + 描边 + 光） —— */
+   /* L0 外壳（TitleBar / SideNav）：比内容区深一档，让最外层不再和卡片同高 */
+   /* 掺进页面底色而不是纯白：混白会把米绿底洗成中性灰，和内容区串色 */
+   --shell-bg: color-mix(in srgb, var(--el-text-color-primary) 8%, var(--el-bg-color-page));
    /* 亚克力外壳：仅在原生 Acrylic 生效（html.acrylic-on）时使用，
      半透明主题色叠在窗口毛玻璃上，既保留主题色又透出桌面 */
-   --glass-bg: color-mix(in srgb, var(--el-bg-color) 55%, transparent);
-   --glass-bg2: color-mix(in srgb, var(--el-bg-color) 75%, transparent);
-   /* 内容区：使用页面底色，比外壳更深一档 */
+   /* 玻璃三层：外壳 76%（透桌面但不被拖浑）/ 内容区 94%（正文优先）/ 浮层 88% + 模糊 */
+   --glass-bg: color-mix(in srgb, var(--el-bg-color) 76%, transparent);
+   --glass-bg2: color-mix(in srgb, var(--el-bg-color) 94%, transparent);
+   --glass-overlay-bg: color-mix(in srgb, var(--el-bg-color) 88%, transparent);
+   --glass-edge: color-mix(in srgb, var(--el-text-color-primary) 10%, transparent);
+   --glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, .10), transparent 46%);
+   /* L1 内容区：使用页面底色（主题自带），卡片在其上浮起 */
    --content-bg: var(--el-bg-color-page);
+
+   /* L2 卡片：亮色保持纯白；暗色加 4% 主色，避免"再白一点"失效 */
+   --surface-card: var(--el-bg-color);
+}
+
+html.dark {
+   --shell-bg: color-mix(in srgb, #000 42%, var(--el-bg-color));
+   /* 暗色下"卡片比内容区亮 4%"只有 1.04:1，去掉描边后读不出来 —— 内容区再压深一档 */
+   --content-bg: color-mix(in srgb, #000 12%, var(--el-bg-color-page));
+   --surface-card: color-mix(in srgb, var(--el-color-primary) 9%, var(--el-bg-color));
+   --surface-inset: color-mix(in srgb, #000 26%, var(--surface-card));
 }

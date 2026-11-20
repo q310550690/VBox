@@ -37,7 +37,7 @@ function onResetAppearance() {
 </script>
 
 <template>
-  <section class="settings-section panel" aria-labelledby="settings-appearance">
+  <section class="settings-section" aria-labelledby="settings-appearance">
     <header class="section-head">
       <div class="section-head-text">
         <h2 id="settings-appearance" class="section-title">外观</h2>
@@ -125,9 +125,9 @@ function onResetAppearance() {
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-2);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-md);
-  background: var(--surface);
+  background: var(--surface-inset);
   color: var(--text-regular);
   text-align: left;
   cursor: pointer;
@@ -139,9 +139,14 @@ function onResetAppearance() {
   box-shadow: var(--shadow-1);
 }
 
+/* 选中态不再用 2px 描边（会挤动内容，且深色主题下像一条黑框）：
+   改 1px 主色描边 + 与全局焦点语言同款的 --ring */
 .hue-card.active {
-  border: 2px solid var(--accent);
-  padding: calc(var(--space-2) - 1px);
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 1px var(--accent),
+    var(--ring),
+    var(--shadow-1);
   color: var(--text);
 }
 

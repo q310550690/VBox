@@ -45,13 +45,18 @@ function select(value: T) {
 </template>
 
 <style scoped>
+/* T1 分段器：卡片托底 + 阴影，选中 = 实心主色胶囊。
+   6 处调用（设置页分区 / 点播分类 / 下载 / 历史 / 收藏 / 云盘筛选）共用同一套，不做 variant。 */
 .status-tabs {
   display: inline-flex;
-  padding: var(--space-1);
-  border: 1px solid var(--border);
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 0;
   border-radius: var(--radius-pill);
-  background: var(--surface-2);
-  transition: var(--transition-color);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-1);
+  transition: box-shadow .18s var(--ease);
 }
 
 .status-tabs.is-wrap {
@@ -59,33 +64,44 @@ function select(value: T) {
 }
 
 .status-tab {
-  padding: 4px 12px;
+  height: 32px;
+  padding: 0 15px;
   border: none;
   border-radius: var(--radius-pill);
   background: transparent;
   color: var(--text-muted);
   font: inherit;
   font-size: 12.5px;
-  line-height: 1.4;
+  font-weight: 500;
+  line-height: 1;
   white-space: nowrap;
   cursor: pointer;
   transition:
-    background-color 0.16s ease,
-    color 0.16s ease;
+    background-color .16s var(--ease),
+    color .16s var(--ease),
+    box-shadow .16s var(--ease);
 }
 
 .status-tab:hover {
+  background: var(--surface-2);
   color: var(--text);
 }
 
+.status-tab:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
 .status-tab.is-active {
-  background: var(--accent);
-  color: #fff;
+  background: var(--accent-solid);
+  color: var(--accent-on);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .2), inset 0 1px 0 rgba(255, 255, 255, .14);
 }
 
 /* 过期/不可用项：降低不透明度（云盘过期凭据胶囊） */
 .status-tab.is-muted {
-  opacity: 0.68;
+  opacity: .68;
 }
 
 .status-tab-badge {
@@ -94,7 +110,7 @@ function select(value: T) {
   justify-content: center;
   width: 14px;
   height: 14px;
-  margin-left: 4px;
+  margin-left: 5px;
   border-radius: 50%;
   background: var(--warning);
   color: #fff;

@@ -433,7 +433,6 @@ onMounted(() => {
         </el-button>
         <el-button
           type="danger"
-          plain
           :loading="cleaningCompleted"
           :disabled="api.demoMode || !storage || storage.completedCount === 0"
           @click="openCleanup('completed')"
@@ -520,9 +519,9 @@ onMounted(() => {
   flex-direction: column;
   gap: 2px;
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--border-lighter);
+  border: 0;
   border-radius: var(--radius-md);
-  background: var(--surface-2);
+  background: var(--surface-inset);
 }
 
 .storage-key {
@@ -566,9 +565,9 @@ onMounted(() => {
   gap: var(--space-3);
   margin-top: var(--space-4);
   padding: var(--space-3);
-  border: 1px solid var(--border-lighter);
+  border: 0;
   border-radius: var(--radius-md);
-  background: var(--surface-2);
+  background: var(--surface-inset);
 }
 
 .switch-text {

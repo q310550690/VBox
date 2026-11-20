@@ -19,9 +19,8 @@ const emit = defineEmits<{
 <template>
   <el-dialog
     :model-value="modelValue"
-    class="pan-account-dialog"
+    class="pan-account-dialog dlg-lg"
     title="账号管理"
-    width="620px"
     append-to-body
     align-center
     @update:model-value="emit('update:modelValue', $event)"
@@ -69,6 +68,11 @@ const emit = defineEmits<{
   flex: 1 1 auto;
   min-height: 0;
   height: auto;
+}
+
+.pan-account-dialog .pan-account-dialog-body {
+  /* body 本身 padding:0（flex 高度链），内边距落在内容容器上，与其它弹窗的 18/20 对齐 */
+  padding: 18px 20px;
 }
 
 .pan-account-dialog .pan-account-dialog-body .section-head {

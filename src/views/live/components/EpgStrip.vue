@@ -75,8 +75,8 @@ function formatClock(ts?: number | null): string {
 .epg-strip {
   margin-top: var(--space-4);
   padding: var(--space-3) var(--space-4);
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--surface-inset);
+  border: 0;
   border-radius: var(--radius-lg);
 }
 

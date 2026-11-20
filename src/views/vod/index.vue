@@ -579,7 +579,7 @@ onActivated(() => {
   <PageScroll>
     <div class="vod-page">
     <!-- ============ 顶部单行栏：首页 + 分类（横向滚动，flex:1） | 源切换 | 搜索 | 刷新 ============ -->
-    <header class="vod-topbar">
+    <header class="vod-topbar head-sticky">
       <!-- 分类标签：首页 + 当前站点分类，多则横向滚动（el-scrollbar + 滚轮横向滚动），不折叠 -->
       <div
         class="cat-strip"
@@ -598,20 +598,16 @@ onActivated(() => {
             class="chip-skel"
           />
         </div>
-        <el-scrollbar
-          v-else
-          class="cat-scrollbar"
-        >
-          <StatusTabs
-            :items="categoryTabs"
-            :model-value="category"
-            aria-label="首页与当前站点分类"
-            @change="onCategorySelect"
-          />
-        </el-scrollbar>
+        <StatusTabs
+          :items="categoryTabs"
+          :model-value="category"
+          aria-label="首页与当前站点分类"
+          @change="onCategorySelect"
+        />
       </div>
 
-      <!-- 源切换：点击打开弹窗选择站点 -->
+      <!-- 源切换 + 工具条：右上角按钮组收进一个浮起胶囊，与左侧分类分段器同高 -->
+      <div class="page-toolbar">
       <el-tooltip
         content="切换点播源"
         placement="bottom"
@@ -677,13 +673,14 @@ onActivated(() => {
           </el-button>
         </el-tooltip>
       </div>
+      </div>
     </header>
 
     <!-- 站点选择弹窗（多仓时可在弹窗内先切换仓库） -->
     <el-dialog
       v-model="siteDialogVisible"
       title="选择点播站点"
-      width="860px"
+      class="dlg-xl"
       append-to-body
       align-center
     >
@@ -926,7 +923,6 @@ onActivated(() => {
   flex-direction: column;
   min-height: 100%;
   padding: var(--space-4);
-  padding-top: 0;
 }
 
 .vod-page>* {
@@ -939,20 +935,11 @@ onActivated(() => {
 
 /* —— 顶部单行栏：[首页 + 分类横向滚动（flex:1）] [源切换] [搜索] [刷新] ——
    属于内容区，与内容同底色；不用分割线，靠颜色层级区分 */
+/* 顶部栏不再自绘底色/外扩：分段器与工具条各自是独立胶囊，阴影不该被滚动容器裁掉 */
 .vod-topbar {
-  position: sticky;
-  top: 0;
-  z-index: 15;
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-4);
-  margin-bottom: 0 !important;
-  margin-left: calc(var(--space-4) * -1);
-  margin-right: calc(var(--space-4) * -1);
-  background: linear-gradient(180deg, var(--content-bg) 75%, transparent);
-  /* background: var(--content-bg); */
-  transition: var(--transition-color);
 }
 
 /* 源切换按钮：点击打开源选择弹窗（位于搜索图标左侧） */
@@ -964,9 +951,9 @@ onActivated(() => {
   max-width: 200px;
   height: 32px;
   padding: 0 10px;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-pill);
-  background: var(--surface-2);
+  background: transparent;
   color: var(--text);
   font: inherit;
   font-size: 13px;
@@ -975,9 +962,8 @@ onActivated(() => {
 }
 
 .site-picker:hover {
-  border-color: var(--accent);
-  background: var(--accent-weak);
-  color: var(--accent);
+  background: var(--surface-2);
+  color: var(--text);
 }
 
 .site-picker-icon {
@@ -1006,7 +992,7 @@ onActivated(() => {
 
 .cat-scrollbar {
   width: 100%;
-  height: 34px;
+  height: 44px;
 }
 
 /* 分类标签在 32px 高度内垂直居中（el-scrollbar 的滚动容器默认是块级） */
@@ -1026,8 +1012,6 @@ onActivated(() => {
 
 .cat-strip :deep(.status-tab) {
   flex-shrink: 0;
-  padding: 5px 12px;
-  font-size: 12.5px;
 }
 
 .site-actions {
@@ -1054,7 +1038,7 @@ onActivated(() => {
 
 .dlg-chip {
   padding: 4px 10px;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-pill);
   background: var(--surface-2);
   color: var(--text-regular);
@@ -1070,9 +1054,10 @@ onActivated(() => {
 }
 
 .dlg-chip.is-active {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--text-on-accent);
+  border-color: var(--edge-accent);
+  background: color-mix(in srgb, var(--el-color-primary) 10%, transparent);
+  color: var(--el-color-primary);
+  font-weight: 600;
 }
 
 .dlg-hint {
@@ -1103,9 +1088,9 @@ onActivated(() => {
   gap: var(--space-2);
   min-width: 0;
   padding: 8px 10px;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-md);
-  background: var(--surface);
+  background: var(--surface-inset);
   color: var(--text);
   font: inherit;
   font-size: 13px;
@@ -1164,7 +1149,8 @@ onActivated(() => {
 .site-item-retry {
   flex-shrink: 0;
   padding: 1px 8px;
-  border: 1px solid var(--border);
+  border: 0;
+  background: var(--surface-2);
   border-radius: var(--radius-pill);
   color: var(--accent);
   font-size: 11px;
@@ -1224,7 +1210,8 @@ onActivated(() => {
   font-size: 12px;
   color: var(--text-muted);
   background: var(--info-weak);
-  border: 1px solid var(--border-lighter);
+  border: 0;
+  border-left: 3px solid var(--info);
   border-radius: var(--radius-md);
 }
 

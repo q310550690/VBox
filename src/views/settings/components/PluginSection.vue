@@ -431,9 +431,9 @@ onMounted(() => {
 }
 
 .plugin-list-box {
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-md);
-  background: var(--surface);
+  background: var(--surface-inset);
   overflow: hidden;
 }
 

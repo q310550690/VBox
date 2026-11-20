@@ -172,10 +172,12 @@ export const useUiStore = defineStore('ui', {
         /* 环境不支持 matchMedia 时忽略 */
       }
 
-      // 窗口宽度变化 → 侧栏自动折叠（< 960px 图标模式）
+      // 窗口宽度变化 → 只自动折叠（< 960px 图标模式），不自动展开：
+      // 展开 / 折叠由用户在标题栏最左侧手动控制，避免拉扯用户的显式选择
       window.addEventListener('resize', () => {
-        const collapsed = window.innerWidth < SIDEBAR_COLLAPSE_WIDTH
-        if (collapsed !== this.sidebarCollapsed) this.sidebarCollapsed = collapsed
+        if (window.innerWidth < SIDEBAR_COLLAPSE_WIDTH && !this.sidebarCollapsed) {
+          this.sidebarCollapsed = true
+        }
       })
     },
 

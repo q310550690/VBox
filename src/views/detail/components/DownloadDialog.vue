@@ -66,7 +66,7 @@ function onConfirm() {
   <el-dialog
     :model-value="open"
     title="选择下载线路"
-    width="460px"
+    class="dlg-md"
     append-to-body
     align-center
     @update:model-value="emit('update:open', $event)"

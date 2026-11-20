@@ -382,7 +382,6 @@ function goBack() {
         <section class="search-bar panel">
           <el-button
             circle
-            class="back-btn"
             aria-label="返回点播首页"
             @click="goBack"
           >
@@ -557,7 +556,7 @@ function goBack() {
 .search-left {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
   min-width: 0;
 }
 
@@ -574,9 +573,6 @@ function goBack() {
   min-width: 0;
 }
 
-.back-btn {
-  flex-shrink: 0;
-}
 
 .hot-panel {
   min-width: 0;
@@ -596,12 +592,11 @@ function goBack() {
   min-height: 0;
 }
 
-/* 左：站点列表 */
+/* 左：站点列表（内边距跟 .panel 一致，12px） */
 .site-nav {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: var(--space-3);
 }
 
 .site-scroll {

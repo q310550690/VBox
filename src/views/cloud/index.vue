@@ -22,10 +22,11 @@ defineOptions({ name: 'CloudHomeView' })
 const router = useRouter()
 const route = useRoute()
 
-const DEFAULT_HOT = ['三体', '流浪地球3', '沙丘2', '庆余年2', '4K合集']
+const HISTORY_KEY = 'vbox.cloud.searchHistory'
+const HISTORY_MAX = 8
 
 const keyword = ref('')
-const hot = ref<string[]>(DEFAULT_HOT)
+const searchHistory = ref<string[]>([])
 const cloudAccounts = useCloudAccountsStore()
 const accountsOpen = ref(false)
 /** 过期胶囊入口：打开弹窗后要聚焦的 provider（W14 §8.2） */
@@ -85,13 +86,6 @@ function scrollActiveIntoView() {
   if (!child) return
   const left = child.offsetLeft - (strip.clientWidth - child.clientWidth) / 2
   strip.scrollTo({ left: Math.max(0, left), behavior: 'smooth' })
-}
-
-function goToDouban(target: number) {
-  if (target === doubanIndex.value) return
-  doubanIndex.value = target
-  scrollActiveIntoView()
-  schedule()
 }
 
 function pause() {
@@ -171,13 +165,23 @@ async function loadAccounts() {
   await cloudAccounts.load()
 }
 
-async function loadHot() {
-  if (api.demoMode) return
+function loadHistory() {
   try {
-    const list = await api.cloudHotSearches()
-    if (list.length) hot.value = list
+    const raw = localStorage.getItem(HISTORY_KEY)
+    const list = raw ? (JSON.parse(raw) as unknown) : []
+    if (Array.isArray(list)) searchHistory.value = list.filter((w) => typeof w === 'string').slice(0, HISTORY_MAX)
   } catch {
-    // 热搜失败保留默认词
+    searchHistory.value = []
+  }
+}
+
+function pushHistory(word: string) {
+  const next = [word, ...searchHistory.value.filter((w) => w !== word)].slice(0, HISTORY_MAX)
+  searchHistory.value = next
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(next))
+  } catch {
+    // 隐私模式下写不进去就算了
   }
 }
 
@@ -200,6 +204,7 @@ function submitSearch(word?: string) {
   const kw = (word ?? keyword.value).trim()
   if (!kw) return
   keyword.value = kw
+  pushHistory(kw)
   void router.push(`/cloud/search/${encodeURIComponent(kw)}`)
 }
 
@@ -209,7 +214,7 @@ function onKeydown(event: KeyboardEvent) {
 
 onMounted(() => {
   void loadAccounts()
-  void loadHot()
+  loadHistory()
   void loadDouban()
   // 解析失败「去登录」等外部入口：/cloud?accounts=1 直接打开账号管理弹窗
   if (String(route.query.accounts ?? '') === '1') accountsOpen.value = true
@@ -261,7 +266,7 @@ watch(accountsOpen, (open) => {
         </Transition>
       </div>
 
-      <header class="cloud-top">
+      <header class="cloud-top head-sticky">
         <div
           v-if="pillTabs.length"
           class="cloud-pills"
@@ -274,7 +279,8 @@ watch(accountsOpen, (open) => {
           />
         </div>
 
-        <div class="site-btn">
+        <div class="page-toolbar">
+          <div class="site-btn">
           <el-tooltip
             content="账号管理"
             placement="bottom"
@@ -292,6 +298,7 @@ watch(accountsOpen, (open) => {
               </template>
             </el-button>
           </el-tooltip>
+          </div>
         </div>
       </header>
 
@@ -327,10 +334,13 @@ watch(accountsOpen, (open) => {
           </button>
         </div>
 
-        <div class="cloud-hot">
-          <span class="cloud-hot-label">热搜：</span>
+        <div
+          v-if="searchHistory.length"
+          class="cloud-hot"
+        >
+          <span class="cloud-hot-label">历史记录：</span>
           <button
-            v-for="word in hot"
+            v-for="word in searchHistory"
             :key="word"
             class="cloud-hot-item"
             type="button"
@@ -355,9 +365,10 @@ watch(accountsOpen, (open) => {
               豆瓣热榜
             </span>
             <span class="douban-hint">
-              自动轮播 · 点击卡片搜索资源
+              自动轮播，点击卡片搜索资源
             </span>
           </div>
+          <el-scrollbar class="douban-scroll">
           <div
             ref="stripRef"
             class="douban-strip"
@@ -373,15 +384,9 @@ watch(accountsOpen, (open) => {
                 :image-proxy="douban?.imageProxy"
                 @select="selectDouban"
               />
-              <button
-                class="douban-dot"
-                type="button"
-                :aria-label="`选中《${item.title}》`"
-                :aria-pressed="index === doubanIndex"
-                @click.stop="goToDouban(index)"
-              />
             </div>
           </div>
+          </el-scrollbar>
         </section>
 
       </div>
@@ -471,6 +476,11 @@ watch(accountsOpen, (open) => {
   align-items: center;
 }
 
+/* 没有网盘 tab 时，工具条靠右（与其它页「左 tabs / 右工具条」一致） */
+.cloud-top > .page-toolbar {
+  margin-left: auto;
+}
+
 .cloud-center {
   position: relative;
   z-index: 1;
@@ -508,9 +518,10 @@ watch(accountsOpen, (open) => {
   gap: var(--space-2);
   width: min(680px, 82vw);
   padding: 4px 4px 4px 12px;
-  border: 1px solid var(--border);
+  border: 0;
+  box-shadow: var(--shadow-1);
   border-radius: var(--radius-md);
-  background: var(--surface);
+  background: var(--surface-card);
   transition: border-color 0.15s ease;
 }
 
@@ -543,9 +554,10 @@ watch(accountsOpen, (open) => {
   padding: 5px 16px;
   border: 0;
   border-radius: 6px;
-  background: var(--accent);
-  color: var(--text-on-accent);
+  background: var(--accent-solid);
+  color: var(--accent-on);
   font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -607,50 +619,52 @@ watch(accountsOpen, (open) => {
   font-size: 12px;
 }
 
+.douban-scroll {
+  width: 100%;
+}
+
+.douban-scroll :deep(.el-scrollbar__wrap) {
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.douban-scroll :deep(.el-scrollbar__wrap::-webkit-scrollbar) {
+  display: none;
+}
+
+.douban-scroll :deep(.el-scrollbar__bar.is-horizontal) {
+  height: 6px;
+  bottom: 2px;
+  border-radius: var(--radius-pill);
+}
+
+.douban-scroll :deep(.el-scrollbar__thumb) {
+  background: var(--edge-strong);
+  border-radius: var(--radius-pill);
+}
+
 .douban-strip {
   display: flex;
   gap: var(--space-3);
-  width: 100%;
+  width: max-content;
   padding: var(--space-3) var(--space-2) var(--space-4);
-  overflow-x: auto;
-  scrollbar-width: thin;
-  scroll-snap-type: x proximity;
 }
 
+/* 去掉圆点后不再用"压暗非当前项"表达焦点：整排同亮度，靠 hover 抬起 */
 .douban-slide {
   position: relative;
   flex: 0 0 158px;
   width: 158px;
-  opacity: 0.72;
   scroll-snap-align: center;
-  transition:
-    transform 0.35s ease,
-    opacity 0.35s ease;
+  transition: transform 0.28s var(--ease);
+}
+
+.douban-slide:hover {
+  transform: translateY(-3px);
 }
 
 .douban-slide.is-active {
   z-index: 1;
-  opacity: 1;
-  transform: translateY(-6px) scale(1.04);
 }
 
-.douban-dot {
-  position: absolute;
-  bottom: -2px;
-  left: 50%;
-  width: 6px;
-  height: 6px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: var(--border);
-  opacity: 0;
-  transform: translateX(-50%);
-  cursor: pointer;
-}
-
-.douban-slide.is-active .douban-dot {
-  background: var(--accent);
-  opacity: 1;
-}
 </style>

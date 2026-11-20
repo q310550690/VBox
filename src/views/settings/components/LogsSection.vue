@@ -176,9 +176,9 @@ onBeforeUnmount(() => {
 }
 
 .log-scroll {
-  border: 1px solid var(--border-lighter);
+  border: 0;
   border-radius: var(--radius-md);
-  background: var(--surface-2);
+  background: var(--surface-inset);
   margin: 0;
   padding: 0;
 }

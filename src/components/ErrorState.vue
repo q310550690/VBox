@@ -87,9 +87,10 @@ function handleRetry() {
 .message {
   margin: 0;
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--border);
+  border: 0;
+  border-left: 3px solid var(--el-color-danger);
   border-radius: var(--radius-md);
-  background: var(--surface-2);
+  background: var(--surface-inset);
   color: var(--text-regular);
   font-family: var(--font-mono);
   font-size: 12px;

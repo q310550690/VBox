@@ -73,7 +73,7 @@ withDefaults(
   gap: var(--space-2);
   min-width: 0;
   padding: var(--space-2);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-lg);
   background: var(--surface);
 }
@@ -90,7 +90,7 @@ withDefaults(
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-2);
-  border: 1px solid var(--border-lighter);
+  border: 0;
   border-radius: var(--radius-md);
   background: var(--surface);
 }
@@ -112,7 +112,7 @@ withDefaults(
 
 /* 骨架块：--surface-2/--surface-3 脉冲 + 描边，亮色主题下也能看清块形状 */
 .sk-block {
-  border: 1px solid var(--border-light);
+  border: 0;
   border-radius: var(--radius-sm);
   background-color: var(--surface-3);
   animation: vbox-skeleton-pulse 1.4s ease-in-out infinite;

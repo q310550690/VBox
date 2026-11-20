@@ -5,9 +5,12 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import SolarIcon from '@/components/SolarIcon.vue'
+import { useUiStore } from '@/store/ui'
 import { isTauri } from '@/api'
 
 const route = useRoute()
+
+const ui = useUiStore()
 
 /** 标题栏显示的当前页面名（路由 meta.title） */
 const pageTitle = computed<string>(() => String(route.meta.title ?? ''))
@@ -72,21 +75,28 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <header class="titlebar" data-tauri-drag-region @dblclick="onToggleMaximize">
+  <header
+    class="titlebar"
+    :class="{ 'is-collapsed': ui.sidebarCollapsed }"
+    data-tauri-drag-region
+    @dblclick="onToggleMaximize"
+  >
     <div class="tb-left" data-tauri-drag-region>
-      <span class="tb-logo" data-tauri-drag-region>
-        <img
-          class="tb-logo-img"
-          src="/logo.png"
-          alt=""
-          draggable="false"
+      <button
+        class="tb-toggle"
+        type="button"
+        :title="ui.sidebarCollapsed ? '展开侧栏' : '折叠侧栏'"
+        :aria-label="ui.sidebarCollapsed ? '展开侧栏' : '折叠侧栏'"
+        :aria-expanded="!ui.sidebarCollapsed"
+        @click.stop="ui.toggleSidebar()"
+      >
+        <SolarIcon
+          :size="16"
+          :name="ui.sidebarCollapsed ? 'panel-left-open' : 'panel-left-close'"
         />
-        VBox
-      </span>
-      <template v-if="pageTitle">
-        <span class="tb-sep" data-tauri-drag-region>·</span>
-        <span class="tb-page" data-tauri-drag-region>{{ pageTitle }}</span>
-      </template>
+      </button>
+      <img class="tb-logo" src="/logo.png" alt="VBox" draggable="false" data-tauri-drag-region />
+      <span v-if="pageTitle" class="tb-page" data-tauri-drag-region>{{ pageTitle }}</span>
     </div>
 
     <div class="tb-drag" data-tauri-drag-region />
@@ -136,34 +146,41 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 0 var(--space-4);
+  padding: 0 var(--space-4) 0 13px;
   height: 100%;
   min-width: 0;
 }
 
-.tb-logo {
-  display: inline-flex;
+.tb-toggle {
+  display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  color: var(--accent);
+  justify-content: center;
   flex-shrink: 0;
-}
-
-.tb-logo-img {
-  width: 18px;
-  height: 18px;
-  object-fit: contain;
-  pointer-events: none;
-  user-select: none;
-}
-
-.tb-sep {
+  width: 28px;
+  height: 28px;
+  margin-right: -4px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
   color: var(--text-muted);
-  font-size: 12px;
+  cursor: pointer;
+  transition: var(--transition-color);
+}
+
+.tb-toggle:hover {
+  color: var(--text-strong);
+}
+
+/** 折叠/展开时把折叠按钮图标对到主导航图标那一列（展开 27px、折叠 32px 中心） */
+.titlebar.is-collapsed .tb-left {
+  padding-left: 18px;
+}
+
+.tb-logo {
   flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
 }
 
 .tb-page {
@@ -206,8 +223,8 @@ onUnmounted(() => {
 }
 
 .tb-btn-close:hover {
-  background: var(--danger);
-  color: var(--text-on-accent);
+  background: var(--danger-solid);
+  color: var(--accent-on);
 }
 
 .tb-btn:active {

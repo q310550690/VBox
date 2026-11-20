@@ -222,7 +222,6 @@ async function play(item: CloudSearchItem): Promise<void> {
       void ElMessageBox.confirm(message, '需要登录网盘账号', {
         confirmButtonText: '去登录',
         cancelButtonText: '稍后',
-        confirmButtonClass: 'vbox-msgbox-confirm',
         type: 'warning',
       })
         .then(() => router.push({ path: '/cloud', query: { accounts: '1' } }))
@@ -263,7 +262,6 @@ onActivated(() => {
           <section class="search-bar panel">
             <el-button
               circle
-              class="back-btn"
               aria-label="返回云盘"
               @click="router.push('/cloud')"
             >
@@ -490,7 +488,7 @@ onActivated(() => {
       <el-dialog
         :model-value="!!detail"
         title="资源详情"
-        width="560px"
+        class="dlg-md"
         align-center
         append-to-body
         @update:model-value="detail = null"
@@ -551,9 +549,9 @@ onActivated(() => {
   flex-direction: column;
   gap: 8px;
   padding: 14px 16px;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-md, 8px);
-  background: var(--surface);
+  background: var(--surface-inset);
 }
 
 .skeleton-bar {
@@ -602,8 +600,9 @@ onActivated(() => {
 .dead-tag {
   padding: 1px 7px;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--warning);
-  color: var(--warning);
+  border: 0;
+  background: color-mix(in srgb, var(--el-color-warning) 12%, transparent);
+  color: color-mix(in srgb, var(--el-color-warning) 80%, var(--el-text-color-primary));
   font-size: 11px;
 }
 
@@ -632,7 +631,7 @@ onActivated(() => {
 .search-left {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
   min-width: 0;
 }
 
@@ -649,9 +648,6 @@ onActivated(() => {
   min-width: 0;
 }
 
-.back-btn {
-  flex-shrink: 0;
-}
 
 .stats-sort-btn {
   display: inline-flex;
@@ -687,9 +683,9 @@ onActivated(() => {
 .stats-refresh {
   margin-left: var(--space-2);
   padding: 2px 8px;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-pill);
-  background: transparent;
+  background: var(--surface-2);
   color: var(--text-muted);
   font-size: 12px;
   cursor: pointer;
@@ -725,7 +721,8 @@ onActivated(() => {
   justify-content: space-between;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--border);
+  border: 0;
+  border-left: 3px solid var(--el-color-warning);
   border-radius: var(--radius-md);
   background: var(--accent-weak);
   color: var(--text-muted);
@@ -735,7 +732,7 @@ onActivated(() => {
 
 .filter-chip {
   padding: 4px 12px;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-pill);
   background: var(--surface);
   color: var(--text-muted);
@@ -778,7 +775,7 @@ onActivated(() => {
   justify-content: space-between;
   gap: var(--space-4);
   padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-md);
   background: var(--surface);
 }
@@ -815,9 +812,9 @@ onActivated(() => {
 
 .password-chip {
   padding: 1px 8px;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 999px;
-  background: var(--surface);
+  background: var(--surface-2);
   color: var(--text-muted);
   font-size: 12px;
   cursor: pointer;

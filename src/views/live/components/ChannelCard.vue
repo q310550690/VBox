@@ -40,19 +40,23 @@ const initial = computed(() => props.channel.name.trim().charAt(0) || '频')
   align-items: center;
   gap: var(--space-3);
   width: 100%;
-  padding: var(--space-3);
-  border: 1px solid var(--border);
+  padding: 11px 14px;
+  border: 0;
   border-radius: var(--radius-md);
-  background: var(--surface);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-1);
   color: var(--text);
   text-align: left;
   cursor: pointer;
-  transition: var(--transition-color), transform 0.12s ease;
+  transition:
+    border-color var(--dur-base) var(--ease),
+    box-shadow var(--dur-base) var(--ease),
+    transform var(--dur-base) var(--ease);
 }
 
 .channel-card:hover {
-  border-color: var(--accent);
-  box-shadow: var(--shadow-1);
+  box-shadow: var(--shadow-2);
+  transform: translateY(-1px);
 }
 
 .channel-card:active {
@@ -63,13 +67,13 @@ const initial = computed(() => props.channel.name.trim().charAt(0) || '频')
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 40px;
-  width: 40px;
-  height: 40px;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
   border-radius: var(--radius-md);
   background: var(--surface-2);
   color: var(--text-muted);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   overflow: hidden;
 }

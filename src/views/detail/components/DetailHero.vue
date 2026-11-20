@@ -201,7 +201,7 @@ const initial = computed(() => (props.detail.name || '?').trim().charAt(0))
   width: 104px;
   aspect-ratio: 2 / 3;
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-md);
   background: var(--surface-2);
 }

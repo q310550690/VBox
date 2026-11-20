@@ -51,6 +51,7 @@ img {
 
 /* —— 通用页面容器：所有内容页统一内边距 + 块间距 —— */
 .page {
+  /* 页面内缩 16px：内容靠底色差 + 阴影分区，不靠线 */
   padding: var(--space-4);
   display: flex;
   flex-flow: column;
@@ -71,12 +72,78 @@ img {
   padding: var(--space-4); */
 }
 
+/* 二级页头部：整条做成卡片（返回 + 标题 + 右侧动作），材质与一级页的分段器/工具条一致 */
+.page-header--card {
+  position: static;
+  min-height: 56px;
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-1);
+}
+
+.head-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.head-sticky{
+  position: sticky;
+  top: 6px;
+  z-index: 99;
+}
+
+/* 页面工具条：右上角按钮组收进一个浮起的胶囊，与左侧分段器同高同材质（40px + 阴影，无描边） */
+.page-toolbar {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-1);
+}
+
+.page-toolbar > .site-btn {
+  display: flex;
+  align-items: center;
+}
+
+.page-toolbar__sep {
+  width: 1px;
+  height: 18px;
+  margin: 0 3px;
+  background: var(--edge);
+}
+
+/* 信息型工具条：统计文字 + 动作按钮共用一条 40px 胶囊 */
+.page-toolbar--meta {
+  gap: 10px;
+  padding: 4px 4px 4px 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.page-toolbar--meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.page-toolbar--meta .el-button {
+  margin: 0;
+}
+
 .page-title {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--fs-display);
   font-weight: 600;
   color: var(--text);
-  letter-spacing: 0.2px;
+  letter-spacing: -0.2px;
 }
 
 /* —— 通用文本工具 —— */
@@ -102,12 +169,14 @@ img {
 }
 
 /* —— 通用面板（页面可在 scoped 样式里覆盖） —— */
+/* L2 大容器：只给"块"，不给线 —— 面积足够大，卡片底与内容底的色差就够读。
+   小卡片（PosterCard 等 160px 级）仍然保留 1px 描边，那是另一种尺度问题 */
 .panel {
-  background: var(--surface);
-  /* background: var(--glass-bg); */
-  border: 1px solid var(--border);
+  background: var(--surface-card);
+  border: 0;
   border-radius: var(--radius-lg);
   padding: var(--space-3);
+  box-shadow: var(--shadow-1);
 }
 .panel .el-scrollbar,
 .panel .el-scrollbar__wrap{
@@ -179,18 +248,97 @@ img {
 
 /* 标签 */
 .el-tag {
-  --el-tag-border-radius: var(--radius-sm);
+  --el-tag-border-radius: var(--radius-pill);
 }
 
 /* 弹窗类：对话框 / 消息框 / 抽屉 / 通知 */
 .el-dialog {
   --el-dialog-border-radius: var(--radius-lg);
+  border: 1px solid var(--edge);
   border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3);
+  overflow: hidden;
+  /* EP 默认给 .el-dialog 自身 16px padding，会把 header / footer 变成
+     "浮在弹窗里的小色块"。置 0 让三块各自贴边，分隔线与底区才是通栏的 */
+  padding: 0;
+}
+
+/* 弹窗解剖：header 有分隔线、body 留白、footer 独立底区
+   —— 让"标题 / 内容 / 操作"三块在视觉上分开，而不是一整个灰面 */
+.el-dialog__header {
+  padding: 16px 20px 14px;
+  margin: 0;
+  border-bottom: 1px solid var(--edge);
+}
+
+/* EP 自带 .el-dialog__header.show-close 把右侧 padding 抬到 32px；
+   这里固定 20px 左边距 + 预留关闭键宽度，标题不会被 X 压住 */
+.el-dialog__header.show-close {
+  padding-right: 44px;
+}
+
+.el-dialog__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-strong);
+  letter-spacing: .2px;
+}
+
+.el-dialog__headerbtn {
+  top: 13px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  transition: background-color .18s var(--ease);
+}
+
+.el-dialog__headerbtn:hover {
+  background: var(--el-fill-color);
+}
+
+.el-dialog__headerbtn:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.el-dialog__body {
+  padding: 18px 20px;
+  color: var(--el-text-color-regular);
+}
+
+.el-dialog__footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--edge);
+  background: var(--surface-2);
+}
+
+/* footer 是浅色带，按钮在带上改用卡片底，才能从带上"浮"出来（填充式按钮同色会糊在一起） */
+.el-dialog__footer .el-button:not(.el-button--primary):not(.el-button--danger):not(.el-button--success):not(.el-button--warning):not(.is-text):not(.is-link) {
+  --el-button-bg-color: var(--surface);
+  --el-button-hover-bg-color: var(--el-fill-color-extra-light);
+}
+
+/* 4 档宽度：替代逐个 width="NNNpx"，弹窗只留 class */
+.el-dialog.dlg-sm { --el-dialog-width: 400px; }
+.el-dialog.dlg-md { --el-dialog-width: 560px; }
+.el-dialog.dlg-lg { --el-dialog-width: 720px; }
+.el-dialog.dlg-xl { --el-dialog-width: 860px; }
+
+@media (max-width: 720px) {
+  .el-dialog.dlg-sm,
+  .el-dialog.dlg-md,
+  .el-dialog.dlg-lg,
+  .el-dialog.dlg-xl {
+    --el-dialog-width: calc(100vw - 32px);
+  }
 }
 
 .el-message-box {
   --el-messagebox-border-radius: var(--radius-lg);
+  border: 1px solid var(--edge);
   border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3);
 }
 
 .el-drawer {
@@ -229,6 +377,9 @@ html.acrylic-on .app-main,
 html.acrylic-on .titlebar,
 html.acrylic-on .sidebar {
   background: var(--glass-bg);
+  /* 玻璃也要有边界：1px 内描边 + 顶部一道高光，否则只是一层"更淡的底色" */
+  box-shadow: inset 0 0 0 1px var(--glass-edge);
+  background-image: var(--glass-sheen);
 }
 html.acrylic-on.acrylic-on-content .app-content,
 html.acrylic-on.acrylic-on-content .status-tabs
@@ -257,4 +408,44 @@ html.player-shell-solid .app-content,
 html.player-shell-solid .status-tabs,
 html.player-shell-solid .vod-topbar {
   background: var(--content-bg) !important;
+}
+
+/* ============================================================
+   浮层玻璃（P4）：只有开了亚克力才生效，且只作用于"浮在内容之上"的层
+   —— 弹窗 / 气泡 / 下拉，正文区不参与，保证可读性
+   ============================================================ */
+html.acrylic-on .el-overlay-dialog .el-dialog,
+html.acrylic-on .el-overlay-message-box .el-message-box,
+html.acrylic-on .el-popper.is-light,
+html.acrylic-on .el-dropdown__popper {
+  background-color: var(--glass-overlay-bg);
+  backdrop-filter: blur(20px) saturate(1.15);
+  -webkit-backdrop-filter: blur(20px) saturate(1.15);
+}
+
+/* 遮罩层轻度模糊：让"弹窗下面那层"退后，而不是简单压黑 */
+.el-overlay {
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+/* 面板分级：.panel 是"内容卡"；嵌在卡里的小块用 .panel--inset（凹陷，不再叠阴影） */
+.panel--inset {
+  background: var(--surface-inset);
+  border-color: var(--edge);
+  box-shadow: none;
+}
+
+/* ============================================================
+   动效（P3/P4）：只做反馈，不做装饰；尊重系统"减少动态效果"
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

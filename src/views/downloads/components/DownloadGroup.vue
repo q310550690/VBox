@@ -190,6 +190,7 @@ function onOpenLocation(task: DownloadTask) {
         <el-tooltip content="本剧全部暂停" placement="top">
           <el-button
             circle
+            type="warning"
             :disabled="!canPause"
             :aria-label="`${group.name} 全部暂停`"
             @click="onBulkPause"
@@ -234,9 +235,10 @@ function onOpenLocation(task: DownloadTask) {
 
 <style scoped>
 .series-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--surface-card);
+  border: 0;
   border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
   overflow: hidden;
 }
 
@@ -440,12 +442,6 @@ function onOpenLocation(task: DownloadTask) {
   align-self: stretch;
   gap: var(--space-2);
   padding-left: var(--space-2);
-  border-left: 1px solid var(--border-lighter);
-}
-
-/* 卡片底部：独立的整行展开 / 收起条 */
-.series-foot {
-  border-top: 1px solid var(--border-lighter);
 }
 
 .series-expand {
@@ -480,12 +476,21 @@ function onOpenLocation(task: DownloadTask) {
   transform: rotate(180deg);
 }
 
+/* 剧集行去线：斑马行 + 行高，不再画分隔线 */
 .series-body {
-  border-top: 1px solid var(--border-lighter);
+  padding: 2px 0;
 }
 
-.series-body :deep(.download-row + .download-row) {
-  border-top: 1px solid var(--border-lighter);
+.series-body :deep(.download-row:nth-child(even)) {
+  background: color-mix(in srgb, var(--el-text-color-primary) 3%, transparent);
+}
+
+.series-body :deep(.download-row) {
+  transition: background-color var(--dur-fast) var(--ease);
+}
+
+.series-body :deep(.download-row:hover) {
+  background: var(--surface-2);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -3,7 +3,9 @@
    - 亮色：html.theme-xxx  /  暗色：html.dark.theme-xxx
    - 所有业务颜色/字体只允许引用这里的 --el-* / --font-* 变量
    ============================================================ */
-* { box-sizing: border-box; outline: none;}
+* { box-sizing: border-box; }
+/* 鼠标点击不画焦点框，键盘 Tab 一定画（不要写成全局 outline:none，否则控件全部丢焦点） */
+*:focus:not(:focus-visible) { outline: none; }
 html, body, #app {
   height:100%;
   width:100%;
@@ -84,28 +86,62 @@ html.dark { color-scheme: dark; }
 
 @mixin theme-color-vars-dark($primary, $success, $warning, $danger, $error, $info) {
   --el-color-primary: #{$primary};
-  --el-color-success: #{$success};
-  --el-color-warning: #{$warning};
-  --el-color-danger: #{$danger};
-  --el-color-error: #{$error};
+  /* 暗色语义色统一成一组"在深底上能读出红/黄/绿"的值：
+     原各主题的橄榄/棕（#8A7A5A 等）在 #1A201C 上几乎无色相，已确认改为下面三个。 */
+  $dark-success: #8ABF8A;
+  $dark-warning: #D8B27A;
+  $dark-danger: #D08A85;
+  --el-color-success: #{$dark-success};
+  --el-color-warning: #{$dark-warning};
+  --el-color-danger: #{$dark-danger};
+  --el-color-error: #{$dark-danger};
   --el-color-info: #{$info};
 
   @include color-scale-dark(primary, $primary);
-  @include color-scale-dark(success, $success);
-  @include color-scale-dark(warning, $warning);
-  @include color-scale-dark(danger, $danger);
-  @include color-scale-dark(error, $error);
+  @include color-scale-dark(success, $dark-success);
+  @include color-scale-dark(warning, $dark-warning);
+  @include color-scale-dark(danger, $dark-danger);
+  @include color-scale-dark(error, $dark-danger);
   @include color-scale-dark(info, $info);
 }
 
 // ── 亮色主题共用布局变量 ──
 @mixin layout-light {
-  --el-box-shadow: 0px 12px 32px 4px rgba(0,0,0,0.06), 0px 8px 20px rgba(0,0,0,0.08);
-  --el-box-shadow-light: 0px 0px 12px rgba(0,0,0,0.08);
-  --el-box-shadow-lighter: 0px 0px 6px rgba(0,0,0,0.08);
+  /* 接触影（近）+ 环境影（远）：有偏移才有离地感 */
+  --el-box-shadow-lighter: 0 1px 2px rgba(23,31,18,.05), 0 4px 10px -2px rgba(23,31,18,.07), 0 18px 40px -18px rgba(23,31,18,.18);
+  --el-box-shadow-light: 0 2px 6px rgba(23,31,18,.07), 0 16px 36px -12px rgba(23,31,18,.20);
+  --el-box-shadow: 0 6px 16px rgba(23,31,18,.06), 0 24px 64px -16px rgba(23,31,18,.24);
   --el-box-shadow-dark: 0px 16px 48px 16px rgba(0,0,0,0.08), 0px 12px 32px rgba(0,0,0,0.1), 0px 8px 16px -8px rgba(0,0,0,0.1);
-  --el-mask-color: rgba(0,0,0,0.8);
-  --el-mask-color-extra-light: rgba(0,0,0,0.3);
+  /* 实心按钮底色 = 主题主色本身，不混色；字色与悬停方向由每套主题按对比度指定 */
+  --accent-solid: var(--el-color-primary);
+  --accent-shift: #000;            /* 悬停/按下往哪走：白字主题压暗、深字主题提亮 */
+  /* 文字专用主色：主色当文字色在白底上只有 2.19–7.18，混黑 35% 后 7 套最低 4.73:1 */
+  --accent-ink: color-mix(in srgb, var(--el-color-primary) 65%, #000);
+  /* 文字按钮悬停：再压深 20%（只换色 + 12%→18% 底，两个通道同时给反馈） */
+  --accent-ink-hover: oklch(from var(--accent-ink) calc(l - 0.045) c h);
+  --accent-ink-active: oklch(from var(--accent-ink) calc(l - 0.09) c h);
+  /* ── 状态阶梯（2026-11-20 统一）──
+     悬停 / 按下**只有这两级**，每级固定压 4.3 oklch L，与色相、主题无关。
+     之前按各自语义色混不同百分比，success 只降 2.8 L*、default 却降 8.4 L*，
+     同一排按钮的悬停深度差 3 倍。现在：普通按钮 rest=fill，轻形态（plain/text/link）
+     rest=透明卡片底，但**悬停都落到同一级** fill-1 → fill-2 ——
+     两种形态的悬停底色逐像素相同，落差也不因 type 而变。 */
+  /* 注意：近中性色的 oklch 相对色会把 hue 解析成 none（Chrome 实测），
+     混出来是偏红的中性灰 —— 所以这两级用 oklab 与黑/白混，a/b 原样保留。 */
+  --fill-1: color-mix(in oklab, var(--el-fill-color) 96%, #000);   /* ≈ -4 L* */
+  --fill-2: color-mix(in oklab, var(--el-fill-color) 92%, #000);   /* ≈ -8 L* */
+  --ink-dir: -1;                   /* 文字色落差方向：亮色压深 */
+  --ink-l: 0.48;                   /* 语义字色固定亮度：跨主题对比度一致（探针实测最差 4.87:1） */
+  --accent-solid-hover: oklch(from var(--accent-solid) calc(l - 0.032) c h);
+  --accent-solid-active: oklch(from var(--accent-solid) calc(l - 0.064) c h);
+  --accent-on: #FFFFFF;
+  --danger-solid: color-mix(in srgb, var(--el-color-danger) 82%, #000);
+  --danger-solid-hover: oklch(from var(--danger-solid) calc(l - 0.032) c h);
+  --danger-solid-active: oklch(from var(--danger-solid) calc(l - 0.064) c h);
+  /* 遮罩：原来的 80% 压得太死，和玻璃叠加后会发黑 */
+  --el-mask-color: rgba(0,0,0,0.45);
+  --el-mask-color-extra-light: rgba(0,0,0,0.28);
+  --el-overlay-color-lighter: rgba(0,0,0,0.45);
   --el-text-color-primary: #2C2C2C;
   --el-text-color-regular: #404040;
   --el-text-color-secondary: #707070;
@@ -115,12 +151,33 @@ html.dark { color-scheme: dark; }
 
 // ── 暗色主题共用布局变量 ──
 @mixin layout-dark {
-  --el-box-shadow: 0px 12px 32px 4px #0000005c, 0px 8px 20px #000000b8;
-  --el-box-shadow-light: 0px 0px 12px #000000b8;
-  --el-box-shadow-lighter: 0px 0px 6px #000000b8;
+  /* 暗色投影几乎不可见，必须补"顶部内高光"当抬升信号 */
+  --el-box-shadow-lighter: inset 0 1px 0 rgba(255,255,255,.06), 0 2px 6px rgba(0,0,0,.5), 0 6px 14px -6px rgba(0,0,0,.45), 0 20px 44px -20px rgba(0,0,0,.7);
+  --el-box-shadow-light: inset 0 1px 0 rgba(255,255,255,.06), 0 10px 30px rgba(0,0,0,.55);
+  --el-box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 26px 70px rgba(0,0,0,.7);
   --el-box-shadow-dark: 0px 16px 48px 16px #000000b8, 0px 12px 32px #000, 0px 8px 16px -8px #000;
-  --el-mask-color: #000c;
-  --el-mask-color-extra-light: #0000004d;
+  /* 暗色主色本身够亮：实心底 = 主色本身，字用深色（白字只有 2.16–3.22:1） */
+  --accent-solid: var(--el-color-primary);
+  /* 暗色底上"压暗"看不见，悬停改为提亮 */
+  --accent-shift: #FFF;
+  /* 暗色底上主色当文字本来就合格（4.87–7.75） */
+  --accent-ink: var(--el-color-primary);
+  --accent-ink-hover: oklch(from var(--accent-ink) calc(l + 0.045) c h);
+  --accent-ink-active: oklch(from var(--accent-ink) calc(l + 0.09) c h);
+  /* 状态阶梯：暗色底上"压暗"看不见，所以两级一律提亮，落差与亮色同样是 4.3 L* */
+  --fill-1: color-mix(in oklab, var(--el-fill-color) 95%, #FFF);   /* ≈ +4 L* */
+  --fill-2: color-mix(in oklab, var(--el-fill-color) 90%, #FFF);   /* ≈ +8 L* */
+  --ink-dir: 1;                    /* 文字色落差方向：暗色提亮 */
+  --ink-l: 0.78;                   /* 语义字色固定亮度：探针实测最差 4.89:1 */
+  --accent-solid-hover: oklch(from var(--accent-solid) calc(l + 0.032) c h);
+  --accent-solid-active: oklch(from var(--accent-solid) calc(l + 0.064) c h);
+  --accent-on: var(--el-bg-color-page);
+  --danger-solid: var(--el-color-danger);
+  --danger-solid-hover: oklch(from var(--danger-solid) calc(l + 0.032) c h);
+  --danger-solid-active: oklch(from var(--danger-solid) calc(l + 0.064) c h);
+  --el-mask-color: rgba(0,0,0,0.62);
+  --el-mask-color-extra-light: rgba(0,0,0,0.4);
+  --el-overlay-color-lighter: rgba(0,0,0,0.62);
   --el-text-color-primary: #E8E8E8;
   --el-text-color-regular: #D0D0D0;
   --el-text-color-secondary: #A0A0A0;
@@ -155,6 +212,12 @@ html.theme-coral-rose {
   --el-fill-color-light: #F0E3DE;
   --el-fill-color-lighter: #F2E8E5;
   @include border-fill-derivatives;
+  /* 浅主色：白字 2.43–3.57:1 不达标 → 深字 5.22–7.66:1，悬停提亮 */
+  --accent-on: #141914;
+  --accent-shift: #FFF;
+  /* 深字主题的实心按钮悬停要往字色反方向走（提亮），落差与其他主题一致 */
+  --accent-solid-hover: oklch(from var(--accent-solid) calc(l + 0.032) c h);
+  --accent-solid-active: oklch(from var(--accent-solid) calc(l + 0.064) c h);
 }
 
 /* 橙 — 暖橙 */
@@ -170,6 +233,12 @@ html.theme-autumn-field {
   --el-fill-color-light: #EDE6DC;
   --el-fill-color-lighter: #F0EAE2;
   @include border-fill-derivatives;
+  /* 浅主色：白字 2.43–3.57:1 不达标 → 深字 5.22–7.66:1，悬停提亮 */
+  --accent-on: #141914;
+  --accent-shift: #FFF;
+  /* 深字主题的实心按钮悬停要往字色反方向走（提亮），落差与其他主题一致 */
+  --accent-solid-hover: oklch(from var(--accent-solid) calc(l + 0.032) c h);
+  --accent-solid-active: oklch(from var(--accent-solid) calc(l + 0.064) c h);
 }
 
 /* 黄 — 金砂 */
@@ -185,6 +254,12 @@ html.theme-sandalwood {
   --el-fill-color-light: #EBE4D8;
   --el-fill-color-lighter: #EEE9DE;
   @include border-fill-derivatives;
+  /* 浅主色：白字 2.43–3.57:1 不达标 → 深字 5.22–7.66:1，悬停提亮 */
+  --accent-on: #141914;
+  --accent-shift: #FFF;
+  /* 深字主题的实心按钮悬停要往字色反方向走（提亮），落差与其他主题一致 */
+  --accent-solid-hover: oklch(from var(--accent-solid) calc(l + 0.032) c h);
+  --accent-solid-active: oklch(from var(--accent-solid) calc(l + 0.064) c h);
 }
 
 /* 绿 — 翠微 */
@@ -354,54 +429,409 @@ html.dark.theme-twilight-purple {
 }
 
 /* ============================================================
-   幽灵按钮
+   按钮四级（L1 实心 / L2 描边 / L3 轻底 / L4 文字 / 危险实心）
+   一句话规则：一屏最多一个实心；其余按钮靠"描边 / 轻底 / 纯文字"降权。
    ============================================================ */
 .el-button {
+  /* 静止态仍用 --el-fill-color（自带主题色温），但悬停/按下改走 --fill-1 / --fill-2：
+     fill-color → fill-dark 一步是 8.4 L*，是别的一倍，看上去"普通按钮反应特别大"；
+     现在每一步都是 4.3–4.5 L*，与其它 type 一致。 */
+  --el-button-bg-color: var(--el-fill-color);
+  --el-button-text-color: var(--el-text-color-regular);
   --el-button-border-color: transparent;
+  --el-button-hover-bg-color: var(--fill-1);
+  --el-button-hover-text-color: var(--el-text-color-primary);
+  --el-button-hover-border-color: transparent;
+  --el-button-active-bg-color: var(--fill-2);
+  --el-button-active-text-color: var(--el-text-color-primary);
+  --el-button-active-border-color: transparent;
+  /* 禁用底必须不透明：半透明会跟底下的东西继续合成（行 hover / 卡片底），
+     看起来就像「禁用之后 hover 还在变淡」。这里用 fill 与卡片底混出一个
+     比卡片深一档的实色，既与主题同色温，又不随底面变化。 */
+  --el-button-disabled-bg-color: color-mix(in srgb, var(--el-fill-color) 55%, var(--el-bg-color));
+  --el-button-disabled-text-color: var(--el-text-color-disabled);
+  --el-button-disabled-border-color: transparent;
+  border: 1px solid var(--el-button-border-color);
+  box-shadow: none;
+  transition:
+    background-color .18s var(--ease), border-color .18s var(--ease),
+    color .18s var(--ease), box-shadow .18s var(--ease), transform .18s var(--ease);
+}
+
+/* —— 悬停 / 按下：全站按钮只有一个来源 ——
+   声明只有这一份，形状之间只靠 --el-button-hover-* / --el-button-active-* 变量区分。
+   为什么要列出 .is-text / .is-link / .is-circle：
+   EP 自带的 `.el-button.is-text:not(.is-disabled):hover`（0,4,0）和
+   `.el-button.is-circle:hover`（0,3,0）把 color / background-color 直接写死，
+   而通用的 `.el-button:hover`（0,2,0）赢不过它们；把它们并进同一个选择器列表，
+   拿到的仍然是同一组变量，不是第二套颜色。 */
+.el-button:not(.is-disabled):hover,
+.el-button.is-text:not(.is-disabled):hover,
+.el-button.is-link:not(.is-disabled):hover,
+.el-button.is-circle:not(.is-disabled):hover {
+  color: var(--el-button-hover-text-color);
+  background-color: var(--el-button-hover-bg-color);
+  border-color: var(--el-button-hover-border-color);
+}
+.el-button:not(.is-disabled):active,
+.el-button.is-text:not(.is-disabled):active,
+.el-button.is-link:not(.is-disabled):active,
+.el-button.is-circle:not(.is-disabled):active {
+  color: var(--el-button-active-text-color);
+  background-color: var(--el-button-active-bg-color);
+  border-color: var(--el-button-active-border-color);
+}
+
+/* 尺寸与字级对齐 spec：默认 32 / 小 26 / 大 38，正文 13px */
+.el-button {
+  padding: 0 14px;
+  font-size: 13px;
+  /* 汉字墨迹在 13px 行框里整体偏下约 1.2px；行高给 1.2 把基线提上来，
+     配合 EP 自带的 flex 居中，视觉重心才落在中线上 */
+  line-height: 1.2;
+}
+
+.el-button--small {
+  height: 26px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.el-button--large {
+  height: 38px;
+  padding: 0 20px;
+  font-size: 14px;
+}
+
+/* 文字按钮只留 8px 侧距，避免行内动作被撑宽 */
+.el-button.is-text {
+  padding: 0 8px;
+}
+
+/* 键盘焦点：与输入框 / 卡片共用一个环 */
+.el-button:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* —— L1 主操作：实心 —— */
+.el-button--primary {
+  --el-button-bg-color: var(--accent-solid);
+  --el-button-text-color: var(--accent-on);
+  --el-button-border-color: transparent;
+  --el-button-hover-bg-color: var(--accent-solid-hover);
+  --el-button-hover-text-color: var(--accent-on);
+  --el-button-hover-border-color: transparent;
+  --el-button-active-bg-color: var(--accent-solid-active);
+  --el-button-active-text-color: var(--accent-on);
+  --el-button-active-border-color: transparent;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .12);
+}
+.el-button--primary:focus-visible { box-shadow: var(--ring), 0 1px 2px rgba(0, 0, 0, .12); }
+/* 悬停：颜色变深一档 + 阴影抬一层（双通道，色差小时也能感知） */
+.el-button--primary:hover {
+  box-shadow: 0 2px 6px -1px rgba(23, 31, 18, .22), 0 8px 20px -10px rgba(23, 31, 18, .30);
+}
+html.dark .el-button--primary:hover {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), 0 2px 8px rgba(0, 0, 0, .48);
+}
+.el-button--primary:active {
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .28);
+}
+
+/* 阴影只属于实心档：plain / text / link 是"贴在底上"的形态，带接触影会像浮起的卡片。
+   .el-button--primary 的 box-shadow 是 0,1,0，这里用 0,3,0 精确否决。 */
+.el-button.el-button--primary.is-plain,
+.el-button.el-button--primary.is-text,
+.el-button.el-button--primary.is-link,
+.el-button.el-button--primary.is-plain:hover,
+.el-button.el-button--primary.is-text:hover,
+.el-button.el-button--primary.is-link:hover,
+.el-button.el-button--primary.is-plain:active,
+.el-button.el-button--primary.is-text:active,
+.el-button.el-button--primary.is-link:active {
+  box-shadow: none;
+}
+.el-button--primary.is-plain:focus-visible,
+.el-button--primary.is-text:focus-visible,
+.el-button--primary.is-link:focus-visible {
+  box-shadow: var(--ring);
+}
+
+/* —— L3 轻操作：浅底无描边（新增类，不占用既有 type 语义） —— */
+.el-button.is-quiet {
+  --el-button-bg-color: var(--el-fill-color);
+  --el-button-border-color: transparent;
+  --el-button-text-color: var(--el-text-color-regular);
+  --el-button-hover-bg-color: var(--fill-1);
+  --el-button-hover-border-color: transparent;
+  --el-button-active-bg-color: var(--fill-2);
+}
+.el-button.is-quiet.is-disabled { --el-button-bg-color: var(--el-fill-color-lighter); }
+
+/* —— L4 文字按钮：无底无框，主色文字（用加深版 --accent-ink，保证 4.5:1） —— */
+.el-button.is-text,
+.el-button.is-link {
+  --el-button-bg-color: transparent;
+  --el-button-border-color: transparent;
+  --el-button-text-color: var(--accent-ink);
+  /* 只声明"文字按钮才有的差异"：静止无底 + 主色文字。
+     悬停/按下的**底色一律不在这里写**，直接继承 .el-button 基础块，
+     全站就只有一个悬停底色；这里只把字色再加深一档（静止是主色，悬停不能掉回中性灰）。 */
+  --el-button-hover-bg-color: var(--fill-1);
+  --el-button-hover-text-color: var(--accent-ink-hover);
+  --el-button-hover-border-color: transparent;
+  --el-button-active-bg-color: var(--fill-2);
+  --el-button-active-text-color: var(--accent-ink-active);
+  --el-button-active-border-color: transparent;
+  transition: background-color .16s ease, color .16s ease;
+  border-color: transparent;
+}
+/* el-link（EP 原生链接）同样走加深版 */
+.el-link { --el-link-text-color: var(--accent-ink); --el-link-hover-text-color: var(--accent-ink); }
+
+/* —— 语义按钮：选择器写成 .el-button.el-button--X（0,2,0）——
+   只写 .el-button--danger 是 0,1,0，输给 .el-button.is-text（0,2,0），
+   于是 <el-button type="danger" text> 的字色会变成 --accent-ink（深绿），
+   悬停底也会被 EP 自带的 `.el-button--danger.is-text{--el-button-hover-bg-color:var(--el-color-danger)}`
+   （同样 0,2,0、但排在前面）抢回整块实红。加 .el-button 前缀才同级，再靠"后出现"胜出。 */
+/* —— 危险：默认红描边；不可撤销的删除加 .is-solid —— */
+.el-button.el-button--danger {
+  /* 色相浓度固定 10%（三级完全一样），亮度全部交给 --state 阶梯 —— danger 的
+     悬停深度因此和 primary / success 一模一样，不再"红色一跳、绿色只动一点"。 */
+  --btn-ink: oklch(from var(--el-color-danger) var(--ink-l) c h);
+  --el-button-bg-color: color-mix(in oklab, var(--el-color-danger) 10%, var(--el-fill-color));
+  --el-button-text-color: var(--btn-ink);
+  --el-button-border-color: transparent;
+  --el-button-hover-bg-color: color-mix(in oklab, var(--el-color-danger) 10%, var(--fill-1));
+  --el-button-hover-text-color: oklch(from var(--btn-ink) calc(l + 0.045 * var(--ink-dir)) c h);
+  --el-button-hover-border-color: transparent;
+  --el-button-active-bg-color: color-mix(in oklab, var(--el-color-danger) 10%, var(--fill-2));
+  --el-button-active-text-color: oklch(from var(--btn-ink) calc(l + 0.09 * var(--ink-dir)) c h);
+}
+.el-button--danger.is-solid {
+  --el-button-bg-color: var(--danger-solid);
+  --el-button-text-color: #fff;
+  --el-button-border-color: transparent;
+  --el-button-hover-bg-color: var(--danger-solid-hover);
+  --el-button-hover-text-color: #fff;
+  --el-button-hover-border-color: transparent;
+  --el-button-active-bg-color: var(--danger-solid-active);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .12);
+}
+html.dark .el-button--danger.is-solid { --el-button-text-color: var(--accent-on); }
+.el-button--danger.is-solid:hover {
+  box-shadow: 0 2px 6px -1px rgba(23, 31, 18, .2), 0 8px 20px -10px rgba(23, 31, 18, .3);
+}
+
+/* —— success / warning / info：语义色只做"描边 + 悬停浅底"，不再整块染色 —— */
+.el-button.el-button--success {
+  /* 本色当字色只有 3.60:1（<4.5），混 20% 正文色提到 4.57/4.80；色相保留 */
+  --btn-ink: oklch(from var(--el-color-success) var(--ink-l) c h);
+  --el-button-bg-color: color-mix(in oklab, var(--el-color-success) 10%, var(--el-fill-color));
+  --el-button-text-color: var(--btn-ink);
+  --el-button-border-color: transparent;
+  --el-button-hover-bg-color: color-mix(in oklab, var(--el-color-success) 10%, var(--fill-1));
+  --el-button-hover-text-color: oklch(from var(--btn-ink) calc(l + 0.045 * var(--ink-dir)) c h);
+  --el-button-hover-border-color: transparent;
+  --el-button-active-bg-color: color-mix(in oklab, var(--el-color-success) 10%, var(--fill-2));
+  --el-button-active-text-color: oklch(from var(--btn-ink) calc(l + 0.09 * var(--ink-dir)) c h);
+  --el-button-active-border-color: transparent;
+}
+.el-button.el-button--warning {
+  /* 本色当字色只有 3.79:1（<4.5），混 20% 正文色提到 4.57/4.80；色相保留 */
+  --btn-ink: oklch(from var(--el-color-warning) var(--ink-l) c h);
+  --el-button-bg-color: color-mix(in oklab, var(--el-color-warning) 10%, var(--el-fill-color));
+  --el-button-text-color: var(--btn-ink);
+  --el-button-border-color: transparent;
+  --el-button-hover-bg-color: color-mix(in oklab, var(--el-color-warning) 10%, var(--fill-1));
+  --el-button-hover-text-color: oklch(from var(--btn-ink) calc(l + 0.045 * var(--ink-dir)) c h);
+  --el-button-hover-border-color: transparent;
+  --el-button-active-bg-color: color-mix(in oklab, var(--el-color-warning) 10%, var(--fill-2));
+  --el-button-active-text-color: oklch(from var(--btn-ink) calc(l + 0.09 * var(--ink-dir)) c h);
+  --el-button-active-border-color: transparent;
+}
+/* :not(.is-text):not(.is-link)：文字/链接形态的 hover 底由下面的 L4 块统一给 fill-1，
+   这里若再声明 fill-1 会把它顶成 -8.7 L*（0,2,0 且更靠后）。 */
+.el-button.el-button--info:not(.is-text):not(.is-link) {
+  --el-button-bg-color: var(--el-fill-color);
+  --el-button-text-color: var(--el-text-color-regular);
+  --el-button-border-color: transparent;
+  --el-button-hover-bg-color: var(--fill-1);
+  --el-button-hover-text-color: var(--el-text-color-primary);
+  --el-button-hover-border-color: transparent;
+  --el-button-active-bg-color: var(--fill-2);
+  --el-button-active-text-color: var(--el-text-color-primary);
+  --el-button-active-border-color: transparent;
+}
+
+/* —— plain = L2 描边档：透明底 + 1px 描边 + 语义文字 ——
+   EP 的 plain 只对带 type 的按钮生效（default 的 plain 与普通按钮长得一模一样），
+   且用的是 light-9 浅底 + light-5 描边，与我们的 L3 轻底完全撞车，
+   于是"普通态"和"plain 态"在 default/success/warning/danger 四列上不可分辨。
+   这里把 plain 重新定义成真正的描边档：底透明、描边可见、文字沿用各 type 语义色。 */
+.el-button.is-plain {
+  --el-button-bg-color: transparent;
+  --el-button-border-color: var(--edge-strong);
+  --el-button-text-color: var(--el-text-color-regular);
+  --el-button-hover-bg-color: var(--fill-1);
+  --el-button-hover-border-color: var(--edge-strong);
+  --el-button-hover-text-color: var(--el-text-color-primary);
+  --el-button-active-bg-color: var(--fill-2);
+  --el-button-active-text-color: var(--el-text-color-primary);
+}
+/* plain 的 type 版：描边/文字保留语义色，**底色和普通态走同一套阶梯**
+   （rest = 透明卡片底 → hover = fill-1 → active = fill-2），
+   语义色只以固定 10% 浓度叠在上面，不参与决定亮度。 */
+.el-button.el-button--primary.is-plain {
+  --el-button-bg-color: transparent;
+  --el-button-border-color: var(--edge-accent);
+  --el-button-text-color: var(--accent-ink);
+  --el-button-hover-bg-color: var(--fill-1);
+  --el-button-hover-border-color: var(--accent-ink);
+  --el-button-hover-text-color: var(--accent-ink-hover);
+  --el-button-active-bg-color: var(--fill-2);
+  --el-button-active-text-color: var(--accent-ink-active);
+}
+.el-button--success.is-plain {
+  --el-button-bg-color: transparent;
+  --el-button-border-color: color-mix(in srgb, var(--el-color-success) 45%, transparent);
+  --el-button-text-color: var(--btn-ink);
+  --el-button-hover-bg-color: var(--fill-1);
+  --el-button-hover-border-color: color-mix(in srgb, var(--el-color-success) 55%, transparent);
+  --el-button-hover-text-color: oklch(from var(--btn-ink) calc(l + 0.045 * var(--ink-dir)) c h);
+  --el-button-active-bg-color: var(--fill-2);
+  --el-button-active-text-color: oklch(from var(--btn-ink) calc(l + 0.09 * var(--ink-dir)) c h);
+}
+.el-button--warning.is-plain {
+  --el-button-bg-color: transparent;
+  --el-button-border-color: color-mix(in srgb, var(--el-color-warning) 45%, transparent);
+  --el-button-text-color: var(--btn-ink);
+  --el-button-hover-bg-color: var(--fill-1);
+  --el-button-hover-border-color: color-mix(in srgb, var(--el-color-warning) 55%, transparent);
+  --el-button-hover-text-color: oklch(from var(--btn-ink) calc(l + 0.045 * var(--ink-dir)) c h);
+  --el-button-active-bg-color: var(--fill-2);
+  --el-button-active-text-color: oklch(from var(--btn-ink) calc(l + 0.09 * var(--ink-dir)) c h);
+}
+.el-button--danger.is-plain {
+  --el-button-bg-color: transparent;
+  --el-button-border-color: color-mix(in srgb, var(--el-color-danger) 45%, transparent);
+  --el-button-text-color: var(--btn-ink);
+  --el-button-hover-bg-color: var(--fill-1);
+  --el-button-hover-border-color: color-mix(in srgb, var(--el-color-danger) 55%, transparent);
+  --el-button-hover-text-color: oklch(from var(--btn-ink) calc(l + 0.045 * var(--ink-dir)) c h);
+  --el-button-active-bg-color: var(--fill-2);
+  --el-button-active-text-color: oklch(from var(--btn-ink) calc(l + 0.09 * var(--ink-dir)) c h);
+}
+
+/* —— 文字 / 链接形态的悬停：EP 给的是"type 实色底 + 白字"（0,2,0），
+   于是 primary 文字按钮一悬停就变成实心主色块、深色字压在上面（2.02:1）。
+   这里用 0,3,0 把它们改回"浅色底 + 语义字"：底色同样是 fill-1 → fill-2 两级，
+   与同 type 的普通按钮同深度，只是起点晚一级（文字按钮静止没有底）。 */
+.el-button.el-button--primary.is-text,
+.el-button.el-button--primary.is-link {
+  --el-button-hover-bg-color: var(--fill-1);
+  --el-button-hover-text-color: var(--accent-ink-hover);
+  --el-button-active-bg-color: var(--fill-2);
+  --el-button-active-text-color: var(--accent-ink-active);
   --el-button-hover-border-color: transparent;
   --el-button-active-border-color: transparent;
-  --el-button-disabled-bg-color: color-mix(in srgb, var(--el-color-primary) 6%, transparent);
-  --el-button-disabled-text-color: var(--el-color-primary-light-7);
-  --el-button-disabled-border-color: transparent;
-  border: none;
 }
-.el-button, .el-button--primary {
-  --el-button-bg-color: color-mix(in srgb, var(--el-color-primary) 12%, transparent);
-  --el-button-text-color: var(--el-color-primary);
-  --el-button-hover-bg-color: color-mix(in srgb, var(--el-color-primary) 30%, transparent);
-  --el-button-hover-text-color: var(--el-color-primary);
-  --el-button-active-bg-color: color-mix(in srgb, var(--el-color-primary) 45%, transparent);
-  --el-button-active-text-color: var(--el-color-primary);
+.el-button.el-button--success.is-text,
+.el-button.el-button--success.is-link {
+  /* 悬停底 = 同 type 普通按钮的悬停底：固定 10% 色相 + 同一级 --fill-1。
+     文字按钮静止无底，如果悬停也走纯中性，type 的色相就整个消失了。 */
+  --el-button-hover-bg-color: color-mix(in oklab, var(--el-color-success) 10%, var(--fill-1));
+  --el-button-hover-text-color: oklch(from var(--btn-ink) calc(l + 0.045 * var(--ink-dir)) c h);
+  --el-button-active-bg-color: color-mix(in oklab, var(--el-color-success) 10%, var(--fill-2));
+  --el-button-active-text-color: oklch(from var(--btn-ink) calc(l + 0.09 * var(--ink-dir)) c h);
+  --el-button-hover-border-color: transparent;
+  --el-button-active-border-color: transparent;
 }
-.el-button--success {
-  --el-button-bg-color: color-mix(in srgb, var(--el-color-success) 12%, transparent);
-  --el-button-text-color: var(--el-color-success);
-  --el-button-hover-bg-color: color-mix(in srgb, var(--el-color-success) 30%, transparent);
-  --el-button-hover-text-color: var(--el-color-success);
-  --el-button-active-bg-color: color-mix(in srgb, var(--el-color-success) 45%, transparent);
-  --el-button-active-text-color: var(--el-color-success);
+.el-button.el-button--warning.is-text,
+.el-button.el-button--warning.is-link {
+  /* 悬停底 = 同 type 普通按钮的悬停底：固定 10% 色相 + 同一级 --fill-1。
+     文字按钮静止无底，如果悬停也走纯中性，type 的色相就整个消失了。 */
+  --el-button-hover-bg-color: color-mix(in oklab, var(--el-color-warning) 10%, var(--fill-1));
+  --el-button-hover-text-color: oklch(from var(--btn-ink) calc(l + 0.045 * var(--ink-dir)) c h);
+  --el-button-active-bg-color: color-mix(in oklab, var(--el-color-warning) 10%, var(--fill-2));
+  --el-button-active-text-color: oklch(from var(--btn-ink) calc(l + 0.09 * var(--ink-dir)) c h);
+  --el-button-hover-border-color: transparent;
+  --el-button-active-border-color: transparent;
 }
-.el-button--warning {
-  --el-button-bg-color: color-mix(in srgb, var(--el-color-warning) 12%, transparent);
-  --el-button-text-color: var(--el-color-warning);
-  --el-button-hover-bg-color: color-mix(in srgb, var(--el-color-warning) 30%, transparent);
-  --el-button-hover-text-color: var(--el-color-warning);
-  --el-button-active-bg-color: color-mix(in srgb, var(--el-color-warning) 45%, transparent);
-  --el-button-active-text-color: var(--el-color-warning);
+.el-button.el-button--danger.is-text,
+.el-button.el-button--danger.is-link {
+  /* 悬停底 = 同 type 普通按钮的悬停底：固定 10% 色相 + 同一级 --fill-1。
+     文字按钮静止无底，如果悬停也走纯中性，type 的色相就整个消失了。 */
+  --el-button-hover-bg-color: color-mix(in oklab, var(--el-color-danger) 10%, var(--fill-1));
+  --el-button-hover-text-color: oklch(from var(--btn-ink) calc(l + 0.045 * var(--ink-dir)) c h);
+  --el-button-active-bg-color: color-mix(in oklab, var(--el-color-danger) 10%, var(--fill-2));
+  --el-button-active-text-color: oklch(from var(--btn-ink) calc(l + 0.09 * var(--ink-dir)) c h);
+  --el-button-hover-border-color: transparent;
+  --el-button-active-border-color: transparent;
 }
-.el-button--danger {
-  --el-button-bg-color: color-mix(in srgb, var(--el-color-danger) 12%, transparent);
-  --el-button-text-color: var(--el-color-danger);
-  --el-button-hover-bg-color: color-mix(in srgb, var(--el-color-danger) 30%, transparent);
-  --el-button-hover-text-color: var(--el-color-danger);
-  --el-button-active-bg-color: color-mix(in srgb, var(--el-color-danger) 45%, transparent);
-  --el-button-active-text-color: var(--el-color-danger);
+
+/* ============================================================
+   圆形图标按钮（.is-circle 是唯一可靠钩子，文字按钮不受影响）
+   形态：软底（默认，无需额外 class）/ 实心 primary / 危险 hover 转红 / 禁用 .38
+   ============================================================ */
+.el-button.is-circle {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  /* 底色/字色一律读 type 变量：默认圆形拿到 --el-fill-color（= --surface-2），
+     primary / danger / success… 直接拿到各自 type 的静止色。
+     不要在形状层写死中性色，否则所有 type 在 hover 前长得一模一样。 */
+  background-color: var(--el-button-bg-color);
+  color: var(--el-button-text-color);
+  box-shadow: none;
+  position: relative;
 }
-.el-button--info {
-  --el-button-bg-color: color-mix(in srgb, var(--el-color-info) 12%, transparent);
-  --el-button-text-color: var(--el-color-info);
-  --el-button-hover-bg-color: color-mix(in srgb, var(--el-color-info) 30%, transparent);
-  --el-button-hover-text-color: var(--el-color-info);
-  --el-button-active-bg-color: color-mix(in srgb, var(--el-color-info) 45%, transparent);
-  --el-button-active-text-color: var(--el-color-info);
+/* 命中区外扩到 40px（视觉不变、点击变大，WCAG 2.5.8 目标 24px 的最小值之上） */
+.el-button.is-circle::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+}
+/* 圆形实心按钮的颜色全部来自 .el-button--primary 的变量，这里只补一层接触影 */
+.el-button.is-circle.el-button--primary {
+  box-shadow: 0 1px 2px rgba(20, 30, 15, .18);
+}
+.el-button.is-circle.el-button--primary:hover {
+  box-shadow: 0 2px 6px -1px rgba(23, 31, 18, .22), 0 8px 20px -10px rgba(23, 31, 18, .30);
+}
+
+/* 禁用态一票否决：任何 type / 形态（默认、primary、danger、circle、is-quiet、文字）
+   都只有这一套禁用色，并且 hover / active 一律不得变化。
+   底色必须是**不透明**的：半透明会跟底下的行 hover / 卡片底继续合成，
+   看起来就像「禁用之后 hover 还在变淡」。
+   放在文件最末：.is-circle 块（0,2,0）会重新声明 background-color，
+   这里的 .is-circle.is-disabled（0,3,0）+ 靠后，才能压住它。 */
+.el-button.is-disabled,
+.el-button.is-disabled:hover,
+.el-button.is-disabled:focus-visible,
+.el-button.is-disabled:active,
+.el-button.is-disabled.is-plain,
+.el-button.is-disabled.is-plain:hover,
+.el-button.is-disabled.is-plain:focus-visible,
+.el-button.is-disabled.is-plain:active,
+.el-button.is-disabled.is-text,
+.el-button.is-disabled.is-text:hover,
+.el-button.is-disabled.is-text:focus-visible,
+.el-button.is-disabled.is-text:active,
+.el-button.is-disabled.is-link,
+.el-button.is-disabled.is-link:hover,
+.el-button.is-disabled.is-link:focus-visible,
+.el-button.is-disabled.is-link:active,
+.el-button.is-circle.is-disabled,
+.el-button.is-circle.is-disabled:hover {
+  background-color: var(--el-button-disabled-bg-color);
+  color: var(--el-button-disabled-text-color);
+  box-shadow: none;
+  border-color: transparent;
+  box-shadow: none;
 }

@@ -294,9 +294,9 @@ onMounted(() => {
   gap: var(--space-2);
   margin-top: var(--space-3);
   padding: var(--space-3);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-md);
-  background: var(--surface-2);
+  background: var(--surface-inset);
 }
 
 .sniff-row {

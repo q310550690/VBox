@@ -247,7 +247,7 @@ onMounted(() => {
         @confirm="onClear"
       >
         <template #reference>
-          <el-button type="danger" plain :loading="clearing" :disabled="api.demoMode || loading">
+          <el-button type="danger" :loading="clearing" :disabled="api.demoMode || loading">
             <template #icon><SolarIcon name="trash-bin-minimalistic" /></template>
             清除播放缓存
           </el-button>
@@ -278,9 +278,9 @@ onMounted(() => {
   gap: var(--space-3);
   margin-top: var(--space-3);
   padding: var(--space-3);
-  border: 1px solid var(--border-lighter);
+  border: 0;
   border-radius: var(--radius-md);
-  background: var(--surface-2);
+  background: var(--surface-inset);
 }
 
 .usage-main {

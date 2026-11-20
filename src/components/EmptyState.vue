@@ -54,12 +54,13 @@ function handleAction() {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 72px;
-  height: 72px;
+  width: 44px;
+  height: 44px;
   margin-bottom: var(--space-1);
+  border: 0;
   border-radius: var(--radius-pill);
   background: var(--surface-2);
-  color: var(--text-faint);
+  color: var(--text-muted);
 }
 
 .title {

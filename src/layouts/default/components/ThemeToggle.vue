@@ -39,10 +39,11 @@ const ariaLabel = computed<string>(() => `切换主题（当前：${modeLabel.va
 
 <template>
   <button
-    class="theme-toggle"
+    class="rail-item theme-toggle"
     :class="{ 'is-collapsed': collapsed }"
     type="button"
     :aria-label="ariaLabel"
+    :title="ariaLabel"
     @click="emit('toggle')"
   >
     <SolarIcon class="tt-icon" :size="18" :name="modeIcon" />
@@ -51,38 +52,11 @@ const ariaLabel = computed<string>(() => `切换主题（当前：${modeLabel.va
 </template>
 
 <style scoped>
+/* 尺寸 / 配色 / 悬停与选中全部复用 SideNav 的 .rail-item，
+   保证展开态（34×34，只换色）与折叠态（40×40，铺 --surface-2）两套规矩一致。
+   这里只留本组件自己的东西：图标不收缩、标签省略。 */
 .theme-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border: none;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--text-regular);
-  cursor: pointer;
   white-space: nowrap;
-  transition: var(--transition-color);
-}
-
-.theme-toggle:hover {
-  background: var(--surface-2);
-  color: var(--text);
-}
-
-.theme-toggle:active {
-  background: var(--accent-weak);
-  color: var(--accent);
-}
-
-/* 折叠态：仅图标并居中 */
-.theme-toggle.is-collapsed {
-  justify-content: center;
-  gap: 0;
-  padding: 0;
 }
 
 .tt-icon {

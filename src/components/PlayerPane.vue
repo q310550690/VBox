@@ -1366,6 +1366,7 @@ defineExpose({
   border-radius: var(--radius-lg);
   outline: 1px solid var(--border);
   outline-offset: -1px;
+  box-shadow: var(--shadow-1);
 }
 
 /* 播放态：整块透明（原生窗口在下层），方角 + 细描边 */

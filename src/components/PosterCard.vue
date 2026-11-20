@@ -146,7 +146,7 @@ function onKeydown(event: KeyboardEvent) {
 </template>
 
 <style scoped>
-/* 卡片外壳：白底 + 圆角 + 描边（与详情页 .panel 同一层级语言）；hover 只做描边 + 背景光晕，不做位移/缩放 */
+/* 卡片外壳：白底 + 圆角 + 描边 + 接触影（与 .panel 同一层级语言）；hover 抬 2px、阴影升级、描边转主色 */
 .poster-card {
   display: flex;
   flex-direction: column;
@@ -154,28 +154,31 @@ function onKeydown(event: KeyboardEvent) {
   min-width: 0;
   margin: 0;
   padding: var(--space-2);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-lg);
-  background: var(--surface);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-1);
   color: inherit;
   font: inherit;
   text-align: left;
   overflow: hidden;
   cursor: pointer;
   transition:
-    border-color 0.18s ease,
-    background-color 0.18s ease,
-    box-shadow 0.18s ease;
+    border-color var(--dur-base) var(--ease),
+    box-shadow var(--dur-base) var(--ease),
+    transform var(--dur-base) var(--ease);
 }
 
 .poster-card:hover,
 .poster-card:focus-visible {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent),
-    0 6px 12px color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow: var(--shadow-2);
+  transform: translateY(-2px);
   outline: none;
+}
+
+.poster-card:active {
+  box-shadow: var(--shadow-1);
+  transform: translateY(0);
 }
 
 .poster-card.is-disabled {

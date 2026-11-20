@@ -234,17 +234,18 @@ onMounted(() => {
   gap: var(--space-2);
   padding: 10px var(--space-3);
   margin: var(--space-3) 0;
-  border: 1px solid var(--el-border-color);
+  border: 0;
+  border-left: 3px solid var(--text-faint);
   border-radius: var(--radius-md);
-  background: var(--el-fill-color-lighter);
+  background: var(--surface-inset);
 }
 
 .python-status.ok {
-  border-color: var(--el-color-success-light-5);
+  border-color: var(--el-color-success);
 }
 
 .python-status.bad {
-  border-color: var(--el-color-warning-light-5);
+  border-color: var(--el-color-warning);
 }
 
 .python-status.ok .status-dot {
@@ -299,7 +300,8 @@ onMounted(() => {
   align-items: center;
   gap: var(--space-2);
   padding: 2px var(--space-2);
-  border: 1px solid var(--el-border-color);
+  border: 0;
+  background: var(--surface-2);
   border-radius: var(--radius-pill);
   color: var(--el-text-color-secondary);
   font-size: 12px;
@@ -307,7 +309,7 @@ onMounted(() => {
 
 .dep-badge.ok {
   color: var(--el-color-success);
-  border-color: var(--el-color-success-light-5);
+  border-color: var(--el-color-success);
 }
 
 .pip-row {

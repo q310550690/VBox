@@ -75,12 +75,12 @@ function handleVisibleChange(visible: boolean) {
   <el-dialog
     :model-value="open"
     :title="title"
-    width="420px"
+    class="dlg-sm"
     append-to-body
     align-center
     @update:model-value="handleVisibleChange"
   >
-    <p v-if="message" class="confirm-message">{{ message }}</p>
+    <p v-if="message" class="confirm-message" :class="{ 'is-danger': danger }">{{ message }}</p>
 
     <div v-if="checkboxLabel" class="confirm-checkbox">
       <el-checkbox
@@ -94,7 +94,11 @@ function handleVisibleChange(visible: boolean) {
     <template #footer>
       <div class="confirm-footer">
         <el-button @click="handleCancel">{{ resolvedCancelText }}</el-button>
-        <el-button :type="danger ? 'danger' : 'primary'" @click="handleConfirm">
+        <el-button
+          :type="danger ? 'danger' : 'primary'"
+          :class="{ 'is-solid': danger }"
+          @click="handleConfirm"
+        >
           {{ resolvedConfirmText }}
         </el-button>
       </div>
@@ -109,6 +113,16 @@ function handleVisibleChange(visible: boolean) {
   font-size: 14px;
   line-height: 1.6;
   overflow-wrap: anywhere;
+}
+
+/* 危险确认：正文独立成一条淡红提示条，与"取消"拉开安全距离 */
+.confirm-message.is-danger {
+  padding: 10px 12px;
+  border: 0;
+  border-left: 3px solid var(--el-color-danger);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--el-color-danger) 10%, transparent);
+  color: var(--el-text-color-primary);
 }
 
 .confirm-checkbox {

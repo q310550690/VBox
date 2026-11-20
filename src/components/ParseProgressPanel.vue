@@ -354,8 +354,8 @@ function handleCancel() {
   max-width: calc(100vw - 48px);
   max-height: calc(100vh - 120px);
   padding: var(--space-3);
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--surface-card);
+  border: 0;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-3);
 }
@@ -482,9 +482,9 @@ function handleCancel() {
   justify-content: center;
   width: 20px;
   height: 20px;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-pill);
-  background: var(--surface);
+  background: var(--surface-inset);
   color: var(--text-faint);
 }
 
@@ -567,8 +567,8 @@ function handleCancel() {
 
 /* 滚动区容器：滚动交给 el-scrollbar（细滚动条 + 圆角裁剪），日志内容横向可滚 */
 .log-scroll {
-  background: var(--surface-2);
-  border: 1px solid var(--border-lighter);
+  background: var(--surface-inset);
+  border: 0;
   border-radius: var(--radius-md);
 }
 

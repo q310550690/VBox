@@ -158,17 +158,18 @@ onMounted(() => {
   gap: var(--space-2);
   padding: 10px var(--space-3);
   margin: var(--space-3) 0;
-  border: 1px solid var(--el-border-color);
+  border: 0;
+  border-left: 3px solid var(--text-faint);
   border-radius: var(--radius-md);
-  background: var(--el-fill-color-lighter);
+  background: var(--surface-inset);
 }
 
 .node-status.ok {
-  border-color: var(--el-color-success-light-5);
+  border-color: var(--el-color-success);
 }
 
 .node-status.bad {
-  border-color: var(--el-color-warning-light-5);
+  border-color: var(--el-color-warning);
 }
 
 .node-status.ok .status-dot {

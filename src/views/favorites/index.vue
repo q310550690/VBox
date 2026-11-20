@@ -76,7 +76,7 @@ onMounted(() => {
 <template>
   <PageScroll>
     <div class="page favorites-page">
-    <div class="list-toolbar">
+    <div class="list-toolbar head-sticky">
       <StatusTabs
         :model-value="store.filter"
         :items="FILTER_TABS"
@@ -84,18 +84,21 @@ onMounted(() => {
         @update:model-value="onFilterChange"
       />
       <span class="toolbar-spacer" />
-      <span v-if="isDemo" class="demo-tag">本地演示数据</span>
-      <span class="muted total">共 {{ store.total }} 部</span>
-      <el-tooltip content="刷新收藏" placement="bottom">
-        <el-button
-          circle
-          :loading="store.loading"
-          aria-label="刷新收藏"
-          @click="onReload"
-        >
-          <template #icon><SolarIcon name="refresh" :size="14" /></template>
-        </el-button>
-      </el-tooltip>
+      <div class="page-toolbar page-toolbar--meta">
+        <span v-if="isDemo" class="demo-tag">本地演示数据</span>
+        <span class="muted total">共 {{ store.total }} 部</span>
+        <span class="page-toolbar__sep" aria-hidden="true" />
+        <el-tooltip content="刷新收藏" placement="bottom">
+          <el-button
+            circle
+            :loading="store.loading"
+            aria-label="刷新收藏"
+            @click="onReload"
+          >
+            <template #icon><SolarIcon name="refresh" :size="14" /></template>
+          </el-button>
+        </el-tooltip>
+      </div>
     </div>
 
     <HintBar v-if="isDemo">
@@ -166,10 +169,10 @@ onMounted(() => {
 
 .demo-tag {
   padding: 1px var(--space-2);
-  border: 1px solid var(--warning);
+  border: 0;
   border-radius: var(--radius-pill);
-  background: var(--warning-weak);
-  color: var(--warning);
+  background: color-mix(in srgb, var(--el-color-warning) 12%, transparent);
+  color: color-mix(in srgb, var(--el-color-warning) 80%, var(--el-text-color-primary));
   font-size: 11px;
   line-height: 18px;
 }

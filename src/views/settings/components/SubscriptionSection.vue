@@ -546,7 +546,7 @@ onMounted(() => {
     <el-dialog
       :model-value="editing !== null"
       title="编辑订阅"
-      width="460px"
+      class="dlg-md"
       append-to-body
       align-center
       @update:model-value="(visible: boolean) => !visible && closeEdit()"
@@ -670,9 +670,9 @@ onMounted(() => {
 }
 
 .sub-item {
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-md);
-  background: var(--surface);
+  background: var(--surface-inset);
   overflow: hidden;
 }
 
@@ -886,9 +886,9 @@ onMounted(() => {
   gap: var(--space-2);
   margin-top: var(--space-3);
   padding: var(--space-3);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-md);
-  background: var(--surface-2);
+  background: var(--surface-inset);
 }
 
 .enabled-info {

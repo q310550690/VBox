@@ -120,10 +120,9 @@ async function load(item: OnlineSubtitle) {
   <el-dialog
     align-center
     v-model="visible"
-    width="720px"
     top="8vh"
     append-to-body
-    class="subtitle-dialog"
+    class="subtitle-dialog dlg-lg"
     :close-on-click-modal="true"
   >
     <template #header>
@@ -307,7 +306,8 @@ async function load(item: OnlineSubtitle) {
 
 .result-list {
   margin-top: 10px;
-  border: 1px solid var(--border-light);
+  border: 0;
+  background: var(--surface-inset);
   border-radius: var(--radius-md);
 }
 

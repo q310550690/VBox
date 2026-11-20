@@ -89,7 +89,7 @@ function onSelect(group: LiveGroup) {
 
 .group-item.active {
   background: var(--accent-weak);
-  border-color: var(--accent-weak-hover);
+  border-color: transparent;
   color: var(--accent);
   font-weight: 600;
 }

@@ -75,14 +75,15 @@ onMounted(() => {
   gap: var(--space-2);
 }
 
+/* 集数按钮：填充式（凹槽底、零描边），与输入框/次级按钮同一套语言 */
 .ep-chip {
   min-width: 0;
   height: 32px;
   padding: 0 var(--space-2);
   overflow: hidden;
-  border: 1px solid transparent;
+  border: 0;
   border-radius: var(--radius-sm);
-  background: var(--surface-2);
+  background: var(--surface-inset);
   color: var(--text-regular);
   font: inherit;
   font-size: 13px;
@@ -96,7 +97,7 @@ onMounted(() => {
 }
 
 .ep-chip:hover {
-  background: var(--surface-3);
+  background: color-mix(in srgb, var(--el-color-primary) 10%, var(--surface-inset));
   color: var(--text);
 }
 

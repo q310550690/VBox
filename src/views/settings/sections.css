@@ -9,9 +9,11 @@
 
 .settings-page .section-title {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--fs-title);
   font-weight: 600;
-  color: var(--text);
+  /* 标题掺 22% 主题色：只靠灰阶分不出"标题"和"正文"，色相能分出来 */
+  color: var(--text-strong);
+  letter-spacing: 0.1px;
 }
 
 .settings-page .field-control {
@@ -94,8 +96,8 @@
   flex-direction: column;
   gap: var(--space-2);
   min-width: 0;
-  margin-top: var(--space-4);
-  margin-bottom: var(--space-4);
+  /* 字段间距统一由下方单侧 margin 控制：原来上下各 16 会叠成 32，网格里的字段又是 0，看起来忽大忽小 */
+  margin: 0 0 var(--space-4);
 }
 
 .settings-page .field-grid .field {

@@ -21,7 +21,7 @@ withDefaults(
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2);
+  padding: 9px 12px;
   border-left: 3px solid var(--info);
   border-radius: var(--radius-md);
   background: var(--info-weak);

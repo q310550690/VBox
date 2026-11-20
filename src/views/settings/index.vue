@@ -95,7 +95,7 @@ onBeforeUnmount(() => {
   <PageScroll>
     <div class="page settings-page">
     <!-- 吸顶分区导航：与下载页 / 历史页共用 StatusTabs 药丸 tab -->
-    <div class="settings-nav">
+    <div class="settings-nav head-sticky">
       <StatusTabs
         :model-value="activeSection"
         :items="SECTION_TABS"
@@ -174,13 +174,13 @@ onBeforeUnmount(() => {
 
     <div
       id="anchor-appearance"
-      class="settings-card "
+      class="settings-card panel"
     >
       <AppearanceSection />
     </div>
     <div
       id="anchor-about"
-      class="settings-card "
+      class="settings-card panel"
     >
       <AboutSection />
     </div>
@@ -191,9 +191,6 @@ onBeforeUnmount(() => {
 <style scoped>
 /* 吸顶导航容器：tab 样式由 StatusTabs 组件提供 */
 .settings-nav {
-  position: sticky;
-  top: 0;
-  z-index: 999;
   width: fit-content;
   max-width: 100%;
 }
@@ -201,21 +198,27 @@ onBeforeUnmount(() => {
 .settings-card {
   /* 吸顶导航约 48px + 页面留白，避免点 tab 后卡片标题被导航盖住 */
   scroll-margin-top: 64px;
+  border-radius: var(--radius-lg);
+}
+
+/* 分区内容块与卡片同圆角，避免嵌套时出现两层不同曲率 */
+.settings-card .settings-section {
+  border-radius: var(--radius-lg);
 }
 
 /* 分组卡片：一个 tab 对应一个卡片、内部多个子分区 */
 .group-title {
-  margin: 0 0 var(--space-3);
-  font-size: 15px;
+  margin: 0 0 var(--space-4);
+  font-size: var(--fs-title);
   font-weight: 600;
-  color: var(--text);
+  color: var(--text-strong);
 }
 
-/* 子分区之间用细分割线隔开，标题降一级 */
+/* 子分区之间只靠留白分隔（不用线），标题降一级 */
 .settings-card--group :deep(.settings-section) + .settings-section {
-  margin-top: var(--space-4);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--border-lighter);
+  margin-top: var(--space-5);
+  padding-top: 0;
+  border-top: 0;
 }
 
 

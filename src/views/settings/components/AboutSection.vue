@@ -93,7 +93,7 @@ async function onInstall() {
 </script>
 
 <template>
-  <section class="settings-section panel" aria-labelledby="settings-about">
+  <section class="settings-section" aria-labelledby="settings-about">
     <header class="section-head">
       <h2 id="settings-about" class="section-title">关于</h2>
       <p class="section-desc">版本、运行环境与自动更新。</p>
@@ -103,6 +103,10 @@ async function onInstall() {
       <div class="about-row">
         <dt class="about-key">应用</dt>
         <dd class="about-value">VBox {{ version }}</dd>
+      </div>
+      <div class="about-row">
+        <dt class="about-key">标语</dt>
+        <dd class="about-value">一匣藏山海，万象皆入画</dd>
       </div>
       <div class="about-row">
         <dt class="about-key">技术栈</dt>
@@ -203,9 +207,9 @@ async function onInstall() {
 .update-box {
   margin-top: var(--space-4);
   padding: var(--space-3);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-md);
-  background: var(--surface-2);
+  background: var(--surface-inset);
 }
 
 .update-head {

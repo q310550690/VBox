@@ -486,9 +486,9 @@ watch(
 .live-play {
   margin-top: var(--space-4);
   padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-lg);
-  background: var(--surface);
+  background: var(--surface-2);
 }
 
 .play-head {
