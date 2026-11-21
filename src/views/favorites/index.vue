@@ -10,6 +10,7 @@ import ErrorState from '@/components/ErrorState.vue'
 import PageScroll from '@/components/PageScroll.vue'
 import HintBar from '@/components/HintBar.vue'
 import StatusTabs from '@/components/StatusTabs.vue'
+import PageHead from '@/components/PageHead.vue'
 import FavoriteCard from './components/FavoriteCard.vue'
 import SkeletonGrid from '@/components/SkeletonGrid.vue'
 import { useFavoritesStore } from '@/store/favorites'
@@ -76,7 +77,7 @@ onMounted(() => {
 <template>
   <PageScroll>
     <div class="page favorites-page">
-    <div class="list-toolbar head-sticky">
+    <PageHead class="list-toolbar" wrap>
       <StatusTabs
         :model-value="store.filter"
         :items="FILTER_TABS"
@@ -84,6 +85,7 @@ onMounted(() => {
         @update:model-value="onFilterChange"
       />
       <span class="toolbar-spacer" />
+      <template #tools>
       <div class="page-toolbar page-toolbar--meta">
         <span v-if="isDemo" class="demo-tag">本地演示数据</span>
         <span class="muted total">共 {{ store.total }} 部</span>
@@ -99,7 +101,8 @@ onMounted(() => {
           </el-button>
         </el-tooltip>
       </div>
-    </div>
+      </template>
+    </PageHead>
 
     <HintBar v-if="isDemo">
       浏览器预览模式：收藏保存在本地 localStorage，仅为演示数据；桌面端会写入本机 SQLite。
@@ -150,18 +153,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.list-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.toolbar-spacer {
-  flex: 1;
-  min-width: var(--space-2);
-}
-
 .total {
   font-size: 12px;
   font-variant-numeric: tabular-nums;

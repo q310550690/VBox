@@ -8,6 +8,7 @@ import * as api from '@/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import HintBar from '@/components/HintBar.vue'
 import StatusTabs from '@/components/StatusTabs.vue'
+import PageHead from '@/components/PageHead.vue'
 import DownloadGroup from './components/DownloadGroup.vue'
 import { buildDownloadGroups } from './components/downloadGroups'
 import EmptyState from '@/components/EmptyState.vue'
@@ -249,10 +250,11 @@ onMounted(() => {
   <PageScroll>
     <div class="page downloads-page">
     <!-- 页头：标题 + 状态筛选 tab + 统计/目录 + 全局圆形操作 -->
-    <header class="page-header head-sticky">
+    <PageHead class="downloads-head" wrap>
       <div class="header-left">
         <StatusTabs v-model="activeTab" :items="TABS" aria-label="下载状态筛选" />
       </div>
+      <template #tools>
       <div class="toolbar">
         <span class="stats">
           共 {{ groups.length }} 部 · 下载中 {{ store.counts.downloading }} · 已完成
@@ -296,7 +298,8 @@ onMounted(() => {
         </el-tooltip>
       </div>
       </div>
-    </header>
+      </template>
+    </PageHead>
 
     <!-- 浏览器预览才提示：任务为本地演示数据，不会真实下载 -->
     <HintBar v-if="isDemo">
@@ -367,9 +370,15 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.downloads-page .page-header {
-  flex-wrap: wrap;
+.downloads-head {
   gap: var(--space-4);
+}
+
+.downloads-head :deep(.page-head__tools) {
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
 }
 
 .toolbar {
@@ -378,14 +387,6 @@ onMounted(() => {
   align-items: center;
   justify-content: flex-end;
   gap: var(--space-2);
-  min-width: 0;
-}
-
-.header-left {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-4);
   min-width: 0;
 }
 

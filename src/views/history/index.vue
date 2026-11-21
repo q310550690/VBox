@@ -12,6 +12,7 @@ import ErrorState from '@/components/ErrorState.vue'
 import PageScroll from '@/components/PageScroll.vue'
 import HintBar from '@/components/HintBar.vue'
 import StatusTabs from '@/components/StatusTabs.vue'
+import PageHead from '@/components/PageHead.vue'
 import HistoryCard from './components/HistoryCard.vue'
 import SkeletonGrid from '@/components/SkeletonGrid.vue'
 import { useConfigStore } from '@/store/config'
@@ -114,7 +115,7 @@ onMounted(() => {
 <template>
   <PageScroll>
     <div class="page history-page">
-    <div class="list-toolbar head-sticky">
+    <PageHead class="list-toolbar" wrap>
       <StatusTabs
         :model-value="store.filter"
         :items="FILTER_TABS"
@@ -122,6 +123,7 @@ onMounted(() => {
         @update:model-value="onFilterChange"
       />
       <span class="toolbar-spacer" />
+      <template #tools>
       <div class="page-toolbar page-toolbar--meta">
         <span class="retention" :title="`当前保留策略：${store.retentionLabel}`">
           <SolarIcon :size="12" name="clock-circle" aria-hidden="true" />
@@ -142,7 +144,8 @@ onMounted(() => {
           </el-button>
         </el-tooltip>
       </div>
-    </div>
+      </template>
+    </PageHead>
 
     <HintBar v-if="isDemo">
       浏览器预览模式：历史记录保存在本地 localStorage，仅为演示数据；桌面端会写入本机 SQLite。
@@ -205,18 +208,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.list-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.toolbar-spacer {
-  flex: 1;
-  min-width: var(--space-2);
-}
-
 .retention {
   display: inline-flex;
   align-items: center;

@@ -8,6 +8,7 @@ import { useRoute, useRouter } from 'vue-router'
 import SolarIcon from '@/components/SolarIcon.vue'
 import * as api from '@/api'
 import StatusTabs from '@/components/StatusTabs.vue'
+import PageHead from '@/components/PageHead.vue'
 import DoubanHome from './components/DoubanHome.vue'
 import ContinueWatching from './components/ContinueWatching.vue'
 import VideoGrid from '@/components/VideoGrid.vue'
@@ -338,20 +339,6 @@ function onCategorySelect(typeId: string) {
   void loadList()
 }
 
-/**
- * 分类条滚轮：纵向滚轮 → 横向滚动。
- * el-scrollbar 只负责滚动条外观/拖拽，不会把纵向滚轮转成横向，这里补一行转换；
- * 分类未溢出时不拦截，滚轮照常滚页面。
- */
-function onCatStripWheel(event: WheelEvent) {
-  const wrap = (event.currentTarget as HTMLElement).querySelector<HTMLElement>(
-    '.el-scrollbar__wrap',
-  )
-  if (!wrap || wrap.scrollWidth <= wrap.clientWidth + 1) return
-  event.preventDefault()
-  wrap.scrollLeft += Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY
-}
-
 function onPrev() {
   if (page.value <= 1 || listLoading.value) return
   page.value -= 1
@@ -579,13 +566,12 @@ onActivated(() => {
   <PageScroll>
     <div class="vod-page">
     <!-- ============ 顶部单行栏：首页 + 分类（横向滚动，flex:1） | 源切换 | 搜索 | 刷新 ============ -->
-    <header class="vod-topbar head-sticky">
+    <PageHead class="vod-topbar">
       <!-- 分类标签：首页 + 当前站点分类，多则横向滚动（el-scrollbar + 滚轮横向滚动），不折叠 -->
       <div
         class="cat-strip"
         role="group"
         aria-label="首页与当前站点分类"
-        @wheel="onCatStripWheel"
       >
         <div
           v-if="catLoading && !categories.length"
@@ -599,6 +585,8 @@ onActivated(() => {
           />
         </div>
         <StatusTabs
+          v-else
+          scrollable
           :items="categoryTabs"
           :model-value="category"
           aria-label="首页与当前站点分类"
@@ -607,6 +595,7 @@ onActivated(() => {
       </div>
 
       <!-- 源切换 + 工具条：右上角按钮组收进一个浮起胶囊，与左侧分类分段器同高 -->
+      <template #tools>
       <div class="page-toolbar">
       <el-tooltip
         content="切换点播源"
@@ -674,7 +663,8 @@ onActivated(() => {
         </el-tooltip>
       </div>
       </div>
-    </header>
+      </template>
+    </PageHead>
 
     <!-- 站点选择弹窗（多仓时可在弹窗内先切换仓库） -->
     <el-dialog
@@ -936,12 +926,6 @@ onActivated(() => {
 /* —— 顶部单行栏：[首页 + 分类横向滚动（flex:1）] [源切换] [搜索] [刷新] ——
    属于内容区，与内容同底色；不用分割线，靠颜色层级区分 */
 /* 顶部栏不再自绘底色/外扩：分段器与工具条各自是独立胶囊，阴影不该被滚动容器裁掉 */
-.vod-topbar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
 /* 源切换按钮：点击打开源选择弹窗（位于搜索图标左侧） */
 .site-picker {
   display: flex;
@@ -984,34 +968,17 @@ onActivated(() => {
   color: var(--text-muted);
 }
 
-/* 分类标签：占满剩余宽度，单行横向滚动（el-scrollbar，hover 显示细滚动条） */
+/* 分类条：宽度交给 StatusTabs 自己裁切与横向滚动（scrollable），
+   这里只负责占满剩余空间，保证不与右侧工具条重叠。 */
 .cat-strip {
+  display: flex;
   flex: 1;
+  align-items: center;
   min-width: 0;
 }
 
-.cat-scrollbar {
-  width: 100%;
-  height: 44px;
-}
-
-/* 分类标签在 32px 高度内垂直居中（el-scrollbar 的滚动容器默认是块级） */
-.cat-scrollbar :deep(.el-scrollbar__wrap.el-scrollbar__wrap--hidden-default) {
-  display: flex;
-  align-items: center;
-}
-
-.cat-scrollbar :deep(.status-tabs) {
-  flex-wrap: nowrap;
-}
-
-/* 隐藏分类栏的滚动条（仍可横向滚动：滚轮 / 触控板 / 拖动标签） */
-.cat-scrollbar :deep(.el-scrollbar__bar) {
-  display: none;
-}
-
-.cat-strip :deep(.status-tab) {
-  flex-shrink: 0;
+.cat-strip :deep(.status-tabs) {
+  max-width: 100%;
 }
 
 .site-actions {
