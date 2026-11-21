@@ -4,14 +4,14 @@
      - 底部：纯文字信息块（名称 / 简介 / 版本 / 协议 / 版权）+ 横排小图标（主题、设置）
      - 展开 / 折叠由标题栏最左侧按钮控制（ui.sidebarCollapsed），折叠时还原为 64px 图标栏 -->
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import SolarIcon from '@/components/SolarIcon.vue'
 import type { SolarIconName } from '@/icons/solar'
 import { navTarget } from '@/router/navMemory'
 import ThemeToggle from './ThemeToggle.vue'
 import { useUiStore } from '@/store/ui'
-import { checkUpdate, updatesSupported } from '@/api/update'
+import { appVersion, checkUpdate, updatesSupported } from '@/api/update'
 import { formatError } from '@/api'
 
 interface NavItem {
@@ -34,9 +34,17 @@ const route = useRoute()
 /** 展开 / 折叠由 store 统一管理（标题栏按钮切换，窗口 < 960px 自动折叠） */
 const collapsed = computed<boolean>(() => ui.sidebarCollapsed)
 
-/** 版本与协议写在 package.json；这里只做展示，升级时同步 */
-const APP_VERSION = '0.1.2'
+/** 版本：桌面端读 Tauri 运行时版本，浏览器预览用构建期常量兜底；协议固定 */
+const APP_VERSION = ref(__APP_VERSION__)
 const APP_LICENSE = 'AGPL-3.0-only'
+
+onMounted(async () => {
+  try {
+    APP_VERSION.value = await appVersion()
+  } catch {
+    // 浏览器预览：保留构建期版本
+  }
+})
 
 /** 插件入口：插件加载后往这里 push 即可出现在「插件」分组，无需改模板 */
 const pluginItems: NavItem[] = []
