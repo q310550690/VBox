@@ -7,7 +7,8 @@
 //   UPDATE_NOTES       更新说明（可选，缺省为空）
 //
 // 说明：
-// - Windows 更新包 = `.nsis.zip`，macOS 更新包 = `.app.tar.gz`；两者旁边各有 `.sig`；
+// - Windows 更新包 = NSIS 安装包本体（`.exe`，Tauri v2），macOS 更新包 = `.app.tar.gz`；
+//   两者旁边各有 `.sig`；
 // - 任何一个平台缺少产物时跳过该平台；都缺失则不写文件（退出码 0），
 //   保证还没配置签名密钥的仓库也能正常跑 CI；
 // - 下载 URL 指向 GitHub Release 资产（public repo 可直接下载）。
@@ -42,14 +43,18 @@ function readSig(file) {
   return existsSync(sigPath) ? readFileSync(sigPath, 'utf8').trim() : null
 }
 
+// Tauri v2 的 Windows 更新包就是 NSIS 安装包本体：url 指向 .exe，signature 取 .exe.sig。
+// （v1Compatible 的 .nsis.zip 仍识别，兼容旧产物。）
 const PLATFORMS = [
-  { key: 'windows-x86_64', suffix: '.nsis.zip' },
+  { key: 'windows-x86_64', suffix: '_x64-setup.exe' },
   { key: 'darwin-aarch64', suffix: '.app.tar.gz' },
 ]
 
 const platforms = {}
 for (const { key, suffix } of PLATFORMS) {
-  const file = files.find((name) => name.endsWith(suffix))
+  const file =
+    files.find((name) => name.endsWith(suffix)) ??
+    (key === 'windows-x86_64' ? files.find((name) => name.endsWith('.nsis.zip')) : undefined)
   if (!file) {
     console.warn(`[latest-json] 跳过 ${key}：dist 里没有 *${suffix}`)
     continue

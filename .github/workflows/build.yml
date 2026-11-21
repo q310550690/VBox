@@ -136,11 +136,12 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      # 自动更新包（.nsis.zip + .sig）：只有配置了签名私钥才会生成
+      # 自动更新产物：Tauri v2 直接用安装包本体（.exe + .exe.sig）
       - uses: actions/upload-artifact@v4
         with:
           name: vbox-windows-updater
           path: |
+            src-tauri/target/release/bundle/nsis/*.exe.sig
             src-tauri/target/release/bundle/nsis/*.zip
             src-tauri/target/release/bundle/nsis/*.zip.sig
           if-no-files-found: ignore
