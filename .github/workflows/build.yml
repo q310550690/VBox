@@ -296,8 +296,12 @@ jobs:
             echo ""
             echo "### 下载"
             echo ""
-            echo "- **Windows x64**：\`VBox_*_x64-setup.exe\`（默认内置 FFmpeg / Python / Node）"
-            echo "- **macOS（Apple Silicon）**：\`VBox-macos.dmg\` 或 \`VBox-macos-app.zip\`"
+            if [ -n "$(ls dist/*.exe 2>/dev/null || true)" ]; then
+              echo "- **Windows x64**：\`VBox_*_x64-setup.exe\`（默认内置 FFmpeg / Python / Node）"
+            fi
+            if [ -n "$(ls dist/*.dmg 2>/dev/null || true)" ]; then
+              echo "- **macOS（Apple Silicon）**：\`VBox-macos.dmg\` 或 \`VBox-macos-app.zip\`"
+            fi
             echo ""
             echo "### 更新内容"
             echo ""
@@ -311,10 +315,14 @@ jobs:
             echo ""
             echo "### 安装说明"
             echo ""
-            echo "- Windows：运行安装包；若未配置代码签名，SmartScreen 会提示“更多信息 → 仍要运行”。"
-            echo "- Windows 自动更新：已装旧版本的用户启动后会在「设置 → 关于」看到新版本并一键安装（配置签名密钥后生效）。"
-            echo "- macOS：未配置开发者证书时为 ad-hoc 签名，首次打开如被拦截，请右键 App → 打开，或执行 \`xattr -dr com.apple.quarantine VBox.app\`。"
-            echo "- macOS 版暂不内置 FFmpeg/Python/Node，按需自行安装或用系统版本。"
+            if [ -n "$(ls dist/*.exe 2>/dev/null || true)" ]; then
+              echo "- Windows：运行安装包；若未配置代码签名，SmartScreen 会提示“更多信息 → 仍要运行”。"
+              echo "- Windows 自动更新：已装旧版本的用户启动后会在「设置 → 关于」看到新版本并一键安装（配置签名密钥后生效）。"
+            fi
+            if [ -n "$(ls dist/*.dmg 2>/dev/null || true)" ]; then
+              echo "- macOS：未配置开发者证书时为 ad-hoc 签名，首次打开如被拦截，请右键 App → 打开，或执行 \`xattr -dr com.apple.quarantine VBox.app\`。"
+              echo "- macOS 版暂不内置 FFmpeg/Python/Node，按需自行安装或用系统版本。"
+            fi
           } > release-notes.md
           echo "--- release-notes.md ---"
           cat release-notes.md
