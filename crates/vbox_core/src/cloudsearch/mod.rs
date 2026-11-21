@@ -433,6 +433,40 @@ mod builtin_sources_tests {
 }
 
 #[cfg(test)]
+pub(crate) mod test_support {
+    use std::path::{Path, PathBuf};
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    /// 测试用临时目录：优先 `VBOX_TEST_TMPDIR`，其次系统 temp；
+    /// 受限环境（%TEMP% 拒写）自动回落到仓库 `target/test-tmp`。
+    pub(crate) fn temp_dir(tag: &str) -> PathBuf {
+        let stamp = format!(
+            "vbox-test-{tag}-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|duration| duration.as_nanos())
+                .unwrap_or(0)
+        );
+        let workspace_tmp = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/test-tmp");
+        let mut candidates = Vec::new();
+        if let Some(custom) = std::env::var_os("VBOX_TEST_TMPDIR") {
+            candidates.push(PathBuf::from(custom));
+        }
+        candidates.push(std::env::temp_dir());
+        candidates.push(workspace_tmp);
+
+        for base in candidates {
+            let dir = base.join(&stamp);
+            if std::fs::create_dir_all(&dir).is_ok() {
+                return dir;
+            }
+        }
+        panic!("测试环境不允许创建临时目录，请设置 VBOX_TEST_TMPDIR 指向可写目录");
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 

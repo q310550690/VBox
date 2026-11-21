@@ -597,11 +597,7 @@ mod tests {
     }
 
     fn disk_dir(tag: &str) -> std::path::PathBuf {
-        let dir = std::env::temp_dir().join(format!(
-            "vbox-disk-cache-{tag}-{}-{}",
-            std::process::id(),
-            unix_secs()
-        ));
+        let dir = crate::cloudsearch::test_support::temp_dir(&format!("disk-cache-{tag}"));
         let _ = std::fs::remove_dir_all(&dir);
         dir
     }

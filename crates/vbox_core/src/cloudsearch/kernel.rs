@@ -665,14 +665,7 @@ mod tests {
 
     #[test]
     fn disk_cache_is_reused_across_kernel_instances() {
-        let dir = std::env::temp_dir().join(format!(
-            "vbox-kernel-disk-{}-{}",
-            std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map(|duration| duration.as_nanos())
-                .unwrap_or(0)
-        ));
+        let dir = crate::cloudsearch::test_support::temp_dir("kernel-disk");
         let _ = std::fs::remove_dir_all(&dir);
         let disk_dir = dir.clone();
 
