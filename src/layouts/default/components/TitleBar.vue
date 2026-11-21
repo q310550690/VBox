@@ -95,7 +95,10 @@ onUnmounted(() => {
           :name="ui.sidebarCollapsed ? 'panel-left-open' : 'panel-left-close'"
         />
       </button>
-      <img class="tb-logo" src="/logo.png" alt="VBox" draggable="false" data-tauri-drag-region />
+      <div class="tb-logo-area" v-if="ui.sidebarCollapsed">
+        <img class="tb-logo" src="/logo.png" alt="VBox" draggable="false" data-tauri-drag-region />
+        <span class="tb-name">VBox</span>
+      </div>
       <span v-if="pageTitle" class="tb-page" data-tauri-drag-region>{{ pageTitle }}</span>
     </div>
 
@@ -175,15 +178,19 @@ onUnmounted(() => {
 .titlebar.is-collapsed .tb-left {
   padding-left: 18px;
 }
-
+.tb-logo-area{
+  display: flex;
+  align-items: center;
+}
 .tb-logo {
   flex-shrink: 0;
   width: 16px;
   height: 16px;
   object-fit: contain;
+  margin-right: 2px;
 }
 
-.tb-page {
+.tb-name,.tb-page {
   color: var(--text-regular);
   font-size: 12px;
   font-weight: 500;

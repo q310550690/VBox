@@ -228,7 +228,7 @@ function targetFor(nav: string, fallback: string): string {
 .brand-top {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   min-height: 30px;
 }
 

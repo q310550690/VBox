@@ -365,30 +365,43 @@ img {
 /* ============================================================
    亚克力外壳（Windows 原生 Acrylic 生效时）
    - 桌面端 window_effect 应用毛玻璃成功后，前端给 <html> 加 .acrylic-on
-   - 外壳（标题栏 / 侧栏 / 外层容器）不再画不透明底色，露出窗口毛玻璃；
-     内容区 .app-content 仍用 --content-bg 不透明，保证正文可读性
-   - 外壳叠一层半透明主题色（--glass-bg），切换主题时跟着变色
+   - 外壳（标题栏 / 侧栏 / 外层容器）不再画不透明底色，露出窗口毛玻璃
+   - 外壳叠一层半透明主题色（--glass-bg），切换主题时跟着变色；
+     内容区默认不透明，开「全局背景」后只叠一层很淡的主题色，透出同一层玻璃
    ============================================================ */
 html.acrylic-on .app-shell,
 html.acrylic-on .app-body {
   background: transparent;
 }
+/* 玻璃只铺在外壳这一层：标题栏 / 侧栏 / 主区各自透明。
+   若每块各自叠一遍半透明色和 1px 内描边，渐变起点与描边会在交界处
+   形成色差与一条分割线（用户反馈「标题栏和左侧菜单不一致、有分割线」）。 */
+html.acrylic-on .app-shell {
+  background: var(--glass-bg);
+  /* 顶部一道高光只覆盖标题栏附近，避免整窗变成上白下透的渐变 */
+  background-image: var(--glass-sheen);
+  background-repeat: no-repeat;
+  background-size: 100% 220px;
+}
 html.acrylic-on .app-main,
 html.acrylic-on .titlebar,
 html.acrylic-on .sidebar {
-  background: var(--glass-bg);
-  /* 玻璃也要有边界：1px 内描边 + 顶部一道高光，否则只是一层"更淡的底色" */
-  box-shadow: inset 0 0 0 1px var(--glass-edge);
-  background-image: var(--glass-sheen);
+  background: transparent;
+  box-shadow: none;
+  background-image: none;
 }
-html.acrylic-on.acrylic-on-content .app-content,
-html.acrylic-on.acrylic-on-content .status-tabs
-{
-  background: var(--glass-bg2);
+/* 内容区亚克力：这里只叠一层很淡的主题色，真正透出的是下层外壳玻璃 + 窗口毛玻璃。
+   早期直接把 --glass-bg2（94%）铺在内容区，它与外壳那层 76% 玻璃叠加后接近不透明，
+   视觉上就是「内容区没有亚克力」。改成淡色叠层后合成透明度约 66%，模糊背景可见。 */
+html.acrylic-on.acrylic-on-content .app-content {
+  background: color-mix(in srgb, var(--el-bg-color) 66%, transparent);
+}
+html.acrylic-on.acrylic-on-content .status-tabs {
+  /* background: var(--glass-bg2); */
 }
 html.acrylic-on.acrylic-on-content .vod-topbar
 {
-  background: linear-gradient(180deg, var(--glass-bg2) 75%, transparent);
+  /* background: linear-gradient(180deg, var(--glass-bg2) 75%, transparent); */
 }
 
 /* ============================================================
@@ -398,10 +411,14 @@ html.acrylic-on.acrylic-on-content .vod-topbar
    - 此时外壳改用不透明主题色（等同关闭亚克力时的观感），亮/暗主题都保持正确；
    - player-shell-solid 由 PlayerPane 在首次起播时写到 <html>，重启应用后恢复亚克力。
    ============================================================ */
+html.player-shell-solid .app-shell {
+  background: var(--shell-bg) !important;
+}
 html.player-shell-solid .app-main,
 html.player-shell-solid .titlebar,
 html.player-shell-solid .sidebar {
-  background: var(--shell-bg) !important;
+  background: transparent !important;
+  box-shadow: none;
 }
 
 html.player-shell-solid .app-content,
