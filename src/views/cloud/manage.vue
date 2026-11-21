@@ -453,12 +453,14 @@ onActivated(() => void loadDir())
 }
 
 .action-btn:hover:not(:disabled) {
-  border-color: var(--accent);
+  background: var(--accent-weak);
   color: var(--accent);
 }
 
+/* 禁用态用一套色，不用透明度：半透明会跟下面的斑马行继续合成 */
 .action-btn:disabled {
-  opacity: 0.45;
+  background: var(--surface-2);
+  color: var(--text-disabled);
   cursor: not-allowed;
 }
 </style>

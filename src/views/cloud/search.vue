@@ -434,7 +434,7 @@ onActivated(() => {
           <div class="result-actions">
             <el-button
               circle
-              class="act-play"
+              type="primary"
               :disabled="!item.playable || isDead(item) || playingId === item.id"
               :title="!item.playable ? '暂不支持磁力/电驴播放' : isDead(item) ? '分享链接已失效' : '播放'"
               :aria-label="isDead(item) ? '已失效' : '播放'"
@@ -444,7 +444,6 @@ onActivated(() => {
             </el-button>
             <el-button
               circle
-              class="act-copy"
               title="复制链接"
               aria-label="复制链接"
               @click="copyLink(item)"
@@ -453,7 +452,6 @@ onActivated(() => {
             </el-button>
             <el-button
               circle
-              class="act-info"
               title="详情"
               aria-label="详情"
               @click="detail = item"
@@ -724,7 +722,7 @@ onActivated(() => {
   border: 0;
   border-left: 3px solid var(--el-color-warning);
   border-radius: var(--radius-md);
-  background: var(--accent-weak);
+  background: var(--warning-weak);
   color: var(--text-muted);
   font-size: 13px;
   line-height: 1.6;
@@ -734,16 +732,27 @@ onActivated(() => {
   padding: 4px 12px;
   border: 0;
   border-radius: var(--radius-pill);
-  background: var(--surface);
+  /* 内容区比 surface-2 只深一点点点，直接铺 surface-2 会看不见；
+     在 surface-2 上掺 4% 正文色做软底，hover 再深一档 */
+  background: color-mix(in srgb, var(--text) 4%, var(--surface-2));
   color: var(--text-muted);
   font-size: 12px;
   cursor: pointer;
+  transition: background-color .16s var(--ease), color .16s var(--ease);
+}
+
+.filter-chip:hover {
+  background: color-mix(in srgb, var(--text) 9%, var(--surface-2));
+  color: var(--text);
 }
 
 .filter-chip.is-active {
-  border-color: var(--accent);
   color: var(--accent);
   background: var(--accent-weak);
+}
+
+.filter-chip.is-active:hover {
+  background: var(--accent-weak-hover);
 }
 
 .search-loading {
@@ -777,7 +786,13 @@ onActivated(() => {
   padding: var(--space-3) var(--space-4);
   border: 0;
   border-radius: var(--radius-md);
-  background: var(--surface);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-1);
+  transition: box-shadow .18s var(--ease);
+}
+
+.result-row:hover {
+  box-shadow: var(--shadow-2);
 }
 
 .result-main {
@@ -806,8 +821,10 @@ onActivated(() => {
 .provider-tag {
   padding: 1px 8px;
   border-radius: var(--radius-pill);
+  /* 品牌 hex 直接当 12px 文字用，115/PikPak 在 12% 底上只有 2.6:1 左右；
+     与正文色混到 55% 后亮色压深、暗色自动提亮，两边都过 4.5:1 */
   background: color-mix(in srgb, var(--provider-color, var(--accent)) 12%, transparent);
-  color: var(--provider-color, var(--accent));
+  color: color-mix(in srgb, var(--provider-color, var(--accent)) 55%, var(--text));
 }
 
 .password-chip {
@@ -821,7 +838,7 @@ onActivated(() => {
 }
 
 .password-chip:hover {
-  border-color: var(--accent);
+  background: var(--accent-weak);
   color: var(--text);
 }
 
@@ -846,23 +863,6 @@ onActivated(() => {
   flex: 0 0 auto;
   align-self: center;
   gap: var(--space-2);
-}
-
-/* 播放/复制/详情 三色区分（禁用时保持灰） */
-.result-actions .act-play:not(.is-disabled) {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: var(--accent-weak);
-}
-.result-actions .act-copy:not(.is-disabled) {
-  color: #2f7fd6;
-  border-color: #2f7fd6;
-  background: rgba(47, 127, 214, 0.12);
-}
-.result-actions .act-info:not(.is-disabled) {
-  color: #b7791f;
-  border-color: #b7791f;
-  background: rgba(183, 121, 31, 0.12);
 }
 
 .detail-grid {

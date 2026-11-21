@@ -11,6 +11,7 @@ import PageScroll from '@/components/PageScroll.vue'
 import HintBar from '@/components/HintBar.vue'
 import AccountDrawer from '@/components/cloud/AccountDrawer.vue'
 import StatusTabs from '@/components/StatusTabs.vue'
+import PageHead from '@/components/PageHead.vue'
 import DoubanCard from '@/views/vod/components/DoubanCard.vue'
 import { proxyImage } from '@/utils/image'
 import * as api from '@/api'
@@ -37,10 +38,13 @@ const accountsFocus = ref('')
 /** 自动轮播间隔（与点播页 HomeCarousel 一致） */
 const INTERVAL_MS = 6000
 
+/** 一页显示的卡片数；两端箭头整页翻动 */
+const PAGE_SIZE = 6
+
 const douban = ref<DoubanHome | null>(null)
 const doubanLoading = ref(false)
 const doubanIndex = ref(0)
-const stripRef = ref<HTMLElement | null>(null)
+const doubanPage = ref(0)
 let doubanTimer: number | undefined
 const doubanPaused = ref(false)
 const activated = ref(true)
@@ -48,6 +52,18 @@ const activated = ref(true)
 const carouselItems = computed<DoubanItem[]>(() => douban.value?.carousel ?? [])
 const activeDouban = computed<DoubanItem | undefined>(() => carouselItems.value[doubanIndex.value])
 const hasMultiple = computed(() => carouselItems.value.length > 1)
+
+/** 按 6 张一页切块；最后一页可以不满 */
+const doubanPageItems = computed<DoubanItem[][]>(() => {
+  const pages: DoubanItem[][] = []
+  for (let i = 0; i < carouselItems.value.length; i += PAGE_SIZE) {
+    pages.push(carouselItems.value.slice(i, i + PAGE_SIZE))
+  }
+  return pages
+})
+const doubanPages = computed(() => Math.max(1, doubanPageItems.value.length))
+const canDoubanPrev = computed(() => doubanPage.value > 0)
+const canDoubanNext = computed(() => doubanPage.value < doubanPages.value - 1)
 
 /** 当前选中卡片的封面（经本机图片代理，豆瓣封面需 Referer） */
 const activeCover = computed(() => {
@@ -73,19 +89,24 @@ function schedule() {
   if (!hasMultiple.value || doubanPaused.value || !activated.value) return
   doubanTimer = window.setTimeout(() => {
     doubanIndex.value = (doubanIndex.value + 1) % carouselItems.value.length
-    scrollActiveIntoView()
+    syncDoubanPage()
     schedule()
   }, INTERVAL_MS)
 }
 
-/** 让当前选中的卡片保持在可视区内（只滚卡片条，不带动整页） */
-function scrollActiveIntoView() {
-  const strip = stripRef.value
-  if (!strip) return
-  const child = strip.children[doubanIndex.value] as HTMLElement | undefined
-  if (!child) return
-  const left = child.offsetLeft - (strip.clientWidth - child.clientWidth) / 2
-  strip.scrollTo({ left: Math.max(0, left), behavior: 'smooth' })
+/** 让页码跟随当前选中的卡片（自动轮播跨页时自动翻页） */
+function syncDoubanPage() {
+  doubanPage.value = Math.min(doubanPages.value - 1, Math.floor(doubanIndex.value / PAGE_SIZE))
+}
+
+/** 箭头翻页：整页翻动，选中落到该页第一张 */
+function goDoubanPage(direction: -1 | 1) {
+  const next = Math.max(0, Math.min(doubanPages.value - 1, doubanPage.value + direction))
+  if (next === doubanPage.value) return
+  doubanPage.value = next
+  const first = next * PAGE_SIZE
+  if (first < carouselItems.value.length) doubanIndex.value = first
+  schedule()
 }
 
 function pause() {
@@ -111,6 +132,7 @@ async function loadDouban() {
     }
     douban.value = await api.doubanHome(false)
     doubanIndex.value = Math.min(doubanIndex.value, Math.max(0, carouselItems.value.length - 1))
+    syncDoubanPage()
     schedule()
   } catch {
     // 豆瓣不可用不阻塞云盘搜索
@@ -128,6 +150,7 @@ watch(
       return
     }
     if (doubanIndex.value >= total) doubanIndex.value = 0
+    syncDoubanPage()
     schedule()
   },
 )
@@ -230,7 +253,9 @@ onDeactivated(() => {
   clearTimer()
 })
 
-onBeforeUnmount(clearTimer)
+onBeforeUnmount(() => {
+  clearTimer()
+})
 
 watch(
   () => route.query.accounts,
@@ -249,7 +274,7 @@ watch(accountsOpen, (open) => {
 </script>
 
 <template>
-  <PageScroll>
+  <PageScroll fill>
     <div class="page cloud-page">
       <!-- 整页模糊封面背景：跟随自动轮播选中的豆瓣条目 -->
       <div
@@ -266,19 +291,15 @@ watch(accountsOpen, (open) => {
         </Transition>
       </div>
 
-      <header class="cloud-top head-sticky">
-        <div
+      <PageHead class="cloud-top">
+        <StatusTabs
           v-if="pillTabs.length"
-          class="cloud-pills"
-        >
-          <StatusTabs
-            :items="pillTabs"
-            model-value=""
-            aria-label="已登录网盘"
-            @change="onPillTab"
+          :items="pillTabs"
+          model-value=""
+          aria-label="已登录网盘"
+          @change="onPillTab"
           />
-        </div>
-
+        <template #tools>
         <div class="page-toolbar">
           <div class="site-btn">
           <el-tooltip
@@ -300,7 +321,8 @@ watch(accountsOpen, (open) => {
           </el-tooltip>
           </div>
         </div>
-      </header>
+        </template>
+      </PageHead>
 
       <div class="cloud-center">
         <div class="cloud-hero">
@@ -365,28 +387,74 @@ watch(accountsOpen, (open) => {
               豆瓣热榜
             </span>
             <span class="douban-hint">
-              自动轮播，点击卡片搜索资源
+              自动轮播 · 左右翻页 · 点击卡片搜索资源
             </span>
           </div>
-          <el-scrollbar class="douban-scroll">
-          <div
-            ref="stripRef"
-            class="douban-strip"
-          >
-            <div
-              v-for="(item, index) in carouselItems"
-              :key="item.id"
-              class="douban-slide"
-              :class="{ 'is-active': index === doubanIndex }"
-            >
-              <DoubanCard
-                :item="item"
-                :image-proxy="douban?.imageProxy"
-                @select="selectDouban"
-              />
+          <div class="douban-carousel">
+            <div class="douban-viewport">
+              <div
+                class="douban-pages"
+                :style="{ transform: `translateX(calc(${-doubanPage * 100}% - ${doubanPage * 32}px))` }"
+              >
+                <div
+                  v-for="(page, pageIndex) in doubanPageItems"
+                  :key="pageIndex"
+                  class="douban-page"
+                >
+                  <div
+                    v-for="(item, index) in page"
+                    :key="item.id"
+                    class="douban-slide"
+                    :class="{ 'is-active': pageIndex * PAGE_SIZE + index === doubanIndex }"
+                  >
+                    <DoubanCard
+                      :item="item"
+                      :image-proxy="douban?.imageProxy"
+                      @select="selectDouban"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
+            <el-tooltip
+              content="上一页"
+              placement="bottom"
+              :show-after="300"
+              :disabled="!canDoubanPrev"
+            >
+              <el-button
+                v-show="canDoubanPrev"
+                class="douban-arrow is-left"
+                circle
+                aria-label="上一页"
+                @click="goDoubanPage(-1)"
+              >
+                <SolarIcon
+                  name="alt-arrow-left"
+                  :size="16"
+                />
+              </el-button>
+            </el-tooltip>
+            <el-tooltip
+              content="下一页"
+              placement="bottom"
+              :show-after="300"
+              :disabled="!canDoubanNext"
+            >
+              <el-button
+                v-show="canDoubanNext"
+                class="douban-arrow is-right"
+                circle
+                aria-label="下一页"
+                @click="goDoubanPage(1)"
+              >
+                <SolarIcon
+                  name="alt-arrow-right"
+                  :size="16"
+                />
+              </el-button>
+            </el-tooltip>
           </div>
-          </el-scrollbar>
         </section>
 
       </div>
@@ -404,11 +472,12 @@ watch(accountsOpen, (open) => {
 </template>
 
 <style scoped>
-/* 页面容器沿用全局 .page 的内边距与块间距，这里只负责模糊背景定位 */
+/* 页面容器沿用全局 .page 的内边距与块间距；自身撑满视口高度，模糊背景才有整页可铺 */
 .cloud-page {
   position: relative;
+  display: flex;
+  flex-direction: column;
   min-height: 100%;
-  overflow: hidden;
 }
 
 /* —— 整页模糊背景（与点播页 Hero 背景同款：radial 渐隐 + blur） —— */
@@ -445,10 +514,6 @@ watch(accountsOpen, (open) => {
 .cloud-top {
   position: relative;
   z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
   min-height: 32px;
 }
 
@@ -476,11 +541,6 @@ watch(accountsOpen, (open) => {
   align-items: center;
 }
 
-/* 没有网盘 tab 时，工具条靠右（与其它页「左 tabs / 右工具条」一致） */
-.cloud-top > .page-toolbar {
-  margin-left: auto;
-}
-
 .cloud-center {
   position: relative;
   z-index: 1;
@@ -500,10 +560,10 @@ watch(accountsOpen, (open) => {
 
 .cloud-title {
   margin: 0 0 6px;
-  font-size: 20px;
+  font-size: var(--fs-display);
   font-weight: 600;
   color: var(--text);
-  letter-spacing: 0.2px;
+  letter-spacing: -0.2px;
 }
 
 .cloud-sub {
@@ -522,11 +582,14 @@ watch(accountsOpen, (open) => {
   box-shadow: var(--shadow-1);
   border-radius: var(--radius-md);
   background: var(--surface-card);
-  transition: border-color 0.15s ease;
+  transition: box-shadow .16s var(--ease);
 }
 
+/* 容器本身无边框，焦点只能画在容器上：与外层卡片影叠加一条 2px 主色光环 */
 .cloud-search:focus-within {
-  border-color: var(--accent);
+  box-shadow:
+    var(--shadow-1),
+    0 0 0 2px color-mix(in srgb, var(--el-color-primary) 55%, var(--surface-card));
 }
 
 .cloud-search-icon {
@@ -551,14 +614,30 @@ watch(accountsOpen, (open) => {
 
 .cloud-search-btn {
   flex: 0 0 auto;
-  padding: 5px 16px;
+  height: 32px;
+  padding: 0 14px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   background: var(--accent-solid);
   color: var(--accent-on);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
+  line-height: 1;
   cursor: pointer;
+  transition: background-color .18s var(--ease), box-shadow .18s var(--ease);
+}
+
+.cloud-search-btn:hover {
+  background: var(--accent-solid-hover);
+}
+
+.cloud-search-btn:active {
+  background: var(--accent-solid-active);
+}
+
+.cloud-search-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
 }
 
 .cloud-hot {
@@ -596,7 +675,7 @@ watch(accountsOpen, (open) => {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  width: min(1180px, 100%);
+  width: 100%;
   margin-top: var(--space-2);
 }
 
@@ -619,43 +698,70 @@ watch(accountsOpen, (open) => {
   font-size: 12px;
 }
 
-.douban-scroll {
-  width: 100%;
+.douban-carousel {
+  position: relative;
 }
 
-.douban-scroll :deep(.el-scrollbar__wrap) {
-  scroll-snap-type: x proximity;
-  scrollbar-width: none;
+/* 翻页视口：不滚动，靠页码整页平移；内边距给卡片阴影留绘制空间，
+   负外边距把多出来的盒子拉回去，卡片仍与页面内容左缘对齐 */
+.douban-viewport {
+  position: relative;
+  overflow: hidden;
+  /* 阴影绘制区：内边距 + 等量负外边距，裁切盒外扩但不挤占卡片宽度 */
+  padding: 6px 16px 32px;
+  margin: -6px -16px -32px;
 }
 
-.douban-scroll :deep(.el-scrollbar__wrap::-webkit-scrollbar) {
-  display: none;
-}
-
-.douban-scroll :deep(.el-scrollbar__bar.is-horizontal) {
-  height: 6px;
-  bottom: 2px;
-  border-radius: var(--radius-pill);
-}
-
-.douban-scroll :deep(.el-scrollbar__thumb) {
-  background: var(--edge-strong);
-  border-radius: var(--radius-pill);
-}
-
-.douban-strip {
+.douban-pages {
   display: flex;
+  width: 100%;
+  /* 与视口外扩的阴影区等宽：翻页空隙落在裁切盒外，相邻页卡片不会漏边 */
+  gap: 32px;
+  transition: transform 0.5s var(--ease);
+  will-change: transform;
+}
+
+.douban-page {
+  display: flex;
+  flex: 0 0 100%;
+  min-width: 0;
   gap: var(--space-3);
-  width: max-content;
-  padding: var(--space-3) var(--space-2) var(--space-4);
+}
+
+/* 两端翻页箭头：静止隐藏，悬停整块时浮出（与 StatusTabs 同款圆钮） */
+.douban-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  opacity: 0;
+  transform: translateY(-50%);
+  pointer-events: none;
+  box-shadow: var(--shadow-1);
+  transition:
+    opacity 0.16s var(--ease),
+    transform 0.16s var(--ease),
+    background-color 0.16s var(--ease);
+}
+
+.douban-arrow.is-left {
+  left: 2px;
+}
+
+.douban-arrow.is-right {
+  right: 2px;
+}
+
+.douban-block:hover .douban-arrow,
+.douban-arrow:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 /* 去掉圆点后不再用"压暗非当前项"表达焦点：整排同亮度，靠 hover 抬起 */
 .douban-slide {
   position: relative;
-  flex: 0 0 158px;
-  width: 158px;
-  scroll-snap-align: center;
+  flex: 0 0 calc((100% - 5 * var(--space-3)) / 6);
+  min-width: 0;
   transition: transform 0.28s var(--ease);
 }
 
@@ -665,6 +771,14 @@ watch(accountsOpen, (open) => {
 
 .douban-slide.is-active {
   z-index: 1;
+}
+
+/* 当前轮播到的海报：沿用首页 hover 的抬升/大阴影，再补一圈主色描边做选中态 */
+.douban-slide.is-active :deep(.poster-card) {
+  box-shadow:
+    var(--shadow-2),
+    0 0 0 2px var(--accent);
+  transform: translateY(-2px);
 }
 
 </style>
