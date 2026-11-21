@@ -1,18 +1,22 @@
 //! PanSou 兼容的 HTTP 增强源（可选，W14 §4）。
 //!
-//! 契约按 PanSou 常见实现取「够用就好」的版本：
+//! 请求契约按官方 README（`/api/search`）对齐：
 //!
 //! ```text
-//! GET {base}/api/search?kw=<keyword>&res=<page_size>&page=<page>
+//! GET {base}/api/search?kw=<keyword>&res=merge&src=all[&cloud_types=quark,115]
 //! Authorization: Bearer <token>   // token 可选
 //! ```
 //!
-//! 真实 PanSou 的字段（`res` 的取值、聚合结构、`cloud_types` 过滤等）因部署版本而异，
-//! 这里**只做容错解析**：响应体先尝试 `data` / `results` / `items` / `list` / `hits`
-//! 数组，单条字段 `title` / `url` / `share_url` / `size` / `published_at` / `password`
-//! 都宽松读取；无法识别的条目跳过，不因个别脏数据整体失败。
+//! `res` 是结果类型枚举（`all` / `results` / `merge`），**不是页大小**；官方没有 `page`
+//! 参数，分页由内核的本地候选池完成（见 `kernel.rs` 的分页语义说明）。`cloud_types`
+//! 由请求里的 `providers` 映射而来，用于服务端裁剪返回类型。
 //!
-//! TODO(W14)：接入真实 PanSou 服务后，按实际响应补 `res` 枚举（merge/all 等）与分页语义。
+//! 响应优先识别官方两种结构：
+//! - `merged_by_type`：按网盘类型分组的链接级结果（`note` / `url` / `password` / `source`）；
+//! - `results[].links[]`：消息级结果，一个 TG 消息可带多个网盘链接。
+//!
+//! 其余结构（`data` / `items` / `list` / `hits` / 根数组）作为容错回落；无法识别的条目
+//! 跳过，不因个别脏数据整体失败。
 
 use std::time::{Duration, Instant};
 
@@ -76,11 +80,19 @@ impl PanSouSource {
         if !self.is_configured() {
             return Err(CoreError::Config("未配置 PanSou 服务地址".to_string()));
         }
-        let mut request = self.client.get(self.request_url()).query(&[
-            ("kw", q.keyword.as_str().to_string()),
-            ("res", q.page_size.to_string()),
-            ("page", q.page.max(1).to_string()),
-        ]);
+        // 真实 PanSou 契约（README `/api/search`）：`res` 是结果类型枚举
+        // （all / results / merge），不是页大小；也没有 `page` 参数，分页由调用方本地完成。
+        // 因此这里固定 `res=merge`（只要 `merged_by_type` 的链接级结果），
+        // `src=all` 聚合 TG 与插件，顺便把 `providers` 映射成 `cloud_types` 以减少传输。
+        let mut params: Vec<(&str, String)> = vec![
+            ("kw", q.keyword.clone()),
+            ("res", "merge".to_string()),
+            ("src", "all".to_string()),
+        ];
+        if let Some(types) = pansou_cloud_types(&q.providers) {
+            params.push(("cloud_types", types));
+        }
+        let mut request = self.client.get(self.request_url()).query(&params);
         if let Some(token) = &self.token {
             request = request.header(reqwest::header::AUTHORIZATION, format!("Bearer {token}"));
         }
@@ -144,6 +156,44 @@ fn normalize_base_url(raw: &str) -> String {
         trimmed.to_string()
     } else {
         format!("http://{trimmed}")
+    }
+}
+
+/// 把 [`SearchProvider`] 映射成 PanSou 的 `cloud_types` 取值。
+///
+/// 映射不上的（如 `Other`）直接跳过；全部映射不上时返回 `None`，即不传该参数。
+fn pansou_cloud_types(providers: &[SearchProvider]) -> Option<String> {
+    let mut types: Vec<&str> = Vec::new();
+    for provider in providers {
+        let Some(name) = pansou_cloud_type(*provider) else {
+            continue;
+        };
+        if !types.contains(&name) {
+            types.push(name);
+        }
+    }
+    if types.is_empty() {
+        None
+    } else {
+        Some(types.join(","))
+    }
+}
+
+fn pansou_cloud_type(provider: SearchProvider) -> Option<&'static str> {
+    match provider {
+        SearchProvider::Quark => Some("quark"),
+        SearchProvider::Aliyun => Some("aliyun"),
+        SearchProvider::P115 => Some("115"),
+        SearchProvider::Xunlei => Some("xunlei"),
+        SearchProvider::PikPak => Some("pikpak"),
+        SearchProvider::Uc => Some("uc"),
+        SearchProvider::Baidu => Some("baidu"),
+        SearchProvider::Tianyi => Some("tianyi"),
+        SearchProvider::Mobile => Some("mobile"),
+        SearchProvider::P123 => Some("123"),
+        SearchProvider::Magnet => Some("magnet"),
+        SearchProvider::Ed2k => Some("ed2k"),
+        SearchProvider::Other => None,
     }
 }
 
@@ -211,16 +261,180 @@ fn validate_payload(value: &Value) -> Result<(), CoreError> {
 }
 
 /// 把 PanSou 响应映射成 [`SearchItem`] 列表。
+///
+/// 优先按官方契约解析：
+/// - `merged_by_type: { "<type>": [{ url, password, note, datetime, source, ... }] }`（`res=merge`）
+/// - `results: [{ title, channel, datetime, links: [{ type, url, password, work_title }] }]`（`res=results/all`）
+///
+/// 两者都没有时才回落到历史容错结构（根数组 / `data` / `items` / `list` / `hits`），
+/// 以兼容自定义或旧版 PanSou 兼容服务。
 pub fn parse_payload(payload: &Value) -> Vec<SearchItem> {
-    collect_entries(payload, 0)
-        .into_iter()
-        .filter_map(parse_entry)
-        .collect()
+    let mut items: Vec<SearchItem> = Vec::new();
+    if let Some(groups) = payload.get("merged_by_type").and_then(Value::as_object) {
+        for (group, list) in groups {
+            let Some(list) = list.as_array() else {
+                continue;
+            };
+            for entry in list {
+                if let Some(item) = parse_merged_entry(entry, group) {
+                    items.push(item);
+                }
+            }
+        }
+    }
+    if let Some(results) = payload.get("results").and_then(Value::as_array) {
+        for result in results {
+            items.extend(parse_result_entry(result));
+        }
+    }
+    if items.is_empty() {
+        items.extend(
+            collect_entries(payload, 0)
+                .into_iter()
+                .filter_map(parse_entry),
+        );
+    }
+    // 同一 share_url 在 merged_by_type 与 results 中可能各出现一次；保留首次出现的条目。
+    let mut seen = std::collections::HashSet::new();
+    items.retain(|item| seen.insert(format!("{}|{}", item.provider.as_str(), item.share_url)));
+    items
+}
+
+/// `merged_by_type` 的单个链接：字段是链接级的 `note` / `url` / `source`，没有 `title`。
+fn parse_merged_entry(entry: &Value, group: &str) -> Option<SearchItem> {
+    let object = entry.as_object()?;
+    let raw_url = first_str(object, &["url", "share_url", "link", "href", "magnet"])?;
+    let raw_url = raw_url.trim();
+    if raw_url.is_empty() {
+        return None;
+    }
+
+    let detected = detect_share(raw_url);
+    let group_provider = SearchProvider::from_str_lossy(group);
+    let provider = if group_provider != SearchProvider::Other {
+        group_provider
+    } else {
+        detected
+            .as_ref()
+            .map(|share| share.provider)
+            .unwrap_or(SearchProvider::Other)
+    };
+
+    let share_url = detected
+        .as_ref()
+        .map(|share| share.share_url.clone())
+        .unwrap_or_else(|| raw_url.to_string());
+    let share_id = detected
+        .as_ref()
+        .map(|share| share.share_id.clone())
+        .unwrap_or_else(|| share_url.clone());
+
+    let title = first_str(object, &["note", "work_title", "title", "name"])
+        .map(str::to_string)
+        .or_else(|| detected.as_ref().map(|share| share.share_id.clone()))
+        .unwrap_or_default();
+
+    let password = first_str(object, &["password", "passcode", "pwd", "access_code"])
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+        .or_else(|| detected.as_ref().and_then(|share| share.password.clone()));
+
+    Some(SearchItem {
+        id: format!("{}:{}", provider.as_str(), share_id),
+        title,
+        provider,
+        share_url,
+        password,
+        size: object.get("size").and_then(parse_size),
+        published_at: parse_timestamp_field(object, &["datetime", "published_at", "time", "date"]),
+        sources: parse_sources(object),
+        playable: provider.is_playable(),
+    })
+}
+
+/// `results` 的单条消息：一个消息可带多个链接，每个链接独立成一条结果。
+fn parse_result_entry(result: &Value) -> Vec<SearchItem> {
+    let Some(object) = result.as_object() else {
+        return Vec::new();
+    };
+    let base_title = first_str(object, &["title", "name"]).unwrap_or("");
+    let channel = first_str(object, &["channel", "channel_name"]).map(str::to_string);
+    let result_time = parse_timestamp_field(object, &["datetime", "published_at", "time", "date"]);
+
+    let Some(links) = object.get("links").and_then(Value::as_array) else {
+        return parse_entry(result).into_iter().collect();
+    };
+
+    let mut items = Vec::new();
+    for link in links {
+        let Some(link) = link.as_object() else {
+            continue;
+        };
+        let Some(raw_url) = first_str(link, &["url", "share_url", "link"]) else {
+            continue;
+        };
+        let raw_url = raw_url.trim();
+        if raw_url.is_empty() {
+            continue;
+        }
+
+        let detected = detect_share(raw_url);
+        let provider = first_str(link, &["type", "provider", "pan"])
+            .map(SearchProvider::from_str_lossy)
+            .filter(|provider| *provider != SearchProvider::Other)
+            .or_else(|| detected.as_ref().map(|share| share.provider))
+            .unwrap_or(SearchProvider::Other);
+
+        let share_url = detected
+            .as_ref()
+            .map(|share| share.share_url.clone())
+            .unwrap_or_else(|| raw_url.to_string());
+        let share_id = detected
+            .as_ref()
+            .map(|share| share.share_id.clone())
+            .unwrap_or_else(|| share_url.clone());
+
+        let title = first_str(link, &["work_title", "title", "note"])
+            .unwrap_or(base_title)
+            .to_string();
+        let password = first_str(link, &["password", "passcode", "pwd", "access_code"])
+            .map(|value| value.trim().to_string())
+            .filter(|value| !value.is_empty())
+            .or_else(|| detected.as_ref().and_then(|share| share.password.clone()));
+
+        let sources = match &channel {
+            Some(channel) => vec![channel.clone()],
+            None => parse_sources(link),
+        };
+
+        items.push(SearchItem {
+            id: format!("{}:{}", provider.as_str(), share_id),
+            title,
+            provider,
+            share_url,
+            password,
+            size: link.get("size").and_then(parse_size),
+            published_at: parse_timestamp_field(
+                link,
+                &["datetime", "published_at", "time", "date"],
+            )
+            .or(result_time),
+            sources,
+            playable: provider.is_playable(),
+        });
+    }
+    items
+}
+
+fn parse_timestamp_field(object: &serde_json::Map<String, Value>, keys: &[&str]) -> Option<i64> {
+    keys.iter()
+        .find_map(|key| object.get(*key).and_then(parse_timestamp))
 }
 
 fn parse_entry(entry: &Value) -> Option<SearchItem> {
     let object = entry.as_object()?;
-    let title = first_str(object, &["title", "name", "message"]).unwrap_or_default();
+    let title = first_str(object, &["title", "name", "message", "note", "work_title"])
+        .unwrap_or_default();
 
     let raw_url = first_str(object, &["share_url", "url", "link", "href", "magnet"])?;
     let raw_url = raw_url.trim();
@@ -253,6 +467,7 @@ fn parse_entry(entry: &Value) -> Option<SearchItem> {
     let size = object.get("size").and_then(parse_size);
     let published_at = object
         .get("published_at")
+        .or_else(|| object.get("datetime"))
         .or_else(|| object.get("time"))
         .or_else(|| object.get("date"))
         .and_then(parse_timestamp);
@@ -376,6 +591,7 @@ fn parse_timestamp(value: &Value) -> Option<i64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::{Arc, Mutex};
     use tiny_http::{Response, Server};
 
     const PAYLOAD: &str = r#"{
@@ -399,7 +615,8 @@ mod tests {
     }"#;
 
     /// 起一个只应答一次的本地 HTTP server，返回 (地址, join handle)。
-    fn mock_server(body: &'static str, status: u16) -> (String, std::thread::JoinHandle<()>) {
+    fn mock_server(body: impl Into<String>, status: u16) -> (String, std::thread::JoinHandle<()>) {
+        let body = body.into();
         let server = Server::http("127.0.0.1:0").expect("启动 mock server");
         let address = format!("http://{}", server.server_addr());
         let handle = std::thread::spawn(move || {
@@ -412,6 +629,29 @@ mod tests {
             }
         });
         (address, handle)
+    }
+
+    /// 同上，但额外记录请求 URL（用于断言真实 PanSou 查询参数）。
+    fn mock_server_capturing(
+        body: impl Into<String>,
+        status: u16,
+    ) -> (String, std::thread::JoinHandle<()>, Arc<Mutex<Option<String>>>) {
+        let body = body.into();
+        let captured = Arc::new(Mutex::new(None));
+        let sink = Arc::clone(&captured);
+        let server = Server::http("127.0.0.1:0").expect("启动 mock server");
+        let address = format!("http://{}", server.server_addr());
+        let handle = std::thread::spawn(move || {
+            if let Ok(request) = server.recv() {
+                *sink.lock().expect("capture lock") = Some(request.url().to_string());
+                let mut response = Response::from_string(body);
+                if status != 200 {
+                    response = response.with_status_code(tiny_http::StatusCode::from(status));
+                }
+                let _ = request.respond(response);
+            }
+        });
+        (address, handle, captured)
     }
 
     fn client() -> reqwest::blocking::Client {
@@ -559,6 +799,131 @@ mod tests {
         assert!(items
             .iter()
             .any(|item| item.provider == SearchProvider::Aliyun));
+    }
+
+    #[test]
+    fn maps_real_merged_by_type_response() {
+        let payload = serde_json::json!({
+            "total": 2,
+            "merged_by_type": {
+                "quark": [{
+                    "url": "https://pan.quark.cn/s/abc123",
+                    "password": "8888",
+                    "note": "三体 全季 4K",
+                    "datetime": "2023-06-10T15:30:22Z",
+                    "source": "plugin:插件名"
+                }],
+                "115": [{
+                    "url": "https://115.com/s/sw123",
+                    "password": "",
+                    "note": "三体 全集",
+                    "datetime": "2023-06-10T14:23:45Z",
+                    "source": "tg:频道名称"
+                }]
+            }
+        });
+        let items = parse_payload(&payload);
+        assert_eq!(items.len(), 2);
+
+        let quark = items
+            .iter()
+            .find(|item| item.provider == SearchProvider::Quark)
+            .expect("quark 结果");
+        assert_eq!(quark.title, "三体 全季 4K", "链接级标题取 note");
+        assert_eq!(quark.password.as_deref(), Some("8888"));
+        assert_eq!(quark.published_at, Some(1_686_411_022));
+        assert_eq!(quark.sources, vec!["plugin:插件名".to_string()]);
+        assert!(quark.playable);
+
+        let p115 = items
+            .iter()
+            .find(|item| item.provider == SearchProvider::P115)
+            .expect("115 结果");
+        assert_eq!(p115.title, "三体 全集");
+        assert_eq!(p115.published_at, Some(1_686_407_025));
+        assert_eq!(p115.sources, vec!["tg:频道名称".to_string()]);
+    }
+
+    #[test]
+    fn maps_real_results_with_links() {
+        let payload = serde_json::json!({
+            "total": 1,
+            "results": [{
+                "message_id": "12345",
+                "channel": "tgsearchers3",
+                "datetime": "2023-06-10T14:23:45Z",
+                "title": "速度与激情全集1-10",
+                "links": [
+                    {
+                        "type": "baidu",
+                        "url": "https://pan.baidu.com/s/1abcdef",
+                        "password": "1234",
+                        "datetime": "2023-06-10T14:23:45Z",
+                        "work_title": "速度与激情1-10"
+                    },
+                    {
+                        "type": "quark",
+                        "url": "https://pan.quark.cn/s/xyz"
+                    }
+                ]
+            }]
+        });
+        let items = parse_payload(&payload);
+        assert_eq!(items.len(), 2, "一个消息里的两个链接应各成一条");
+
+        let baidu = items
+            .iter()
+            .find(|item| item.provider == SearchProvider::Baidu)
+            .expect("baidu");
+        assert_eq!(baidu.title, "速度与激情1-10", "work_title 优先于消息标题");
+        assert_eq!(baidu.password.as_deref(), Some("1234"));
+        assert_eq!(baidu.published_at, Some(1_686_407_025));
+        assert_eq!(baidu.sources, vec!["tgsearchers3".to_string()]);
+
+        let quark = items
+            .iter()
+            .find(|item| item.provider == SearchProvider::Quark)
+            .expect("quark");
+        assert_eq!(quark.title, "速度与激情全集1-10", "缺 work_title 时回落到消息标题");
+    }
+
+    #[test]
+    fn requests_official_query_contract() {
+        let payload = serde_json::json!({
+            "total": 1,
+            "merged_by_type": {
+                "quark": [{
+                    "url": "https://pan.quark.cn/s/abc123",
+                    "note": "三体",
+                    "source": "tg:频道"
+                }]
+            }
+        });
+        let (address, handle, captured) = mock_server_capturing(payload.to_string(), 200);
+        let source = PanSouSource::with_client(address, None, client());
+        let page = source
+            .search(&SearchQuery {
+                keyword: "三体".to_string(),
+                providers: vec![SearchProvider::Quark, SearchProvider::P115],
+                ..SearchQuery::default()
+            })
+            .expect("mock 请求应成功");
+        handle.join().expect("mock server 线程");
+        assert_eq!(page.total, 1);
+
+        let url = captured
+            .lock()
+            .expect("capture lock")
+            .clone()
+            .expect("应记录到请求 URL");
+        assert!(url.starts_with("/api/search?"), "url={url}");
+        assert!(url.contains("kw="), "url={url}");
+        assert!(url.contains("res=merge"), "res 应是枚举而不是页大小：{url}");
+        assert!(url.contains("src=all"), "url={url}");
+        assert!(url.contains("cloud_types="), "providers 应映射成 cloud_types：{url}");
+        assert!(url.contains("quark"), "url={url}");
+        assert!(url.contains("115"), "url={url}");
+        assert!(!url.contains("page="), "官方接口没有 page 参数：{url}");
     }
 
     #[test]
