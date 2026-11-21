@@ -3,7 +3,13 @@
 // 不重复请求后端；后端另有 50 关键词 LRU 兜底。
 import { defineStore } from 'pinia'
 import * as api from '@/api'
-import type { CloudSearchPage, CloudSearchProvider, CloudSortBy } from '@/api'
+import type {
+  CloudLinkCheckItem,
+  CloudLinkState,
+  CloudSearchPage,
+  CloudSearchProvider,
+  CloudSortBy,
+} from '@/api'
 
 export const CLOUD_SEARCH_PAGE_SIZE = 20
 /** 前端结果缓存 TTL 与容量：只保会话内的最近查询，过期/超量自动淘汰 */
@@ -26,6 +32,24 @@ function cacheKeyOf(
 
 const DEAD_LINKS_KEY = 'vbox.cloud.deadLinks'
 const DEAD_LINKS_MAX = 200
+/** 单次死链检测上限（后端也会截断到 20 条） */
+const LINK_CHECK_MAX = 20
+
+/**
+ * 可做死链检测的网盘：只有官方 `/api/check/links` 支持的类型才会提交；
+ * 磁力/电驴/PikPak/其它等不支持的类型直接跳过。
+ */
+const CHECKABLE_DISK_TYPES: Partial<Record<CloudSearchProvider, string>> = {
+  quark: 'quark',
+  aliyun: 'aliyun',
+  p115: '115',
+  xunlei: 'xunlei',
+  uc: 'uc',
+  baidu: 'baidu',
+  tianyi: 'tianyi',
+  mobile: 'mobile',
+  p123: '123',
+}
 
 function loadDeadLinks(): string[] {
   try {
@@ -72,6 +96,9 @@ export const useCloudSearchStore = defineStore('cloudSearch', {
     cache: {} as Record<string, CachedPage>,
     /** 本会话确认失效（被取消分享/已过期）的分享链接，用于结果行标记与播放禁用 */
     deadLinks: loadDeadLinks(),
+    /** 死链检测结果（shareUrl -> 状态），用于结果行状态提示 */
+    linkStates: {} as Record<string, { state: CloudLinkState; summary: string; at: number }>,
+    checkingLinks: false,
   }),
   getters: {
     pageCount(state): number {
@@ -94,7 +121,11 @@ export const useCloudSearchStore = defineStore('cloudSearch', {
       return value.partial || value.degradedSources.length > 0
     },
     deadLinkSet(state): Set<string> {
-      return new Set(state.deadLinks)
+      const set = new Set(state.deadLinks)
+      for (const [url, info] of Object.entries(state.linkStates)) {
+        if (info.state === 'bad') set.add(url)
+      }
+      return set
     },
     cacheKey(state): string {
       return cacheKeyOf(state.keyword, state.provider, state.sort, state.page)
@@ -150,6 +181,47 @@ export const useCloudSearchStore = defineStore('cloudSearch', {
       if (index < 0) return
       this.deadLinks.splice(index, 1)
       saveDeadLinks(this.deadLinks)
+    },
+    /**
+     * 死链检测（W14）：把当前结果的分享链接交给 PanSou 官方 `/api/check/links`。
+     * 只提交官方支持的网盘类型、按 shareUrl 去重、最多 20 条；bad 结果同时标记为失效。
+     */
+    async checkLinks(): Promise<{ ok: number; bad: number; locked: number; skipped: number }> {
+      const summary = { ok: 0, bad: 0, locked: 0, skipped: 0 }
+      if (this.checkingLinks || !this.result) return summary
+      const seen = new Set<string>()
+      const items: CloudLinkCheckItem[] = []
+      for (const item of this.result.items) {
+        const diskType = CHECKABLE_DISK_TYPES[item.provider]
+        if (!diskType || !item.shareUrl || seen.has(item.shareUrl)) continue
+        seen.add(item.shareUrl)
+        items.push({ diskType, url: item.shareUrl, password: item.password ?? null })
+        if (items.length >= LINK_CHECK_MAX) break
+      }
+      summary.skipped = this.result.items.length - items.length
+      if (!items.length) return summary
+      this.checkingLinks = true
+      try {
+        const results = await api.cloudCheckLinks(items)
+        for (const result of results) {
+          this.linkStates[result.url] = {
+            state: result.state,
+            summary: result.summary ?? '',
+            at: Date.now(),
+          }
+          if (result.state === 'bad') {
+            summary.bad += 1
+            this.markDead(result.url)
+          } else if (result.state === 'ok') {
+            summary.ok += 1
+          } else if (result.state === 'locked') {
+            summary.locked += 1
+          }
+        }
+        return summary
+      } finally {
+        this.checkingLinks = false
+      }
     },
     pruneCache(now = Date.now()): void {
       for (const [key, entry] of Object.entries(this.cache)) {

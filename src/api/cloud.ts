@@ -173,3 +173,37 @@ export function cloudSourcesPriority(): Promise<string> {
 export function cloudSourcePrioritySet(priority: CloudSourcePriority): Promise<CloudSourceStatus[]> {
   return invoke<CloudSourceStatus[]>('cloud_sources_priority_set', { priority })
 }
+
+/** 死链检测状态（PanSou 官方 `/api/check/links`） */
+export type CloudLinkState = 'ok' | 'bad' | 'locked' | 'unsupported' | 'uncertain'
+
+/** 死链检测入参 */
+export interface CloudLinkCheckItem {
+  /** 官方网盘类型枚举：baidu / aliyun / quark / tianyi / uc / mobile / 115 / xunlei / 123 */
+  diskType: string
+  url: string
+  password?: string | null
+}
+
+/** 死链检测结果 */
+export interface CloudLinkCheckResult {
+  diskType: string
+  url: string
+  normalizedUrl?: string | null
+  state: CloudLinkState
+  summary?: string | null
+  cacheHit: boolean
+  checkedAt?: number | null
+  expiresAt?: number | null
+}
+
+/** 死链检测：交给 PanSou 增强源探测分享链接是否失效 */
+export function cloudCheckLinks(items: CloudLinkCheckItem[]): Promise<CloudLinkCheckResult[]> {
+  return invoke<CloudLinkCheckResult[]>('cloud_check_links', {
+    items: items.map((item) => ({
+      diskType: item.diskType,
+      url: item.url,
+      password: item.password ?? null,
+    })),
+  })
+}

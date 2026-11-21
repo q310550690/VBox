@@ -55,7 +55,7 @@ const detail = ref<CloudSearchItem | null>(null)
 
 // 状态/结果缓存统一放 store（W14 §7.3）：KeepAlive 返回本页不重复请求后端。
 const search = useCloudSearchStore()
-const { provider, sort, page, pageSize, result, loading, error } = storeToRefs(search)
+const { provider, sort, page, pageSize, result, loading, error, checkingLinks } = storeToRefs(search)
 const countsByProvider = computed(() => search.countsByProvider)
 const allCount = computed(() => search.allCount)
 const sourceTrouble = computed(() => search.sourceTrouble)
@@ -134,6 +134,27 @@ function setFilter(value: CloudSearchProvider | ''): void {
 function toggleSort(): void {
   const next: CloudSortBy = sort.value === 'relevance' ? 'time' : 'relevance'
   search.setSort(next)
+}
+
+/** 死链检测：交给 PanSou 增强源探测当前页分享链接 */
+async function checkDeadLinks(): Promise<void> {
+  try {
+    const summary = await search.checkLinks()
+    const parts: string[] = []
+    if (summary.ok) parts.push(`${summary.ok} 条有效`)
+    if (summary.bad) parts.push(`${summary.bad} 条失效`)
+    if (summary.locked) parts.push(`${summary.locked} 条需提取码`)
+    if (summary.skipped) parts.push(`${summary.skipped} 条未检测`)
+    if (!parts.length) {
+      ElMessage.info('当前结果没有可检测的分享链接')
+      return
+    }
+    const text = `检测完成：${parts.join('，')}`
+    if (summary.bad) ElMessage.warning(text)
+    else ElMessage.success(text)
+  } catch (err) {
+    ElMessage.error(err instanceof Error ? err.message : String(err))
+  }
 }
 
 function onPageSizeChange(size: number): void {
@@ -321,6 +342,17 @@ onActivated(() => {
         >
           <SolarIcon name="sort-vertical" :size="14" />
           <span>{{ sort === 'relevance' ? '相关度' : '时间' }}</span>
+        </button>
+        <button
+          class="stats-sort-btn stats-check-btn"
+          type="button"
+          :disabled="checkingLinks || !result.items.length"
+          :title="checkingLinks ? '正在检测分享链接…' : '用 PanSou 增强源检测当前页分享是否失效'"
+          :aria-label="checkingLinks ? '正在检测分享链接' : '检测分享链接是否失效'"
+          @click="checkDeadLinks"
+        >
+          <SolarIcon name="check-circle" :size="14" />
+          <span>{{ checkingLinks ? '检测中…' : '检测失效' }}</span>
         </button>
       </div>
 
@@ -664,6 +696,15 @@ onActivated(() => {
 
 .stats-sort-btn:hover {
   color: var(--accent);
+}
+
+.stats-check-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.stats-check-btn:disabled:hover {
+  color: var(--text-muted);
 }
 
 .search-stats {

@@ -328,6 +328,7 @@ pub fn run() {
             ffmpeg_prefs::ffmpeg_open_download,
             // W13：网盘账号登录（协议登录 + 网页兜底 + 账号管理）
             commands_cloud::cloud_search,
+            commands_cloud::cloud_check_links,
             commands_cloud::cloud_hot_searches,
             commands_cloud::cloud_source_status,
             commands_cloud::cloud_source_set,

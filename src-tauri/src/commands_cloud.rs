@@ -25,7 +25,7 @@ use vbox_core::cloudsearch::{
     cache::DiskCache,
     kernel::SearchKernel,
     manifest::{channels_from_manifest, verify_sources_manifest, MAX_MANIFEST_BYTES},
-    pansou::PanSouSource,
+    pansou::{CheckLinkItem, CheckLinkResult, PanSouSource},
     tg::TgKernelSource,
     CloudSearchSource, SearchPage, SearchProvider, SearchQuery, SortBy, SourceKind, SourceStatus,
 };
@@ -57,6 +57,59 @@ struct CloudSourcesConfig {
     /// 搜索源优先级（W14 §8.7）：`builtin`（默认）/ `builtin_only` / `pansou_only`。
     #[serde(default)]
     priority: Option<String>,
+}
+
+/// 死链检测入参（前端 camelCase；与官方 `items[]` 一致）。
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CheckLinkInput {
+    /// 网盘类型（官方枚举：baidu / aliyun / quark / tianyi / uc / mobile / 115 / xunlei / 123）。
+    pub disk_type: String,
+    /// 分享链接。
+    pub url: String,
+    /// 提取码（可选）。
+    #[serde(default)]
+    pub password: Option<String>,
+}
+
+/// 死链检测出参（返回前端 camelCase）。
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CheckLinkOutput {
+    pub disk_type: String,
+    pub url: String,
+    pub normalized_url: Option<String>,
+    /// ok / bad / locked / unsupported / uncertain。
+    pub state: String,
+    pub summary: Option<String>,
+    pub cache_hit: bool,
+    pub checked_at: Option<i64>,
+    pub expires_at: Option<i64>,
+}
+
+impl From<CheckLinkInput> for CheckLinkItem {
+    fn from(input: CheckLinkInput) -> Self {
+        CheckLinkItem {
+            disk_type: input.disk_type,
+            url: input.url,
+            password: input.password,
+        }
+    }
+}
+
+impl From<CheckLinkResult> for CheckLinkOutput {
+    fn from(result: CheckLinkResult) -> Self {
+        CheckLinkOutput {
+            disk_type: result.disk_type,
+            url: result.url,
+            normalized_url: result.normalized_url,
+            state: result.state,
+            summary: result.summary,
+            cache_hit: result.cache_hit,
+            checked_at: result.checked_at,
+            expires_at: result.expires_at,
+        }
+    }
 }
 
 /// 归一化搜索源优先级；无法识别的值按默认 `builtin` 处理（`None`）。
@@ -165,6 +218,42 @@ impl CloudState {
         // 只读地取出内核句柄后立即释放锁：单次搜索最多 8s，不应阻塞状态读取/改配置。
         let kernel = { self.lock().kernel.clone() };
         kernel.search_checked(query).map_err(search_error_message)
+    }
+
+    /// 死链检测（W14：PanSou 官方 `/api/check/links`）。
+    ///
+    /// 只在已配置 PanSou 增强源时可用；一次最多 20 条，过滤空链接并小写网盘类型。
+    fn check_links(&self, items: Vec<CheckLinkInput>) -> Result<Vec<CheckLinkOutput>, String> {
+        let config = { self.lock().config.clone() };
+        let Some(source) = pansou_source(&config)? else {
+            return Err("未配置 PanSou 服务地址：死链检测需要 PanSou 增强源".to_string());
+        };
+        let items: Vec<CheckLinkItem> = items
+            .into_iter()
+            .filter(|item| !item.url.trim().is_empty())
+            .take(20)
+            .map(|item| {
+                let password = item
+                    .password
+                    .map(|value| value.trim().to_string())
+                    .filter(|value| !value.is_empty());
+                CheckLinkItem {
+                    disk_type: item.disk_type.trim().to_ascii_lowercase(),
+                    url: item.url.trim().to_string(),
+                    password,
+                }
+            })
+            .collect();
+        if items.is_empty() {
+            return Ok(Vec::new());
+        }
+        source
+            .check_links(items)
+            .map(|results| results.into_iter().map(CheckLinkOutput::from).collect())
+            .map_err(|error| match error {
+                vbox_core::error::CoreError::Config(message) => message,
+                other => sanitize_error(other),
+            })
     }
 
     fn statuses(&self) -> Vec<SourceStatus> {
@@ -606,6 +695,15 @@ pub fn cloud_search(
     };
     let query = query.normalized().map_err(sanitize_error)?;
     state.cloud.search(&query)
+}
+
+/// 死链检测：把当前结果里的分享链接交给 PanSou 官方 `/api/check/links` 探测。
+#[tauri::command]
+pub fn cloud_check_links(
+    state: State<'_, AppState>,
+    items: Vec<CheckLinkInput>,
+) -> Result<Vec<CheckLinkOutput>, String> {
+    state.cloud.check_links(items)
 }
 
 /// 首页热搜词：优先豆瓣首页磁盘缓存（零额外网络），失败回退内置词表。

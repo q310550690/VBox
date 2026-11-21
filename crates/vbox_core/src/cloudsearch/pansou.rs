@@ -20,6 +20,7 @@
 
 use std::time::{Duration, Instant};
 
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::detect::detect_share;
@@ -35,6 +36,42 @@ pub struct PanSouSource {
     base_url: String,
     token: Option<String>,
     client: reqwest::blocking::Client,
+}
+
+/// 死链检测请求项（官方 `POST /api/check/links` 的 `items[]`）。
+#[derive(Debug, Clone, Serialize)]
+pub struct CheckLinkItem {
+    /// 网盘类型（官方枚举：baidu / aliyun / quark / tianyi / uc / mobile / 115 / xunlei / 123）。
+    pub disk_type: String,
+    /// 分享链接原文（可带提取码）。
+    pub url: String,
+    /// 提取码（可选）。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub password: Option<String>,
+}
+
+/// 死链检测结果项（官方 `results[]`）。
+#[derive(Debug, Clone, Deserialize)]
+pub struct CheckLinkResult {
+    /// 网盘类型。
+    pub disk_type: String,
+    /// 原始链接。
+    pub url: String,
+    /// 归一化后的链接（官方可能回填）。
+    #[serde(default)]
+    pub normalized_url: Option<String>,
+    /// 检测状态：ok / bad / locked / unsupported / uncertain。
+    pub state: String,
+    /// 人类可读的说明（官方可选）。
+    #[serde(default)]
+    pub summary: Option<String>,
+    /// 是否命中服务端缓存。
+    #[serde(default)]
+    pub cache_hit: bool,
+    #[serde(default)]
+    pub checked_at: Option<i64>,
+    #[serde(default)]
+    pub expires_at: Option<i64>,
 }
 
 impl PanSouSource {
@@ -101,6 +138,54 @@ impl PanSouSource {
         let payload: Value = response.json()?;
         validate_payload(&payload)?;
         Ok(parse_payload(&payload))
+    }
+
+    /// 死链检测（官方 `POST /api/check/links`）。
+    ///
+    /// 一次最多提交 20 条（由调用方裁剪）；服务端按类型逐个探测分享状态，
+    /// 返回 `ok / bad / locked / unsupported / uncertain`。坏链接由前端标记为失效。
+    pub fn check_links(
+        &self,
+        items: Vec<CheckLinkItem>,
+    ) -> Result<Vec<CheckLinkResult>, CoreError> {
+        if !self.is_configured() {
+            return Err(CoreError::Config("未配置 PanSou 服务地址".to_string()));
+        }
+        if items.is_empty() {
+            return Ok(Vec::new());
+        }
+        let request_body = serde_json::json!({ "items": items });
+        let mut request = self
+            .client
+            .post(format!("{}/api/check/links", self.base_url))
+            .timeout(Duration::from_secs(25))
+            .json(&request_body);
+        if let Some(token) = &self.token {
+            request = request.header(reqwest::header::AUTHORIZATION, format!("Bearer {token}"));
+        }
+        let response = request.send()?;
+        let status = response.status();
+        if !status.is_success() {
+            let text = response.text().unwrap_or_default();
+            let mut detail: String = text.trim().chars().take(240).collect();
+            if detail.is_empty() {
+                detail = "空响应".to_string();
+            }
+            return Err(CoreError::Config(format!(
+                "PanSou 死链检测失败（HTTP {status}）：{detail}"
+            )));
+        }
+        let payload: Value = response.json()?;
+        let results = payload
+            .get("results")
+            .and_then(Value::as_array)
+            .map(|rows| {
+                rows.iter()
+                    .filter_map(|row| serde_json::from_value::<CheckLinkResult>(row.clone()).ok())
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+        Ok(results)
     }
 }
 
@@ -591,6 +676,7 @@ fn parse_timestamp(value: &Value) -> Option<i64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Read;
     use std::sync::{Arc, Mutex};
     use tiny_http::{Response, Server};
 
@@ -659,6 +745,35 @@ mod tests {
             .timeout(Duration::from_secs(5))
             .build()
             .expect("client")
+    }
+
+    /// 同上，但同时记录 HTTP 方法、URL 与请求体（用于断言 POST /api/check/links）。
+    type CapturedRequest = (String, String, String);
+
+    fn mock_server_capturing_request(
+        body: impl Into<String>,
+        status: u16,
+    ) -> (String, std::thread::JoinHandle<()>, Arc<Mutex<Option<CapturedRequest>>>) {
+        let body = body.into();
+        let captured = Arc::new(Mutex::new(None));
+        let sink = Arc::clone(&captured);
+        let server = Server::http("127.0.0.1:0").expect("启动 mock server");
+        let address = format!("http://{}", server.server_addr());
+        let handle = std::thread::spawn(move || {
+            if let Ok(mut request) = server.recv() {
+                let method = request.method().to_string();
+                let url = request.url().to_string();
+                let mut text = String::new();
+                let _ = request.as_reader().read_to_string(&mut text);
+                *sink.lock().expect("capture lock") = Some((method, url, text));
+                let mut response = Response::from_string(body);
+                if status != 200 {
+                    response = response.with_status_code(tiny_http::StatusCode::from(status));
+                }
+                let _ = request.respond(response);
+            }
+        });
+        (address, handle, captured)
     }
 
     #[test]
@@ -935,5 +1050,89 @@ mod tests {
         assert!(validate_payload(&serde_json::json!({"data": []})).is_ok());
         assert!(validate_payload(&serde_json::json!([{"title": "x"}])).is_ok());
         assert!(validate_payload(&serde_json::json!("plain text")).is_err());
+    }
+
+    #[test]
+    fn checks_links_via_official_endpoint() {
+        let payload = serde_json::json!({
+            "results": [
+                {
+                    "disk_type": "quark",
+                    "url": "https://pan.quark.cn/s/abc123",
+                    "normalized_url": "https://pan.quark.cn/s/abc123",
+                    "state": "ok",
+                    "cache_hit": true,
+                    "checked_at": 1_700_000_000,
+                    "expires_at": 1_700_086_400,
+                    "summary": "链接有效"
+                },
+                {
+                    "disk_type": "115",
+                    "url": "https://115.com/s/xyz789",
+                    "state": "bad",
+                    "cache_hit": false,
+                    "checked_at": 1_700_000_001,
+                    "summary": "分享已失效"
+                }
+            ]
+        });
+        let (address, handle, captured) =
+            mock_server_capturing_request(payload.to_string(), 200);
+        let source = PanSouSource::with_client(address, None, client());
+
+        let results = source
+            .check_links(vec![
+                CheckLinkItem {
+                    disk_type: "quark".to_string(),
+                    url: "https://pan.quark.cn/s/abc123".to_string(),
+                    password: None,
+                },
+                CheckLinkItem {
+                    disk_type: "115".to_string(),
+                    url: "https://115.com/s/xyz789".to_string(),
+                    password: Some("8888".to_string()),
+                },
+            ])
+            .expect("死链检测应成功");
+        handle.join().expect("mock server 线程");
+
+        let (method, url, body) = captured
+            .lock()
+            .expect("capture lock")
+            .clone()
+            .expect("应捕获请求");
+        assert_eq!(method, "POST");
+        assert_eq!(url, "/api/check/links", "应使用官方死链检测端点");
+        let request: Value = serde_json::from_str(&body).expect("请求体应为 JSON");
+        assert_eq!(request["items"][0]["disk_type"], "quark");
+        assert_eq!(request["items"][1]["password"], "8888");
+
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0].disk_type, "quark");
+        assert_eq!(results[0].state, "ok");
+        assert!(results[0].cache_hit);
+        assert_eq!(results[0].checked_at, Some(1_700_000_000));
+        assert_eq!(results[1].state, "bad");
+        assert_eq!(results[1].summary.as_deref(), Some("分享已失效"));
+    }
+
+    #[test]
+    fn check_links_reports_http_errors() {
+        let (address, handle, _captured) = mock_server_capturing_request(
+            r#"{"code":"AUTH_TOKEN_INVALID"}"#,
+            401,
+        );
+        let source = PanSouSource::with_client(address, Some("token".to_string()), client());
+        let error = source
+            .check_links(vec![CheckLinkItem {
+                disk_type: "quark".to_string(),
+                url: "https://pan.quark.cn/s/abc123".to_string(),
+                password: None,
+            }])
+            .expect_err("401 应返回错误");
+        handle.join().expect("mock server 线程");
+        let message = format!("{error}");
+        assert!(message.contains("HTTP 401"), "message={message}");
+        assert!(message.contains("AUTH_TOKEN_INVALID"), "message={message}");
     }
 }
