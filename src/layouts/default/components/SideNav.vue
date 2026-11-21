@@ -62,12 +62,13 @@ async function onCheckUpdate() {
   }
 }
 
-/** 分享：复制「应用名 + 版本 + 标语」到剪贴板 */
+/** 分享：复制 GitHub 仓库地址到剪贴板 */
+const REPO_URL = 'https://github.com/q310550690/VBox'
+
 async function onShare() {
-  const text = `VBox v${APP_VERSION} · 一匣藏山海，万象皆入画`
   try {
-    await navigator.clipboard.writeText(text)
-    ui.notify('分享文案已复制到剪贴板', 'success')
+    await navigator.clipboard.writeText(REPO_URL)
+    ui.notify('GitHub 仓库地址已复制', 'success')
   } catch {
     ui.notify('复制失败，请检查剪贴板权限', 'error')
   }
@@ -173,8 +174,8 @@ function targetFor(nav: string, fallback: string): string {
           <button
             class="rail-item"
             type="button"
-            aria-label="分享"
-            title="分享"
+            aria-label="复制仓库地址"
+            title="分享 · 复制仓库地址"
             @click="onShare"
           >
             <SolarIcon :size="18" name="link-round" />
