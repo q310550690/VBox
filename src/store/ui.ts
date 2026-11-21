@@ -95,6 +95,8 @@ function systemPrefersDark(): boolean {
 }
 
 let seq = 0
+/** 同文案提示去重窗口（§13.1）：1.5s 内重复的同一句只保留第一条 */
+let lastNotice: { text: string; at: number; id: number } | null = null
 let inited = false
 
 export const useUiStore = defineStore('ui', {
@@ -279,9 +281,14 @@ export const useUiStore = defineStore('ui', {
     /** 弹出全局提示（默认 4s 自动消失，最多同时 3 条） */
     notify(text: string, level: ToastLevel = 'info') {
       if (!text) return -1
+      const now = Date.now()
+      if (lastNotice && lastNotice.text === text && now - lastNotice.at < 1500) {
+        return lastNotice.id
+      }
       const id = ++seq
       this.notices.push({ id, text, level })
       if (this.notices.length > 3) this.notices.shift()
+      lastNotice = { text, at: now, id }
       window.setTimeout(() => this.dismissNotice(id), 4000)
       return id
     },
@@ -292,6 +299,7 @@ export const useUiStore = defineStore('ui', {
 
     clearNotices() {
       this.notices = []
+      lastNotice = null
     },
   },
 })

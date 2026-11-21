@@ -24,6 +24,7 @@ const initial = computed(() => props.channel.name.trim().charAt(0) || '频')
     <span class="channel-logo" aria-hidden="true">
       <img v-if="channel.logo" class="logo-img" :src="channel.logo" :alt="channel.name" loading="lazy" />
       <template v-else>{{ initial }}</template>
+      <i v-if="!channel.logo" class="logo-dot" />
     </span>
     <span class="channel-info">
       <span class="channel-name ellipsis-1">{{ channel.name }}</span>
@@ -64,6 +65,7 @@ const initial = computed(() => props.channel.name.trim().charAt(0) || '频')
 }
 
 .channel-logo {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -71,11 +73,28 @@ const initial = computed(() => props.channel.name.trim().charAt(0) || '频')
   width: 34px;
   height: 34px;
   border-radius: var(--radius-md);
-  background: var(--surface-2);
-  color: var(--text-muted);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent) 10%, var(--surface-2)),
+      var(--surface-2) 72%
+    );
+  color: color-mix(in srgb, var(--accent) 68%, var(--text));
   font-size: 15px;
   font-weight: 600;
   overflow: hidden;
+}
+
+/* 首字母块的装饰点：LiveChannel 暂无状态字段，不承载语义 */
+.logo-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 70%, transparent);
+  box-shadow: 0 0 0 1.5px var(--surface-2);
 }
 
 .logo-img {
