@@ -197,6 +197,18 @@ pub fn run() {
                 .unwrap_or(false);
             app.manage(window_effect::WindowBackdrop { acrylic });
 
+            // 兜底：窗口以 `visible: false` 创建，首屏绘制后由前端 `show()`；
+            // 若前端始终加载失败，8 秒后强制显示，避免只有进程没有窗口。
+            if let Some(window) = app.get_webview_window("main") {
+                let fallback = window.clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_secs(8));
+                    if !fallback.is_visible().unwrap_or(true) {
+                        let _ = fallback.show();
+                    }
+                });
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

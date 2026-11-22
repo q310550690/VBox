@@ -16,6 +16,8 @@ import './styles/tokens.css'
 import './styles/base.css'
 import './styles/element-user.scss'
 
+import { getCurrentWindow } from '@tauri-apps/api/window'
+
 import App from './App.vue'
 import router from './router'
 
@@ -24,3 +26,17 @@ app.use(createPinia())
 app.use(ElementPlus, { locale: zhCn })
 app.use(router)
 app.mount('#app')
+
+// 窗口以 `visible: false` 创建：等首帧绘制完成后再显示，避免 WebView2 首帧之前的白屏。
+// 浏览器预览没有 Tauri 运行时，直接跳过；Rust 侧另有 8 秒兜底显示。
+if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
+  let shown = false
+  const reveal = () => {
+    if (shown) return
+    shown = true
+    const win = getCurrentWindow()
+    void win.show().then(() => win.setFocus()).catch((err) => console.warn('[vbox] 窗口显示失败', err))
+  }
+  requestAnimationFrame(() => requestAnimationFrame(reveal))
+  window.setTimeout(reveal, 3000)
+}
