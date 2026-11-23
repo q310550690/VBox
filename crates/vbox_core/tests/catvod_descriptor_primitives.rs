@@ -141,6 +141,7 @@ fn descriptor_value(kind: &str, base: &str) -> Value {
  * ============================================================ */
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn base_ext_token_vars_and_param_encoding() {
     let echo = echo_server();
     let mut value = descriptor_value("json", "https://default.example");
@@ -194,6 +195,7 @@ fn base_ext_token_vars_and_param_encoding() {
  * ============================================================ */
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn segments_if_var_if_gt_and_page_min() {
     let echo = echo_server();
     let mut value = descriptor_value("json", &echo);
@@ -229,6 +231,7 @@ fn segments_if_var_if_gt_and_page_min() {
  * ============================================================ */
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_url_rule_precedence() {
     let echo = echo_server();
     let mut value = descriptor_value("json", &echo);
@@ -261,6 +264,7 @@ fn detail_url_rule_precedence() {
  * ============================================================ */
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn list_field_pipeline() {
     let base = fixed_server(
         r#"{"data":[
@@ -310,6 +314,7 @@ fn list_field_pipeline() {
  * ============================================================ */
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_field_pipeline_json() {
     let base = fixed_server(
         r#"{"data":{
@@ -386,6 +391,7 @@ const YSJ_LIKE_HTML: &str = r#"<html><body>
 </body></html>"#;
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn html_categories_list_and_detail() {
     let base = fixed_server(YSJ_LIKE_HTML, "text/html; charset=utf-8");
     let mut value = descriptor_value("html", &base);
@@ -486,6 +492,7 @@ fn html_categories_list_and_detail() {
  * ============================================================ */
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn row_filters_and_dedupe() {
     let base = fixed_server(
         r#"{"data":[
@@ -529,6 +536,7 @@ fn row_filters_and_dedupe() {
  * ============================================================ */
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_keyword_params_and_empty_marker() {
     let echo = echo_server();
     let mut value = descriptor_value("json", &echo);
@@ -563,6 +571,7 @@ fn search_keyword_params_and_empty_marker() {
  * ============================================================ */
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn on_error_empty_and_json_error_message() {
     // 404 不可重试，直接走 fetch 失败分支。
     let server = Server::http("127.0.0.1:0").expect("mock 服务器");
@@ -601,6 +610,7 @@ fn on_error_empty_and_json_error_message() {
  * ============================================================ */
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn groups_json_shapes() {
     let base = fixed_server(
         r#"{"data":{
@@ -646,6 +656,7 @@ fn groups_json_shapes() {
  * ============================================================ */
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn single_group_detail_and_requirements() {
     let base = fixed_server(
         r#"{"data":{"name":"X","urls":[{"key":"k1","url":"v1"},{"key":"","url":"v2"}]}}"#,
@@ -701,6 +712,7 @@ fn single_group_detail_and_requirements() {
  * ============================================================ */
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn play_rules_platforms_and_proxy() {
     let base = fixed_server(
         r#"{"data":{"url":"https://real.example/v.m3u8"}}"#,
@@ -775,6 +787,7 @@ fn play_rules_platforms_and_proxy() {
  * ============================================================ */
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn play_defaults_header_mode_and_json_header() {
     let base = echo_server();
     let mut value = descriptor_value("json", &base);
@@ -820,6 +833,7 @@ fn play_defaults_header_mode_and_json_header() {
  * ============================================================ */
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn static_categories_skip_network_and_validate() {
     // 基址指向必然连不上的端口：一旦发请求就会报错，能证明静态分类不联网。
     let mut value = descriptor_value("json", "http://127.0.0.1:1");
@@ -860,6 +874,7 @@ fn static_categories_skip_network_and_validate() {
  * ============================================================ */
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn family_fallback_delegates_per_entry() {
     // 缺省：声明了的入口都由描述接管；没声明 search 时 search 回落手写。
     let desc = parse(descriptor_value("json", "https://base.example"));
@@ -899,6 +914,7 @@ fn family_fallback_delegates_per_entry() {
  * ============================================================ */
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn groups_html_join_base_and_search_trim_keyword() {
     let base = fixed_server(JOIN_BASE_HTML, "text/html; charset=utf-8");
     let mut value = descriptor_value("html", &base);
@@ -972,6 +988,7 @@ const GROUPS_JSON_BODY: &str = r#"{"data":{
   ]}}"#;
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn groups_fields_join_split_and_episode_fallback() {
     let base = fixed_server(GROUPS_JSON_BODY, "application/json");
     let mut value = descriptor_value("json", &base);
@@ -1005,6 +1022,7 @@ fn groups_fields_join_split_and_episode_fallback() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn vars_unix_ts_ms_and_proxy_join_base() {
     // 毫秒时间戳：13 位十进制。
     let echo = echo_server();
@@ -1082,6 +1100,7 @@ fn post_echo_server() -> String {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn post_json_and_form_bodies() {
     let base = post_echo_server();
 

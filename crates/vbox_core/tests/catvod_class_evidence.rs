@@ -86,6 +86,7 @@ fn jar_dir_of(path: &Path) -> Option<String> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn every_class_bearing_api_has_decompiled_evidence() {
     let p = registry::profiles();
     if !decompiled_root().is_dir() {
@@ -154,6 +155,7 @@ fn every_class_bearing_api_has_decompiled_evidence() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn decompiled_evidence_comes_from_declared_jars() {
     let p = registry::profiles();
     if !decompiled_root().is_dir() {

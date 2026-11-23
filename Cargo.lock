@@ -2588,6 +2588,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "vbox_core",
+ "vbox_jvm",
 ]
 
 [[package]]
@@ -2623,7 +2624,20 @@ dependencies = [
  "tiny_http",
  "tracing",
  "url",
+ "vbox_jvm",
  "wait-timeout",
+]
+
+[[package]]
+name = "vbox_jvm"
+version = "0.1.2"
+dependencies = [
+ "flate2",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror 1.0.69",
+ "tracing",
 ]
 
 [[package]]

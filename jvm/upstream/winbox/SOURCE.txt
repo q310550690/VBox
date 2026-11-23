@@ -1,0 +1,83 @@
+VBox JVM 车道的上游源码（原样 vendor，最小改动）
+
+来源仓库  : https://github.com/yagami-hue/Win-box
+提交      : 80668243a783addda747d89cb4d48ab164966e30   (main, 抓取于 2026-11-22)
+上游许可  : MIT，见同目录 LICENSE（Copyright (c) 2026 yagami-hue）
+上游路径  : resources/jvm/
+
+本目录内容（原样拷贝，未改一行）
+  SpiderRunner.java      宿主侧运行器（673 行）：一次性 / --serve 常驻两种模式
+  stubs-src/             Android / TVBox API 净室实现（157 个 .java）
+                         android/ androidx/ com/ dalvik/ org/json 全量重写
+                         shell-shim/  加固壳影子类（P4 用，未编入 stubs.jar）
+                         build-stubs.ps1 / build-stubs.sh  上游构建脚本（参考用）
+  tools/JarRewriter.java  ASM 重算栈映射帧（P4 用）
+  tools/README.md
+  native-bridge/          unidbg ARM 桥（P4/P5 用；VBox 侧暂不编译）
+
+未取（与本仓库无关或已有替代）
+  resources/jvm/PythonRunner.java      VBox 有自己的 python 车道
+  resources/jvm/python-runner/         同上
+  resources/jvm/run-spider.sh          上游调试脚本
+  resources/jvm/scan-calls.py          上游开发工具
+  resources/jvm/scan-stubs.py          上游开发工具
+  resources/jvm/fetch-sqlite.ps1       依赖由 scripts/build-jvm.mjs 统一管理（固定 sha256）
+
+VBox 自身的改动**不在**本目录：
+  - 宿主改造（--probe 探针等）      → jvm/host/src/SpiderHost.java（由 SpiderRunner.java fork）
+      改动 1：新增 probe(PrintStream) + hasClass/classFileVersion/codeSourceOf，输出单行 JSON
+      改动 2：--probe 分支移到 main() 最顶部（在 ensureHostProxy() 之前），探针不 bind 端口
+  - 兼容层补件（stubs-src 缺的类）  → jvm/compat/src/（自研，AGPL-3.0-only，不属于本目录）
+  - 构建                              → scripts/build-jvm.mjs（含 Maven 依赖自动下载）
+  - 运行时供给                        → scripts/fetch-jre.ps1 / fetch-jre.sh
+
+升级上游时：更新上面的提交号，重新 vendor，然后 `git diff jvm/upstream` 逐条评审。
+已知上游差异：upstream 的 SpiderRunner 用 24 线程池 + 实例池并发；MisaTV 的 fork 改回主线程串行，
+理由是加固壳在池化线程下拿不到站点基址（VBox 计划 §3.2 / D5 沿用串行结论，P1 用真站复核后再定）。
+
+## VBox 本地补丁（与上游的差异）
+
+1. `stubs-src/android/os/Handler.java`：补 `obtainMessage()` / `obtainMessage(int)` /
+   `obtainMessage(int,Object)` / `obtainMessage(int,int,int)` /
+   `obtainMessage(int,int,int,Object)`，转调 `Message.obtain`。
+   原因：上游只有 `send*`，Picasso 等在 `<clinit>` 里调 `obtainMessage` 会
+   `NoSuchMethodError`，蜘蛛 `Init` 半途而废（2026-11-23）。
+
+## 本地补丁（2026-11-23，B2/B3）
+
+1. `stubs-src/android/os/Handler.java`：补 5 个 `obtainMessage` 重载（Picasso 等库的 `<clinit>` 需要）。
+2. `native-bridge/com/winbox/nativebridge/BridgeARM32Emulator.java`：适配 stock unidbg 0.9.9
+   （上游基于其自带 fork）——补 `TcpSocket`/`SocketReadiness` import、`RegistrationKey(fd, state)`、
+   `((CounterFile) file).state` 三处强转；`SocketReadiness` 由 `jvm/bridge-compat/` 自研补件提供。
+3. `native-bridge/com/winbox/nativebridge/NativeBridge.java`：`clinitFailed` 打印完整 cause 链（便于定位）。
+4. `stubs-src/dalvik/system/BaseDexClassLoader.java`：产物质量闸门（`classCountInJar(out)>0` 才加载），
+   受限环境下产出「有资源、无 class」的假 jar 时明确报错并返回 null，不再缓存假产物。
+
+以上均为 VBox 侧最小适配，不改运行语义；升级上游时按本清单重放。
+
+## VBox 本地补丁：native-bridge（2026-11-23，wex/szyyds 载荷提取）
+
+- `com/winbox/nativebridge/EnvJni.java`
+  1. `newObject`/`newObjectV` 拦截 `java/io/FileOutputStream|FileInputStream|RandomAccessFile` 的
+     `(String)`/`(String;Z)`/`(String;String)` 构造器，把来宾 POSIX 路径映射到 unidbg rootfs 宿主路径
+     （`DirObject` 之外的第二个入口；否则 `new FileOutputStream("/data/data/…")` 在 Windows 上变成 `E:\data\…`）。
+  2. `isEnvClass` 扩展上述三个 IO 类（否则它们拿到 ProxyJni，不经过 EnvJni）。
+  3. `dirObject` 改为返回「真实 `java.io.File` + rootfs 宿主路径」（native 后续 `File.getAbsolutePath()`/`exists()`
+     才会落到真实文件；POSIX 形态在 Windows 上 exists() 恒 false）。
+  4. `hostPathOfGuest` 识别「已在 rootfs 下」的宿主路径并原样放行（避免双重 rootfs）。
+- `com/winbox/nativebridge/PosixFile.java`
+  - 新增 `hostForGuest(String)`（来宾 POSIX → rootfs 宿主文件，父目录 mkdirs）与 `rootfsDebug()`。
+
+同批 VBox 侧（不在本目录）：`crates/vbox_jvm/src/host.rs` 注入 `-Dtvbox.native.patch=<work>/native-patch`；
+`runtime.rs` add-opens 增 `sun.net.www.protocol.{jar,http,https}`、`sun.nio.ch`；
+`jvm/compat/src/tvbox/dex/{DexStreamConverter,ConvertMain}.java` 增加 `copyResources`（产物带 assets/*.so）。
+
+## VBox 本地补丁：stubs/dalvik（2026-11-23，内层载荷自动导出）
+
+- `dalvik/system/BaseDexClassLoader.java`
+  1. `finalizeProduct(src,out)` 拆成「`finalizeProductBody` + `exportPayloadProduct`」：收尾（补资源/修 NEW）
+     完成后把产物复制到 `-Dtvbox.payload.out` 指定的路径（临时文件 + 原子改名）。
+     用途：加固壳首次在 unidbg 里解密出内层 jar 后，宿主侧（`crates/vbox_jvm/src/host.rs::harvest_payload`）
+     自动安装成 `payloads/<jar sha>/inner.jar`，之后同一只 jar 走纯 Java shim，不必每次重复解密。
+  2. 只在显式注入 `-Dtvbox.payload.out` 时生效（非壳/已启用 shim 不注入）；导出失败只打
+     `[payload] 内层载荷导出失败` 日志，不影响本次加载。

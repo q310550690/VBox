@@ -90,6 +90,7 @@ fn start_server() -> String {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_routes_yunpan_to_native_family() {
     let site = site("https://mock.invalid");
     assert!(vbox_core::spider::catvod::registry::is_native_ready(&site.api));
@@ -97,6 +98,7 @@ fn dispatch_routes_yunpan_to_native_family() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_is_single_home() {
     let base = start_server();
     let site = site(&base);
@@ -107,6 +109,7 @@ fn categories_is_single_home() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn home_videos_parse_cards() {
     let base = start_server();
     let site = site(&base);
@@ -121,6 +124,7 @@ fn home_videos_parse_cards() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn list_videos_parse_two_cards_and_cover_absolutization() {
     let base = start_server();
     let site = site(&base);
@@ -134,6 +138,7 @@ fn list_videos_parse_two_cards_and_cover_absolutization() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_error_when_page_has_no_cards() {
     let base = start_server();
     let site = site(&base);
@@ -143,6 +148,7 @@ fn videos_error_when_page_has_no_cards() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_parses_cards() {
     let base = start_server();
     let site = site(&base);
@@ -152,6 +158,7 @@ fn search_parses_cards() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_rejects_ids_without_separator() {
     let base = start_server();
     let site = site(&base);
@@ -162,6 +169,7 @@ fn detail_rejects_ids_without_separator() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_with_only_unsupported_providers_reports_parse_error() {
     let base = start_server();
     let site = site(&base);
@@ -174,6 +182,7 @@ fn detail_with_only_unsupported_providers_reports_parse_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_reports_engine_gap_for_thunder() {
     let base = start_server();
     let site = site(&base);
@@ -185,6 +194,7 @@ fn player_reports_engine_gap_for_thunder() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_reports_engine_gap_for_yd() {
     let base = start_server();
     let site = site(&base);
@@ -195,6 +205,7 @@ fn player_reports_engine_gap_for_yd() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_rejects_unexpanded_id() {
     let base = start_server();
     let site = site(&base);
@@ -206,6 +217,7 @@ fn player_rejects_unexpanded_id() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_rejects_unknown_share_link() {
     let base = start_server();
     let site = site(&base);

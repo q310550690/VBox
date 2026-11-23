@@ -65,6 +65,58 @@ export const CATVOD_ERROR_COPY: Record<string, CatvodErrorCopy> = {
     action: '换用其他站点；该能力需要 Android/WebView 宿主',
     retryable: false,
   },
+
+  // JVM 车道（真 JRE 跑原始 jar 字节码）
+  'catvod.host.class_not_found': {
+    title: '站点类未找到',
+    action: '换用其他站点，或在设置里更新订阅（该 jar 可能已改类名）',
+    retryable: false,
+  },
+  'catvod.host.init_failed': {
+    title: '站点初始化失败',
+    action: '检查站点 ext 配置；仍失败则换用其他站点',
+    retryable: false,
+  },
+  'catvod.host.method_missing': {
+    title: '该站点不支持此操作',
+    action: '该站点不支持此操作，换用其他站点',
+    retryable: false,
+  },
+  'catvod.host.bad_args': {
+    title: '站点参数不匹配',
+    action: '检查站点配置后重试，或换用其他站点',
+    retryable: false,
+  },
+  'catvod.host.spider_threw': {
+    title: '站点脚本出错',
+    action: '稍后重试；持续失败则换用其他站点',
+    retryable: true,
+  },
+  'catvod.host.proxy_bind': {
+    title: '本地代理端口被占用',
+    action: '稍后重试；持续失败则重启应用',
+    retryable: true,
+  },
+  'catvod.host.dex2jar': {
+    title: '组件转换失败',
+    action: '重试一次；仍失败则在设置里重建组件缓存',
+    retryable: true,
+  },
+  'catvod.host.crashed': {
+    title: 'JVM 宿主崩溃',
+    action: '重试；仍失败则查看日志并反馈',
+    retryable: true,
+  },
+  'catvod.host.shell_unsupported': {
+    title: '加固壳暂不支持',
+    action: '换用非加固 jar，或在设置里切换到原生家族',
+    retryable: false,
+  },
+  'catvod.host.unavailable': {
+    title: 'JVM 运行时未就绪',
+    action: '运行 npm run build:jvm 与 npm run fetch:jre 后重启应用',
+    retryable: false,
+  },
   'catvod.net.http': {
     title: '网络请求失败',
     action: '检查网络/代理后重试，或换镜像',

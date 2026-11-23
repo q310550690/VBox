@@ -73,6 +73,7 @@ fn count_lines(text: &str, prefix: &str) -> usize {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn test_inventory_matches_disk() {
     let plan = fs::read_to_string(root().join("docs/type3兼容/type3-实施计划-原生兼容100%.md"))
         .expect("读取计划文档失败");
@@ -125,6 +126,7 @@ fn test_inventory_matches_disk() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn test_inventory_reconciles_with_full_log() {
     if std::env::var("FULL_BASELINE_BOOTSTRAP").is_ok() {
         eprintln!("bootstrap: 跳过 test_inventory_reconciles_with_full_log（本轮只刷新日志）");

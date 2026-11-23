@@ -83,6 +83,7 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_and_registry_recognise_pikpakshare() {
     let base = start_server();
     let cfg = config();
@@ -99,6 +100,7 @@ fn dispatch_and_registry_recognise_pikpakshare() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_group_returns_entries() {
     let base = start_server();
     let items = spider::list_videos(&config(), &site(&base), "电影", 1).expect("videos");
@@ -108,6 +110,7 @@ fn videos_group_returns_entries() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_share_url_browses_root() {
     let base = start_server();
     let items = spider::list_videos(&config(), &site(&base), SHARE, 1).expect("videos");
@@ -120,6 +123,7 @@ fn videos_share_url_browses_root() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_expands_files_into_episodes() {
     let base = start_server();
     let detail = spider::get_detail(&config(), &site(&base), SHARE).expect("detail");
@@ -132,6 +136,7 @@ fn detail_expands_files_into_episodes() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_returns_direct_url() {
     let base = start_server();
     let s = site(&base);
@@ -148,6 +153,7 @@ fn player_returns_direct_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_without_file_id_reports_parse_error() {
     let base = start_server();
     let err = spider::player_content(&config(), &site(&base), "", SHARE, &[]).expect_err("缺 fid");
@@ -156,6 +162,7 @@ fn player_without_file_id_reports_parse_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_matches_manifest_names() {
     let base = start_server();
     let items = spider::search(&config(), &site(&base), "剧集二", false).expect("search");
@@ -166,6 +173,7 @@ fn search_matches_manifest_names() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn missing_list_source_reports_parse_error() {
     let base = start_server();
     let mut s = site(&base);

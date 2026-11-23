@@ -843,6 +843,80 @@ export interface PythonStatus {
   dependencies: PythonDependency[]
 }
 
+export interface JvmPoolStats {
+  hosts: number
+  maxHosts: number
+  spawns: number
+  hits: number
+  reaped: number
+  evicted: number
+  calls: number
+  failures: number
+  sessions: number
+}
+
+export interface JvmCoverage {
+  jarApis: number
+  capableSites: number
+  guardedSites: number
+  totalSites: number
+}
+
+/** jar 蜘蛛（JRE 车道）的运行时状态。 */
+export interface JvmStatus {
+  available: boolean
+  mode: 'primary' | 'fallback' | 'off'
+  root?: string | null
+  java?: string | null
+  cacheDir: string
+  pool: JvmPoolStats
+  coverage: JvmCoverage
+  /** 运行期累计的缺类（ClassNotFoundException），按命中次数排序 */
+  missingClasses: JvmMissingClass[]
+  /** 实际使用的 java 来自哪里：bundled / VBOX_JVM_JRE_ZIP / VBOX_JAVA_HOME / JAVA_HOME / PATH */
+  javaSource?: string | null
+  /** 实际使用的 java 版本（`java -version` 首行） */
+  javaVersion?: string | null
+  /** 正在进行的 dex→jar 转换数量 */
+  activeConversions?: number
+}
+
+/** 兼容性遥测（L1）本机 spool 状态；默认不上传。 */
+export interface TelemetryStatus {
+  dir: string
+  installId: string
+  pendingJars: number
+  pendingFailures: number
+  endpoint: string | null
+  uploadEnabled: boolean
+}
+
+/** 单个 dex→jar 转换的进度（后端 `convert_progress`）。 */
+export interface JvmConvertProgress {
+  key: string
+  jar: string
+  bytes: number
+  totalClasses: number
+  classesDone: number
+  startedMs: number
+  elapsedMs: number
+  done: boolean
+  ok: boolean
+  error?: string | null
+}
+
+/** 转换进度快照：进行中的数量 + 最近若干条。 */
+export interface JvmConvertSnapshot {
+  active: number
+  items: JvmConvertProgress[]
+}
+
+/** 兼容层缺失的 Android/TVBox 类（诊断用） */
+export interface JvmMissingClass {
+  class: string
+  hits: number
+}
+
 export interface NodeStatus {
   available: boolean
   label?: string | null

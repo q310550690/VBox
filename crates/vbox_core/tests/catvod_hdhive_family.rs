@@ -130,6 +130,7 @@ fn cfg() -> TvConfig {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_and_registry_recognise_hdhive() {
     let api = "csp_Hdh";
     assert_eq!(
@@ -141,6 +142,7 @@ fn dispatch_and_registry_recognise_hdhive() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_are_fixed_five() {
     let (root, _log) = start_server();
     let cats = spider::list_categories(&cfg(), &site(&root)).expect("categories");
@@ -150,6 +152,7 @@ fn categories_are_fixed_five() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn login_runs_once_and_reuses_bearer_token() {
     let (root, log) = start_server();
     let s = site_with_key(&root, "hdh-login");
@@ -165,6 +168,7 @@ fn login_runs_once_and_reuses_bearer_token() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_movie_uses_movies_path() {
     let (root, log) = start_server();
     let rows = spider::list_videos(&cfg(), &site_with_key(&root, "hdh-movie"), "movie", 1).expect("list");
@@ -183,6 +187,7 @@ fn videos_movie_uses_movies_path() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_non_movie_uses_tv_path() {
     let (root, log) = start_server();
     let rows = spider::list_videos(&cfg(), &site_with_key(&root, "hdh-anime"), "anime", 1).expect("list");
@@ -196,6 +201,7 @@ fn videos_non_movie_uses_tv_path() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_pass_page_number() {
     let (root, log) = start_server();
     let _ = spider::list_videos(&cfg(), &site_with_key(&root, "hdh-page"), "movie", 2).expect("list");
@@ -204,6 +210,7 @@ fn videos_pass_page_number() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_aggregates_tmdb_hits() {
     let (root, log) = start_server();
     let rows = spider::search(&cfg(), &site_with_key(&root, "hdh-search"), "沙丘2", false).expect("search");
@@ -221,6 +228,7 @@ fn search_aggregates_tmdb_hits() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_expands_ali_and_keeps_magnet_line() {
     let (root, _log) = start_server();
     let detail = spider::get_detail(&cfg(), &site_with_key(&root, "hdh-detail"), "movie_id=693134")
@@ -246,6 +254,7 @@ fn detail_expands_ali_and_keeps_magnet_line() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_rejects_blank_id() {
     let (root, _log) = start_server();
     let err = spider::get_detail(&cfg(), &site(&root), " ").expect_err("blank id");
@@ -253,6 +262,7 @@ fn detail_rejects_blank_id() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_magnet_is_direct() {
     let (root, _log) = start_server();
     let value = spider::player_content(&cfg(), &site(&root), "磁力1", "magnet:?xt=urn:btih:xyz", &[])
@@ -262,6 +272,7 @@ fn player_magnet_is_direct() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_resolves_ali_episode() {
     let (root, _log) = start_server();
     let value = spider::player_content(
@@ -277,6 +288,7 @@ fn player_resolves_ali_episode() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_blank_keyword_makes_no_request() {
     let (root, log) = start_server();
     let rows = spider::search(&cfg(), &site_with_key(&root, "hdh-blank"), "  ", false).expect("search");

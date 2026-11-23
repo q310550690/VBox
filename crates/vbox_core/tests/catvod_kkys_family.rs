@@ -82,6 +82,7 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn home_categories_skip_recommend() {
     let (base, _) = start_server();
     let cats = spider::list_categories(&cfg(), &site(&base)).expect("分类可解析");
@@ -92,6 +93,7 @@ fn home_categories_skip_recommend() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn category_page_passes_params_and_reads_pagecount() {
     let (base, hits) = start_server();
     let items = spider::list_videos(&cfg(), &site(&base), "电影", 2).expect("列表可解析");
@@ -107,6 +109,7 @@ fn category_page_passes_params_and_reads_pagecount() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_groups_and_jp_prefix() {
     let (base, _) = start_server();
     let d = spider::get_detail(&cfg(), &site(&base), "10").expect("详情可解析");
@@ -121,6 +124,7 @@ fn detail_groups_and_jp_prefix() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_returns_items() {
     let (base, hits) = start_server();
     let items = spider::search(&cfg(), &site(&base), "测试 词", false).expect("搜索可解析");
@@ -132,6 +136,7 @@ fn search_returns_items() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_platform_sets_referer_and_parse_zero() {
     let (base, _) = start_server();
     let v = spider::player_content(
@@ -149,6 +154,7 @@ fn player_platform_sets_referer_and_parse_zero() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_jqq_uses_proxy_and_returns_real_url() {
     let (base, _) = start_server();
     let v = spider::player_content(&cfg(), &site(&base), "", "jqq-abc", &[]).expect("代理播放可解析");
@@ -158,6 +164,7 @@ fn player_jqq_uses_proxy_and_returns_real_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_empty_id_is_error() {
     let (base, _) = start_server();
     let err = spider::player_content(&cfg(), &site(&base), "", "  ", &[]).expect_err("空 id 应报错");
@@ -165,6 +172,7 @@ fn player_empty_id_is_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_without_video_is_parse_error() {
     let (base, _) = start_server();
     let err = spider::get_detail(&cfg(), &site(&base), "missing").expect_err("缺 data.video 应报错");

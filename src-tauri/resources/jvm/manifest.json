@@ -1,0 +1,165 @@
+{
+  "rev": "2ee21f791730",
+  "builtAt": "2026-11-23T15:08:56.929Z",
+  "release": 17,
+  "javac": "javac 21.0.13",
+  "stubs": {
+    "bytes": 308578,
+    "sha256": "7b97e782bfb28f34952ba6c1b1a48dc0826cc972af4f3198bd82be537696fe11",
+    "classes": 267
+  },
+  "host": {
+    "bytes": 18849,
+    "sha256": "5f978b3b88c2b751dce5215a6b26bb1c22a230f806220bae9f786791ddaf20d8",
+    "classes": 8
+  },
+  "libs": [
+    {
+      "name": "bcprov-jdk18on-1.78.1.jar",
+      "bytes": 8324412,
+      "sha256": "add5915e6acfc6ab5836e1fd8a5e21c6488536a8c1f21f386eeb3bf280b702d7"
+    },
+    {
+      "name": "gson-2.10.1.jar",
+      "bytes": 283367,
+      "sha256": "4241c14a7727c34feea6507ec801318a3d4a90f070e4525681079fb94ee4c593"
+    },
+    {
+      "name": "json-20180813.jar",
+      "bytes": 64597,
+      "sha256": "518080049ba83181914419d11a25d9bc9833a2d729b6a6e7469fa52851356da8"
+    },
+    {
+      "name": "jsoup-1.17.2.jar",
+      "bytes": 445706,
+      "sha256": "f60b33b38e9d7ac93eaaa68a6c70f706bb99036494b2e2add2bfee11d09ac6f5"
+    },
+    {
+      "name": "okhttp-3.14.9.jar",
+      "bytes": 430488,
+      "sha256": "2570fab55515cbf881d7a4ceef49fc515490bc027057e666776a2832465aeca0"
+    },
+    {
+      "name": "okio-1.17.5.jar",
+      "bytes": 92326,
+      "sha256": "19a7ff48d86d3cf4497f7f250fbf295f430c13a528dd5b7b203f821802b886ad"
+    },
+    {
+      "name": "slf4j-api-2.0.16.jar",
+      "bytes": 69435,
+      "sha256": "a12578dde1ba00bd9b816d388a0b879928d00bab3c83c240f7013bf4196c579a"
+    },
+    {
+      "name": "slf4j-simple-2.0.16.jar",
+      "bytes": 15704,
+      "sha256": "effc32018658bea09d1e08c7d1060ccad46c086960f583d07dd7ffe9c1172a47"
+    },
+    {
+      "name": "sqlite-jdbc-3.46.1.0.jar",
+      "bytes": 14123618,
+      "sha256": "6dc7464e3803648d3ff18a7359bab6adf079fcd8495b18991f6f5edcb8ac6e3b"
+    },
+    {
+      "name": "asm-9.7.jar",
+      "bytes": 125428,
+      "sha256": "adf46d5e34940bdf148ecdd26a9ee8eea94496a72034ff7141066b3eea5c4e9d"
+    },
+    {
+      "name": "asm-analysis-9.7.jar",
+      "bytes": 34776,
+      "sha256": "7bc6bcbc21379948a0c8c467fb0f864206e5b818f6bc0b546872f5c9f941556f"
+    },
+    {
+      "name": "asm-commons-9.7.jar",
+      "bytes": 73426,
+      "sha256": "389bc247958e049fc9a0408d398c92c6d370c18035120395d4cba1d9d9304b7a"
+    },
+    {
+      "name": "asm-tree-9.7.jar",
+      "bytes": 51934,
+      "sha256": "62f4b3bc436045c1acb5c3ba2d8ec556ec3369093d7f5d06c747eb04b56d52b1"
+    },
+    {
+      "name": "asm-util-9.7.jar",
+      "bytes": 93784,
+      "sha256": "37a6414d36641973f1af104937c95d6d921b2ddb4d612c66c5a9f2b13fc14211"
+    }
+  ],
+  "tools": {
+    "bytes": 20731,
+    "sha256": "00acc790479bc7bc735868a6d5612eb466838d132749fbebf4ef19b70f945254",
+    "classes": 13
+  },
+  "nativeBridge": {
+    "bytes": 85530,
+    "sha256": "293a3705dcad363fc8dfe3b77e35742a138d2b74042b54af47470e02cdf26c22",
+    "classes": 38,
+    "unidbg": [
+      {
+        "name": "apk-parser-2.6.10.jar",
+        "bytes": 213647
+      },
+      {
+        "name": "capstone-3.1.8.jar",
+        "bytes": 3159591
+      },
+      {
+        "name": "commons-codec-1.21.0.jar",
+        "bytes": 402494
+      },
+      {
+        "name": "commons-collections4-4.5.0.jar",
+        "bytes": 898652
+      },
+      {
+        "name": "commons-io-2.21.0.jar",
+        "bytes": 585274
+      },
+      {
+        "name": "demumble-1.0.4.jar",
+        "bytes": 968653
+      },
+      {
+        "name": "fastjson-1.2.83.jar",
+        "bytes": 671701
+      },
+      {
+        "name": "jna-5.14.0.jar",
+        "bytes": 1878533
+      },
+      {
+        "name": "keystone-0.9.7.jar",
+        "bytes": 4731494
+      },
+      {
+        "name": "native-lib-loader-2.3.5.jar",
+        "bytes": 20352
+      },
+      {
+        "name": "unicorn-1.0.15.jar",
+        "bytes": 6193524
+      },
+      {
+        "name": "unidbg-android-0.9.9.jar",
+        "bytes": 6128061
+      },
+      {
+        "name": "unidbg-api-0.9.9.jar",
+        "bytes": 418830
+      },
+      {
+        "name": "unidbg-dynarmic-0.9.9.jar",
+        "bytes": 8217374
+      },
+      {
+        "name": "unidbg-unicorn2-0.9.9.jar",
+        "bytes": 6150256
+      }
+    ]
+  },
+  "shellShim": {
+    "bytes": 6340,
+    "sha256": "dbb9a99189d85ac04061832c5e859b9e4a5bd7cc617a4769abddc5b251284c80",
+    "classes": 1
+  }
+}

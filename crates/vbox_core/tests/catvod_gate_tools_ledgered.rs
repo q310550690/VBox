@@ -35,6 +35,7 @@ const GATE: &[&str] = &[
 ];
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn every_gate_tool_is_ledgered() {
     let index = fs::read_to_string(root().join("docs/审计报告/审计索引.md")).expect("读取审计索引");
     let snapshot = fs::read_to_string(root().join("docs/审计报告/审计快照.json")).expect("读取审计快照");

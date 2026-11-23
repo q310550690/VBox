@@ -1277,6 +1277,141 @@ pub async fn live_epg(
 /* ---------------- Python 运行时设置 ---------------- */
 
 /// 当前 Python 解释器/依赖状态（设置页展示）
+/// `jvm_status`：jar 蜘蛛（JRE 车道）的运行时状态、宿主池统计与覆盖口径。
+#[tauri::command]
+pub fn jvm_status() -> serde_json::Value {
+    use vbox_core::spider::catvod::{jvm, registry};
+
+    let runtime = vbox_jvm::Runtime::locate();
+    let pool = jvm::stats();
+    let mode = match jvm::mode() {
+        jvm::Mode::Primary => "primary",
+        jvm::Mode::Fallback => "fallback",
+        jvm::Mode::Off => "off",
+    };
+
+    // 覆盖口径：带 jar 的站点里，能交给我们跑的（有 class、未加固）与加固壳各多少。
+    let mut capable_sites = 0u32;
+    let mut guarded_sites = 0u32;
+    let mut jar_apis = 0u32;
+    for profile in registry::profiles().apis.values() {
+        if profile.class.is_none() || profile.jars.is_empty() {
+            continue;
+        }
+        jar_apis += 1;
+        if profile.guarded {
+            guarded_sites += profile.sites;
+        } else {
+            capable_sites += profile.sites;
+        }
+    }
+
+    serde_json::json!({
+        "available": jvm::available(),
+        "mode": mode,
+        "root": runtime.as_ref().map(|r| r.root().display().to_string()),
+        "java": runtime.as_ref().map(|r| r.java_bin().display().to_string()),
+        "cacheDir": vbox_jvm::DexOptions::default_cache().display().to_string(),
+        "pool": {
+            "hosts": pool.hosts,
+            "maxHosts": pool.max_hosts,
+            "spawns": pool.spawns,
+            "hits": pool.hits,
+            "reaped": pool.reaped,
+            "evicted": pool.evicted,
+            "calls": pool.calls,
+            "failures": pool.failures,
+            "sessions": jvm::session_count(),
+        },
+        // 缺类诊断：运行期累计的 ClassNotFoundException 汇总（补兼容层类时按热度从上往下加）。
+        "missingClasses": vbox_jvm::missing_classes()
+            .into_iter()
+            .take(20)
+            .map(|m| serde_json::json!({ "class": m.class, "hits": m.hits }))
+            .collect::<Vec<_>>(),
+        "coverage": {
+            "jarApis": jar_apis,
+            "capableSites": capable_sites,
+            "guardedSites": guarded_sites,
+            "totalSites": 612,
+        },
+        // JRE 自愈（C 项）：告诉前端 java 是从哪来的、版本多少；缺失时前端给修复指引。
+        "javaSource": runtime
+            .as_ref()
+            .and_then(|r| r.java_runtime().ok().map(|j| j.source)),
+        "javaVersion": runtime
+            .as_ref()
+            .and_then(|r| r.java_runtime().ok().and_then(|j| j.version)),
+        // dex 转换进度（C 项）：前端在「正在转换」时 1s 轮询。
+        "activeConversions": vbox_jvm::active_conversions(),
+        "convertProgress": vbox_jvm::convert_progress()
+            .into_iter()
+            .take(8)
+            .collect::<Vec<_>>(),
+    })
+}
+
+/// `jvm_convert_progress`：dex → jar 转换进度（设置页在转换期间短轮询这个，开销小）。
+#[tauri::command]
+pub fn jvm_convert_progress() -> serde_json::Value {
+    serde_json::json!({
+        "active": vbox_jvm::active_conversions(),
+        "items": vbox_jvm::convert_progress().into_iter().take(8).collect::<Vec<_>>(),
+    })
+}
+
+/// `jvm_clear_cache`：清掉 dex 转换产物（不含加固壳载荷目录），返回释放的字节数。
+#[tauri::command]
+pub fn jvm_clear_cache() -> Result<u64, String> {
+    let dir = vbox_jvm::DexOptions::default_cache();
+    let mut freed = 0u64;
+    let Ok(entries) = std::fs::read_dir(&dir) else {
+        return Ok(0);
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+        let removable = name.ends_with(".jar")
+            || name.ends_with(".d2j.log")
+            || name.ends_with(".fix.log")
+            || name.ends_with(".fix.ok")
+            || name.ends_with(".part.jar");
+        if !removable {
+            continue;
+        }
+        freed += entry.metadata().map(|m| m.len()).unwrap_or(0);
+        std::fs::remove_file(&path).map_err(|e| format!("删除 {} 失败：{e}", path.display()))?;
+    }
+    Ok(freed)
+}
+
+/// 兼容性遥测（L1）现状：只在本机 spool，默认不上传。
+#[tauri::command]
+pub fn telemetry_status() -> serde_json::Value {
+    vbox_jvm::telemetry::status()
+}
+
+/// 导出诊断包（单 JSON，用户可自行发送）；返回文件绝对路径。
+#[tauri::command]
+pub fn telemetry_export() -> Result<String, String> {
+    let dir = vbox_jvm::telemetry::dir().join("exports");
+    vbox_jvm::telemetry::export_bundle(&dir)
+        .map(|p| p.display().to_string())
+        .map_err(|e| format!("导出诊断包失败：{e}"))
+}
+
+/// 生成「预填内容的 GitHub Issue」链接（浏览器打开即可反馈）。
+#[tauri::command]
+pub fn telemetry_issue_url() -> String {
+    vbox_jvm::telemetry::issue_url()
+}
+
+/// 清空本机 spool（返回释放字节数）。
+#[tauri::command]
+pub fn telemetry_clear() -> u64 {
+    vbox_jvm::telemetry::clear()
+}
+
 #[tauri::command]
 pub async fn python_status() -> vbox_core::python::PythonStatus {
     // 探测会起 `python --version` 与依赖 import 子进程，必须离开主线程

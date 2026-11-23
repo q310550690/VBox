@@ -98,6 +98,7 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_and_registry_recognise_alishare() {
     let base = start_server();
     let cfg = config();
@@ -113,6 +114,7 @@ fn dispatch_and_registry_recognise_alishare() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_list_share_root_entries() {
     let base = start_server();
     let items = spider::list_videos(&config(), &site(&base), SHARE, 1).expect("videos");
@@ -124,6 +126,7 @@ fn videos_list_share_root_entries() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_expands_folder_into_episodes() {
     let base = start_server();
     let cfg = config();
@@ -142,6 +145,7 @@ fn detail_expands_folder_into_episodes() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_file_is_single_episode() {
     let base = start_server();
     let cfg = config();
@@ -153,6 +157,7 @@ fn detail_file_is_single_episode() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_prefers_transcode_url() {
     let base = start_server();
     let cfg = config();
@@ -173,6 +178,7 @@ fn player_prefers_transcode_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_falls_back_to_download_url() {
     let base = start_server();
     let cfg = config();
@@ -185,6 +191,7 @@ fn player_falls_back_to_download_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_is_disabled() {
     let base = start_server();
     let items = spider::search(&config(), &site(&base), "三体", true).expect("search");
@@ -192,6 +199,7 @@ fn search_is_disabled() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn relative_list_source_reports_deviation() {
     let s = Site {
         key: "csp_AliShare".into(),

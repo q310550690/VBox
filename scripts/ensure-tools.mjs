@@ -26,6 +26,13 @@ export const TOOLS = {
     marker: 'src-tauri/resources/python/.vbox-ready',
     script: 'scripts/fetch-python.ps1',
   },
+  jvm: {
+    label: 'JRE 17 (jar spiders)',
+    // jar 蛛蛛要真 JVM：先用 build-jvm.mjs 产出兼容层 jar，再下 JRE 17
+    marker: 'src-tauri/resources/jvm/marker.json',
+    build: 'scripts/build-jvm.mjs',
+    script: 'scripts/fetch-jre.ps1',
+  },
   node: {
     label: 'Node.js',
     marker: 'src-tauri/resources/node/.vbox-ready',
@@ -86,7 +93,18 @@ export function ensureTools(selection) {
       console.log(`[ensure-tools] ${tool.label} 已就位（随安装包分发）`)
       continue
     }
-    console.log(`[ensure-tools] ${tool.label} 缺失，开始下载…`)
+    if (tool.build) {
+      console.log(`[ensure-tools] ${tool.label} 缺兼容层 jar，先构建…`)
+      const built = spawnSync(process.execPath, [path.join(root, tool.build)], {
+        cwd: root,
+        stdio: 'inherit',
+      })
+      if (built.error || built.status !== 0) {
+        console.error(`[ensure-tools] ${tool.build} 构建失败`)
+        return false
+      }
+    }
+    console.log(`[ensure-tools] ${tool.label}的运行时缺失，开始下载…`)
     const result = run(tool.script, [])
     if (result.error) {
       console.error(`[ensure-tools] 启动 ${tool.script} 失败：${result.error.message}`)

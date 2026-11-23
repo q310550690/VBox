@@ -69,6 +69,7 @@ fn parse_blocked_entries(src: &str) -> BTreeMap<String, (String, bool)> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn every_blocked_api_has_commented_evidence() {
     let Some(src) = generator_source() else {
         return;
@@ -100,6 +101,7 @@ fn every_blocked_api_has_commented_evidence() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn generator_blocked_entries_match_profiles() {
     let Some(src) = generator_source() else {
         return;
@@ -123,6 +125,7 @@ fn generator_blocked_entries_match_profiles() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn blocked_reasons_are_known_and_cover_all_unported() {
     let profiles = registry::profiles();
     let unported = profiles

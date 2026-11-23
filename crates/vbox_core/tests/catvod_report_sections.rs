@@ -23,6 +23,7 @@ fn cn_to_num(s: &str) -> Option<usize> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn headings_are_contiguous() {
     let text = fs::read_to_string(root().join(REPORT)).expect("读取审计报告");
     let mut nums = Vec::new();
@@ -51,6 +52,7 @@ fn headings_are_contiguous() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn reproducible_row_counts_match_disk() {
     let text = fs::read_to_string(root().join(REPORT)).expect("读取审计报告");
     let mut ignored_on_disk = 0usize;

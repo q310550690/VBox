@@ -124,6 +124,7 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_via_dispatch() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -134,6 +135,7 @@ fn categories_via_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn list_videos_via_dispatch() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -146,6 +148,7 @@ fn list_videos_via_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_via_dispatch() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -155,6 +158,7 @@ fn search_via_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_maps_metadata_and_groups() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -170,6 +174,7 @@ fn detail_maps_metadata_and_groups() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_resolves_resolution_then_url() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -187,6 +192,7 @@ fn player_resolves_resolution_then_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn play_url_failure_reports_host_api_error() {
     let base = start_server();
     let cfg = TvConfig::default();

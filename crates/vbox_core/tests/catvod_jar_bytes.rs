@@ -46,6 +46,7 @@ fn md5_hex(bytes: &[u8]) -> String {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn jar_files_match_dexinfo_checksums() {
     let Some(dexinfo) = load_json(&dexinfo_path()) else {
         eprintln!("skip: {} 不存在（CI 无 _rea 快照）", dexinfo_path().display());
@@ -79,6 +80,7 @@ fn jar_files_match_dexinfo_checksums() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn jar_file_set_matches_dexinfo() {
     let Some(dexinfo) = load_json(&dexinfo_path()) else {
         eprintln!("skip: {} 不存在（CI 无 _rea 快照）", dexinfo_path().display());

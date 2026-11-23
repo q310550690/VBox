@@ -131,6 +131,7 @@ fn plan_baseline_numbers(plan: &str) -> (u64, u64, u64, u64, u64) {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn full_log_matches_plan_test_baseline() {
     // 自引用引导：本判据自身也计入 targets/passed，而日志只能在上一次全量之后生成。
     // bootstrap 轮整体跳过本测试，使日志得到干净的「134 targets / 1672 passed / 0 failed」，
@@ -165,6 +166,7 @@ fn full_log_matches_plan_test_baseline() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn full_log_covers_all_test_targets() {
     if std::env::var("FULL_BASELINE_BOOTSTRAP").is_ok() {
         eprintln!("bootstrap: 跳过 full_log_covers_all_test_targets（本轮只刷新日志）");

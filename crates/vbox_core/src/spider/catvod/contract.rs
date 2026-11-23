@@ -99,6 +99,26 @@ pub enum ErrorClass {
     Parse,
     /// 需要桌面端不提供的宿主能力（WebView/native/Android API）
     HostApi,
+    /// JVM 宿主：jar 里没有配置的蜘蛛类
+    JvmClassNotFound,
+    /// JVM 宿主：蜘蛛 init 抛异常
+    JvmInitFailed,
+    /// JVM 宿主：蜘蛛未实现该入口
+    JvmMethodMissing,
+    /// JVM 宿主：调用参数/扩展无法解析
+    JvmBadArgs,
+    /// JVM 宿主：蜘蛛内部异常（站点改版/风控）
+    JvmSpiderThrew,
+    /// JVM 宿主：本地取流代理端口绑定失败
+    JvmProxyBind,
+    /// JVM 宿主：dex 转 jar 失败
+    JvmDex2Jar,
+    /// JVM 宿主：进程崩溃或超时退出
+    JvmCrashed,
+    /// 加固壳：需要 ARM native 解密载荷，当前没有可用载荷。
+    JvmShellUnsupported,
+    /// JVM 运行时未就位（缺 JRE/stubs.jar）
+    JvmUnavailable,
     /// 网络层失败（未细分的兜底）
     Network,
     /// DNS 解析失败
@@ -134,6 +154,16 @@ impl ErrorClass {
             ErrorClass::JarLayout => "catvod.jar.layout",
             ErrorClass::Parse => "catvod.result.parse",
             ErrorClass::HostApi => "catvod.host.unsupported",
+            ErrorClass::JvmClassNotFound => "catvod.host.class_not_found",
+            ErrorClass::JvmInitFailed => "catvod.host.init_failed",
+            ErrorClass::JvmMethodMissing => "catvod.host.method_missing",
+            ErrorClass::JvmBadArgs => "catvod.host.bad_args",
+            ErrorClass::JvmSpiderThrew => "catvod.host.spider_threw",
+            ErrorClass::JvmProxyBind => "catvod.host.proxy_bind",
+            ErrorClass::JvmDex2Jar => "catvod.host.dex2jar",
+            ErrorClass::JvmCrashed => "catvod.host.crashed",
+            ErrorClass::JvmShellUnsupported => "catvod.host.shell_unsupported",
+            ErrorClass::JvmUnavailable => "catvod.host.unavailable",
             ErrorClass::Network => "catvod.net.http",
             ErrorClass::NetworkDns => "catvod.net.dns",
             ErrorClass::NetworkConnect => "catvod.net.connect",
@@ -159,6 +189,18 @@ impl ErrorClass {
             ErrorClass::JarLayout => "jar 不是标准 dex-in-zip，或使用了桌面端不支持的 assets://",
             ErrorClass::Parse => "spider 返回结构与 catvod 契约不符",
             ErrorClass::HostApi => "依赖 WebView/native/Android 系统能力，桌面端不实现",
+            ErrorClass::JvmClassNotFound => "宿主在 jar 里找不到配置的蜘蛛类：检查 api/class 拼写，或该 jar 版本已改名",
+            ErrorClass::JvmInitFailed => "蜘蛛 init 抛异常：ext 形态不符或依赖能力缺失，看日志 stderr 尾部",
+            ErrorClass::JvmMethodMissing => "该蜘蛛没有实现这个入口（例如只支持搜索或只支持详情）",
+            ErrorClass::JvmBadArgs => "调用参数或 ext 无法被蜘蛛解析：检查站点配置",
+            ErrorClass::JvmSpiderThrew => "蜘蛛内部异常，多为站点改版或风控；可稍后重试或换镜像",
+            ErrorClass::JvmProxyBind => "宿主本地取流代理端口绑定失败：多为端口被占用，可重试",
+            ErrorClass::JvmDex2Jar => "dex 转 jar 失败：转换器缺失或输出为空，可重试或换样本",
+            ErrorClass::JvmCrashed => "JVM 宿主崩溃或超时退出：看日志里的 stderr 尾部与堆使用",
+            ErrorClass::JvmShellUnsupported => {
+                "该 jar 是加固壳，init 阶段要 ARM native 解密；当前没有可用载荷。可改用原生家族，或把解密产物放到 payloads/<jar sha>/ 并建 index.json"
+            }
+            ErrorClass::JvmUnavailable => "JVM 运行时未就位：先跑 npm run build:jvm 与 npm run fetch:jre",
             ErrorClass::Network => "网络层失败（DNS/连接/超时/TLS），可稍后重试、换镜像或检查代理",
             ErrorClass::NetworkDns => "域名解析失败：检查域名拼写、DNS 或被墙情况",
             ErrorClass::NetworkConnect => "连接失败：目标不可达或被拒绝，可换镜像/代理后重试",
@@ -261,8 +303,8 @@ pub struct ErrorText {
 }
 
 impl ErrorClass {
-    /// 全部 20 个稳定分类（顺序与 UI 文案表一致）。
-    pub const ALL: [ErrorClass; 20] = [
+    /// 全部稳定分类（顺序与 UI 文案表一致）。
+    pub const ALL: [ErrorClass; 30] = [
         ErrorClass::MissingJar,
         ErrorClass::ProtectedGuard,
         ErrorClass::NotPorted,
@@ -273,6 +315,16 @@ impl ErrorClass {
         ErrorClass::JarLayout,
         ErrorClass::Parse,
         ErrorClass::HostApi,
+        ErrorClass::JvmClassNotFound,
+        ErrorClass::JvmInitFailed,
+        ErrorClass::JvmMethodMissing,
+        ErrorClass::JvmBadArgs,
+        ErrorClass::JvmSpiderThrew,
+        ErrorClass::JvmProxyBind,
+        ErrorClass::JvmDex2Jar,
+        ErrorClass::JvmCrashed,
+        ErrorClass::JvmShellUnsupported,
+        ErrorClass::JvmUnavailable,
         ErrorClass::Network,
         ErrorClass::NetworkDns,
         ErrorClass::NetworkConnect,
@@ -298,6 +350,16 @@ impl ErrorClass {
             ErrorClass::JarLayout => "组件格式不支持",
             ErrorClass::Parse => "站点数据解析失败",
             ErrorClass::HostApi => "需要桌面端不支持的能力",
+            ErrorClass::JvmClassNotFound => "站点类未找到",
+            ErrorClass::JvmInitFailed => "站点初始化失败",
+            ErrorClass::JvmMethodMissing => "该站点不支持此操作",
+            ErrorClass::JvmBadArgs => "站点参数不匹配",
+            ErrorClass::JvmSpiderThrew => "站点脚本出错",
+            ErrorClass::JvmProxyBind => "本地代理端口被占用",
+            ErrorClass::JvmDex2Jar => "组件转换失败",
+            ErrorClass::JvmCrashed => "JVM 宿主崩溃",
+            ErrorClass::JvmShellUnsupported => "加固壳暂不支持",
+            ErrorClass::JvmUnavailable => "JVM 运行时未就绪",
             ErrorClass::Network => "网络请求失败",
             ErrorClass::NetworkDns => "域名解析失败",
             ErrorClass::NetworkConnect => "无法连接站点",
@@ -307,8 +369,7 @@ impl ErrorClass {
             ErrorClass::PanCookieRequired => "网盘需要登录 Cookie",
             ErrorClass::LiveFetch => "直播源加载失败",
             ErrorClass::PlayParse => "解析播放地址失败",
-            ErrorClass::AuxFetch => "EPG/字幕加载失败",
-        }
+            ErrorClass::AuxFetch => "EPG/字幕加载失败",        }
     }
 
     /// 面向用户的建议动作。
@@ -333,6 +394,16 @@ impl ErrorClass {
             ErrorClass::LiveFetch => "检查订阅地址/格式与网络后重试",
             ErrorClass::PlayParse => "换解析器/换线路，或检查解析器配置",
             ErrorClass::AuxFetch => "检查地址与网络后重试",
+            ErrorClass::JvmClassNotFound => "换用其他站点，或在设置里更新订阅（该 jar 可能已改类名）",
+            ErrorClass::JvmInitFailed => "检查站点 ext 配置；仍失败则换用其他站点",
+            ErrorClass::JvmMethodMissing => "该站点不支持此操作，换用其他站点",
+            ErrorClass::JvmBadArgs => "检查站点配置后重试，或换用其他站点",
+            ErrorClass::JvmSpiderThrew => "稍后重试；持续失败则换用其他站点",
+            ErrorClass::JvmProxyBind => "稍后重试；持续失败则重启应用",
+            ErrorClass::JvmDex2Jar => "重试一次；仍失败则在设置里重建组件缓存",
+            ErrorClass::JvmCrashed => "重试；仍失败则查看日志并反馈",
+            ErrorClass::JvmShellUnsupported => "换用非加固 jar，或在设置里切换到原生家族",
+            ErrorClass::JvmUnavailable => "运行 npm run build:jvm 与 npm run fetch:jre 后重启应用",
         }
     }
 
@@ -351,6 +422,10 @@ impl ErrorClass {
                 | ErrorClass::Parse
                 | ErrorClass::PlayParse
                 | ErrorClass::AuxFetch
+                | ErrorClass::JvmSpiderThrew
+                | ErrorClass::JvmProxyBind
+                | ErrorClass::JvmDex2Jar
+                | ErrorClass::JvmCrashed
         )
     }
 
@@ -659,7 +734,7 @@ mod describe_tests {
             assert!(!c.action().trim().is_empty(), "{:?}", c);
             assert!(!c.hint().trim().is_empty(), "{:?}", c);
         }
-        assert_eq!(seen.len(), 20);
+        assert_eq!(seen.len(), 30, "ErrorClass::ALL 的条目数应与 errorClass 全量表一致");
     }
 
     #[test]

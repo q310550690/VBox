@@ -33,6 +33,7 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_and_registry_recognise_kuaikan() {
     assert_eq!(families::family_of(API), Some("kuaikan"));
     assert_eq!(families::family_of(" csp_kuaikan "), Some("kuaikan"));
@@ -42,6 +43,7 @@ fn dispatch_and_registry_recognise_kuaikan() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_maps_connect_error_to_catvod_code() {
     // 127.0.0.1:9 默认 discard 端口，连接会被拒绝 → 统一映射为 catvod.* 错误。
     let s = site("http://127.0.0.1:9/api/v1");
@@ -51,6 +53,7 @@ fn categories_maps_connect_error_to_catvod_code() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_maps_connect_error_to_catvod_code() {
     let s = site("http://127.0.0.1:9/api/v1");
     let err = spider::get_detail(&config(), &s, "17").expect_err("upstream unreachable");
@@ -59,6 +62,7 @@ fn detail_maps_connect_error_to_catvod_code() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_rejects_illegal_token_via_dispatch() {
     let s = site("http://127.0.0.1:9/api/v1");
     let err = spider::player_content(&config(), &s, "", "!!!not-base64!!!", &[])

@@ -93,6 +93,7 @@ fn strategy_sites(profiles: &Value) -> BTreeMap<String, u64> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn lane_distribution_matches_profiles() {
     let doc = read("docs/审计报告/站点覆盖报告.md");
     let profiles = profiles();

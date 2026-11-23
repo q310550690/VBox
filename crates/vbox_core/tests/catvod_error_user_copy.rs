@@ -57,6 +57,7 @@ fn frontend_entries() -> BTreeMap<String, (String, String, bool)> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn frontend_copy_matches_rust_contract_exactly() {
     let entries = frontend_entries();
     let rust_codes: BTreeMap<String, ErrorClass> = ErrorClass::ALL
@@ -104,6 +105,7 @@ fn frontend_copy_matches_rust_contract_exactly() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn describe_error_uses_contract_copy_and_strips_code() {
     for class in ErrorClass::ALL {
         let code = class.code();

@@ -141,6 +141,7 @@ fn cfg() -> TvConfig {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_come_from_nav_and_skip_non_categories() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -152,6 +153,7 @@ fn categories_come_from_nav_and_skip_non_categories() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn videos_parse_rows_and_mark_cover_headers() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -176,6 +178,7 @@ fn videos_parse_rows_and_mark_cover_headers() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn videos_page_two_uses_page_segment() {
     let cfg = cfg();
     let (base, seen) = start_server();
@@ -192,6 +195,7 @@ fn videos_page_two_uses_page_segment() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_extracts_magnet_and_ed2k_names() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -210,6 +214,7 @@ fn detail_extracts_magnet_and_ed2k_names() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_without_entry_title_reports_parse_error() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -220,6 +225,7 @@ fn detail_without_entry_title_reports_parse_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_uses_query_and_parses_rows() {
     let cfg = cfg();
     let (base, seen) = start_server();
@@ -232,6 +238,7 @@ fn search_uses_query_and_parses_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_splits_ed2k_direct_from_magnet_parsed() {
     let cfg = cfg();
     let (base, _) = start_server();

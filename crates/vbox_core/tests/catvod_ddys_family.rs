@@ -114,6 +114,7 @@ fn cfg() -> TvConfig {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_and_registry_recognise_ddys() {
     let family = vbox_core::spider::catvod::families::family_of("csp_Ddys");
     assert_eq!(family.as_deref(), Some("ddrk"));
@@ -122,6 +123,7 @@ fn dispatch_and_registry_recognise_ddys() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_parse_nav_and_skip_aggregate() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -132,6 +134,7 @@ fn categories_parse_nav_and_skip_aggregate() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn category_first_page_uses_page_segment() {
     let cfg = cfg();
     let (base, seen) = start_server();
@@ -147,6 +150,7 @@ fn category_first_page_uses_page_segment() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_builds_srctype_specific_episode_urls() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -167,6 +171,7 @@ fn detail_builds_srctype_specific_episode_urls() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_filters_by_keyword_and_uses_favicon() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -182,6 +187,7 @@ fn search_filters_by_keyword_and_uses_favicon() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_reads_getvddr2_json_and_sets_mac_ua() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -196,6 +202,7 @@ fn player_reads_getvddr2_json_and_sets_mac_ua() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_rejects_id_without_separator() {
     let cfg = cfg();
     let (base, _) = start_server();

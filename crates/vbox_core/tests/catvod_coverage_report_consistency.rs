@@ -93,6 +93,7 @@ fn site_strategies(profiles: &serde_json::Value, sites: &serde_json::Value) -> (
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn overview_counts_match_sources() {
     let doc = report();
     let profiles = profiles();
@@ -108,6 +109,7 @@ fn overview_counts_match_sources() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn strategy_distribution_matches_profiles() {
     let doc = report();
     let profiles = profiles();
@@ -138,6 +140,7 @@ fn strategy_distribution_matches_profiles() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn blocked_groups_match_profiles() {
     let doc = report();
     let profiles = profiles();
@@ -175,6 +178,7 @@ fn blocked_groups_match_profiles() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn native_family_summary_matches_profiles() {
     let doc = report();
     let profiles = profiles();
@@ -215,6 +219,7 @@ fn native_family_summary_matches_profiles() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn plan_strategy_percentages_match_profiles_and_sites() {
     // 计划 §1.1 的策略分布表长期是手写数字：api 数/站点数/百分比任一改动都可能漏改，
     // 而既有判据只锁「报告计数」，没有锁「计划里的百分比」。此测试重算三方并逐格比对。

@@ -84,6 +84,7 @@ fn single_site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn api_name_and_handles_are_case_insensitive() {
     assert_eq!(pushshare::API, "csp_PushShare");
     assert!(pushshare::handles("csp_PushShare"));
@@ -94,6 +95,7 @@ fn api_name_and_handles_are_case_insensitive() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_from_text_manifest() {
     let base = start_server();
     let cfg = config();
@@ -107,6 +109,7 @@ fn categories_from_text_manifest() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn missing_manifest_source_is_parse_error() {
     let base = start_server();
     let cfg = config();
@@ -118,6 +121,7 @@ fn missing_manifest_source_is_parse_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn manifest_from_http_list_url() {
     let base = start_server();
     let cfg = config();
@@ -132,6 +136,7 @@ fn manifest_from_http_list_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn manifest_from_second_segment() {
     let cfg = config();
     let site = site_with(json!(format!("own-ext$$${SHARE} 段清单")));
@@ -142,6 +147,7 @@ fn manifest_from_second_segment() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn manifest_from_json_list_source() {
     let cfg = config();
     let site = site_with(json!({
@@ -154,6 +160,7 @@ fn manifest_from_json_list_source() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn unsupported_share_link_is_parse_error() {
     let cfg = config();
     let site = site_with(json!({
@@ -171,6 +178,7 @@ fn unsupported_share_link_is_parse_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_without_category_pages_manifest() {
     let base = start_server();
     let cfg = config();
@@ -183,6 +191,7 @@ fn videos_without_category_pages_manifest() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_browse_root_of_115_share() {
     let base = start_server();
     let cfg = config();
@@ -198,6 +207,7 @@ fn videos_browse_root_of_115_share() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_expands_root_videos_to_episodes() {
     let base = start_server();
     let cfg = config();
@@ -214,6 +224,7 @@ fn detail_expands_root_videos_to_episodes() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_file_ref_returns_single_episode() {
     let base = start_server();
     let cfg = config();
@@ -228,6 +239,7 @@ fn detail_file_ref_returns_single_episode() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_empty_dir_is_parse_error() {
     let base = start_server();
     let cfg = config();
@@ -239,6 +251,7 @@ fn detail_empty_dir_is_parse_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_content_115_returns_direct_url() {
     let base = start_server();
     let cfg = config();
@@ -256,6 +269,7 @@ fn player_content_115_returns_direct_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_without_cookie_reports_standard_error() {
     let base = start_server();
     let cfg = config();
@@ -271,6 +285,7 @@ fn player_without_cookie_reports_standard_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_matches_manifest_display_names() {
     let base = start_server();
     let cfg = config();

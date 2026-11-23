@@ -101,6 +101,7 @@ fn cfg() -> TvConfig {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_are_fixed_four() {
     let cats = vbox_core::sources::spider::list_categories(&cfg(), &site("http://127.0.0.1:1"))
         .expect("categories");
@@ -111,6 +112,7 @@ fn categories_are_fixed_four() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn tv_list_filters_and_remarks() {
     let server = start_server();
     let base = base_of(&server);
@@ -134,6 +136,7 @@ fn tv_list_filters_and_remarks() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn tv_detail_collects_all_episodes() {
     let server = start_server();
     let base = base_of(&server);
@@ -153,6 +156,7 @@ fn tv_detail_collects_all_episodes() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn movie_detail_uses_default_url() {
     let server = start_server();
     let base = base_of(&server);
@@ -168,6 +172,7 @@ fn movie_detail_uses_default_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_rows_map_to_detail_json() {
     let server = start_server();
     let base = base_of(&server);
@@ -183,6 +188,7 @@ fn search_rows_map_to_detail_json() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_marks_parse_and_jx() {
     let out = vbox_core::sources::spider::player_content(
         &cfg(),
@@ -200,6 +206,7 @@ fn player_marks_parse_and_jx() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn sp33_variant_uses_plain_ids_and_string_jx() {
     let server = start_server();
     let base = base_of(&server);
@@ -230,6 +237,7 @@ fn sp33_variant_uses_plain_ids_and_string_jx() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn bad_vod_id_reports_parse_error() {
     let server = start_server();
     let base = base_of(&server);

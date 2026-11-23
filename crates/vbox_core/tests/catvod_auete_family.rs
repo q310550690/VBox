@@ -170,6 +170,7 @@ fn cfg() -> TvConfig {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_parse_nav_and_skip_non_sections() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -180,6 +181,7 @@ fn categories_parse_nav_and_skip_non_sections() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn home_lists_recommendations() {
     let cfg = cfg();
     let (base, seen) = start_server();
@@ -194,6 +196,7 @@ fn home_lists_recommendations() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn videos_page_one_hits_index_html() {
     let cfg = cfg();
     let (base, seen) = start_server();
@@ -214,6 +217,7 @@ fn videos_page_one_hits_index_html() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn videos_page_two_hits_index_n_html() {
     let cfg = cfg();
     let (base, seen) = start_server();
@@ -229,6 +233,7 @@ fn videos_page_two_hits_index_n_html() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_merges_lines_with_known_line_first() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -254,6 +259,7 @@ fn detail_merges_lines_with_known_line_first() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_without_title_errors() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -264,6 +270,7 @@ fn detail_without_title_errors() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_parses_media_rows() {
     let cfg = cfg();
     let (base, seen) = start_server();
@@ -280,6 +287,7 @@ fn search_parses_media_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_decodes_base64_now() {
     let cfg = cfg();
     let (base, seen) = start_server();

@@ -45,6 +45,7 @@ fn dispatch_body<'a>(src: &'a str, name: &str) -> &'a str {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn every_family_module_has_import_and_five_dispatch_arms() {
     let mods_src = read("crates/vbox_core/src/spider/catvod/families/mod.rs");
     let spider = read("crates/vbox_core/src/sources/spider.rs");
@@ -90,6 +91,7 @@ fn every_family_module_has_import_and_five_dispatch_arms() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn family_arms_precede_js_py_heuristics_in_all_dispatch_chains() {
     let spider = read("crates/vbox_core/src/sources/spider.rs");
     let re_arm = regex::Regex::new(r"catvod_\w+::handles\(").unwrap();
@@ -164,6 +166,7 @@ fn family_handles_apis(src: &str) -> Vec<String> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn family_handles_match_rulepack_and_never_claim_blocked_api() {
     // 判据 77 的前两项只保证「模块 ↔ 入口」结构完整，但分派器认哪些 api
     // 是由各家族 `handles` 的**字符串集合**决定的，画像只是报告侧声明。
@@ -237,6 +240,7 @@ fn family_handles_match_rulepack_and_never_claim_blocked_api() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_tolerates_surrounding_api_whitespace() {
     use vbox_core::model::{Site, TvConfig};
     use vbox_core::sources::spider::list_categories;

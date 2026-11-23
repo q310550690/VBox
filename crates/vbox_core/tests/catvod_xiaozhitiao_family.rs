@@ -116,6 +116,7 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_and_registry_recognise_xiaozhitiao() {
     assert_eq!(
         vbox_core::spider::catvod::families::family_of("csp_XiaoZhiTiao"),
@@ -128,6 +129,7 @@ fn dispatch_and_registry_recognise_xiaozhitiao() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_and_videos_are_empty_for_search_only_spider() {
     let base = start_server();
     let cfg = config();
@@ -137,6 +139,7 @@ fn categories_and_videos_are_empty_for_search_only_spider() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_returns_ali_share_links() {
     let base = start_server();
     let cfg = config();
@@ -150,6 +153,7 @@ fn search_returns_ali_share_links() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_empty_keyword_returns_empty_without_request() {
     let base = start_server();
     let cfg = config();
@@ -159,6 +163,7 @@ fn search_empty_keyword_returns_empty_without_request() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_expands_share_directory_into_episodes() {
     let base = start_server();
     let cfg = config();
@@ -176,6 +181,7 @@ fn detail_expands_share_directory_into_episodes() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_rejects_non_ali_share() {
     let base = start_server();
     let cfg = config();
@@ -186,6 +192,7 @@ fn detail_rejects_non_ali_share() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_returns_transcoded_url_with_headers() {
     let base = start_server();
     let cfg = config();
@@ -199,6 +206,7 @@ fn player_returns_transcoded_url_with_headers() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_falls_back_to_download_url() {
     let base = start_server();
     let cfg = config();

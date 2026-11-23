@@ -137,6 +137,7 @@ fn cfg() -> TvConfig {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_parse_nav_and_skip_aggregate() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -149,6 +150,7 @@ fn categories_parse_nav_and_skip_aggregate() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn home_lists_recommendations() {
     let cfg = cfg();
     let (base, seen) = start_server();
@@ -162,6 +164,7 @@ fn home_lists_recommendations() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn videos_parse_rows_with_and_without_parentheses() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -179,6 +182,7 @@ fn videos_parse_rows_with_and_without_parentheses() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn videos_page_two_hits_page_url() {
     let cfg = cfg();
     let (base, seen) = start_server();
@@ -194,6 +198,7 @@ fn videos_page_two_hits_page_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_merges_first_and_extra_seasons() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -214,6 +219,7 @@ fn detail_merges_first_and_extra_seasons() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_without_title_reports_parse_error() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -223,6 +229,7 @@ fn detail_without_title_reports_parse_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_parses_articles_with_fixed_cover() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -238,6 +245,7 @@ fn search_parses_articles_with_fixed_cover() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_reads_video_api_url() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -249,6 +257,7 @@ fn player_reads_video_api_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_rejects_id_without_separator() {
     let cfg = cfg();
     let (base, _) = start_server();

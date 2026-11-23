@@ -35,6 +35,7 @@ fn str_field<'a>(entry: &'a Value, api: &str, field: &str) -> &'a str {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn api_entries_match_strategy_schema() {
     let root = profiles_value();
     let apis = root["apis"].as_object().expect("apis 不是对象");
@@ -151,6 +152,7 @@ fn api_entries_match_strategy_schema() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn jar_and_totals_entries_have_exact_shape() {
     let root = profiles_value();
     let top = keys(&root);

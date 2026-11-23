@@ -69,6 +69,7 @@ fn load_profiles() -> Value {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn every_download_source_rehashes_to_its_canonical() {
     let Some(index) = load_index() else {
         return;
@@ -132,6 +133,7 @@ fn every_download_source_rehashes_to_its_canonical() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn profile_names_trace_to_download_roots() {
     let Some(index) = load_index() else {
         return;

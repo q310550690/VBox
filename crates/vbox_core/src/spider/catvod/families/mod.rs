@@ -1,5 +1,10 @@
 //! catvod 家族原生实现（jar → Rust 垂直切片）。
 //!
+//! **已冻结（2026-11-23，REA 退役）**：本目录 78 个家族模块与 `sources::spider` 里的
+//! 对应分派分支仅作为回退路径保留，不再新增/修正。JVM 车道（真 JRE + 兼容层）是
+//! 带 jar 站点的主力；冻结详情见 `docs/type3兼容/REA退役与冻结.md`。
+
+//!
 //! 一段家族实现 = 「站点级输入（ext/api）→ 请求 → 解析 → VBox 强类型」，
 //! 不依赖 dex、不依赖 Android Host。每移植一个家族，就在 `handles` +
 //! `sources::spider` 的分派里加一条分支，并把 `profiles.json` 的 strategy

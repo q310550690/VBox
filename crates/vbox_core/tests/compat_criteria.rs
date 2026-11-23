@@ -28,6 +28,7 @@ fn crate_root() -> PathBuf {
 /// C1 归属完备：每个 api 都有 strategy，且非脚本/非规则引擎者必须有归属
 /// （native 实现、unported 带 blockedReason、或规则引擎）。
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn every_api_is_classified() {
     let prof = profiles();
     let apis = prof["apis"].as_object().expect("profiles.apis");
@@ -57,6 +58,7 @@ fn every_api_is_classified() {
 
 /// C2 覆盖基线：原生家族 ≥37、native api ≥54、unported 全部带阻断原因。
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn coverage_baseline_is_not_regressing() {
     let prof = profiles();
     let apis = prof["apis"].as_object().unwrap();
@@ -86,6 +88,7 @@ fn coverage_baseline_is_not_regressing() {
 /// C3 家族测试资产：`families/` 下每个 `pub mod x;` 都必须有 `tests/catvod_x_family.rs`
 /// （或该家族的专属回归文件），保证「家族等价 mock 回归」可复现。
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn every_family_has_regression_test() {
     let families_dir = crate_root().join("src/spider/catvod/families");
     let tests_dir = crate_root().join("tests");
@@ -121,6 +124,7 @@ fn family_test_file_exists(tests_dir: &Path, family: &str) -> bool {
 /// C4 真实站点回归资产：`#[ignore]` 真站用例数量 ≥ 25（当前 30 项），
 /// 保证「全链可复现」有真实站点证据而不是只有 mock。
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn live_regression_assets_exist() {
     let tests_dir = crate_root().join("tests");
     let mut ignored = 0usize;
@@ -140,6 +144,7 @@ fn live_regression_assets_exist() {
 /// 家族分派覆盖：`family_of` 对每个 native 家族名都能给出 Some，
 /// 且 `registry::is_native_ready` 与画像一致（防止「画像说已移植但运行时不走原生」）。
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn family_of_and_registry_agree() {
     let prof = profiles();
     let apis = prof["apis"].as_object().unwrap();
@@ -165,6 +170,7 @@ fn family_of_and_registry_agree() {
 /// （防止「新增家族模块却忘接线」或「接线写错导致永远走不到」），
 /// 同时 `family_of` 不得返回未声明的家族名。
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn every_family_module_is_reachable() {
     let prof = profiles();
     let apis = prof["apis"].as_object().expect("profiles.apis");
@@ -206,6 +212,7 @@ fn every_family_module_is_reachable() {
 /// - `family_of` 选中的家族必须自己 `handles(api) == true`（否则线上走原生却永远进不去）；
 /// - 不允许任何其它家族也匹配同一 api（首个匹配胜出，后置分支为死逻辑，容易在重排时静默改变归属）。
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn family_dispatch_is_unambiguous() {
     const FAMILIES: [&str; 77] = ["alist", "anime1", "appget", "appld", "appmao", "appsk", "bttwoo", "apptt", "appysv2", "auete", "bili", "dm84", "ddrk", "douban", "duanju", "firstaid", "huban", "jianpian", "jpys", "iktv", "kugou", "kunyu77", "kanqiu", "libvio", "meijumi", "moli", "mp4mov", "nangua", "p115share", "pushshare",
     "panyq", "pan", "pansearch", "quark", "sixv", "sp360", "tangrenjie", "xb6v", "ying", "yinyuetai", "yqkan", "ysj", "zxzj", "tzfile", "share", "ttian", "xiaozhang", "wogg", "xpanpan", "yingso", "yunpan", "fourkhdr", "push", "xinsj", "seedhub", "yj1211", "liteapple", "xpath", "nmys", "nini", "bdys01", "xiaozhitiao", "czsapp", "gitcafe", "kuaikan", "alishare", "bt0", "gaoqing", "zhaozy", "hdhive", "xbiu", "kkys", "tgyunpan", "pikpakshare", "thundershare", "sambashare", "youtube"];

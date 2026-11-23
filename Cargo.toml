@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/vbox_core", "crates/vbox_cli", "crates/vbox_player"]
+members = ["crates/vbox_core", "crates/vbox_cli", "crates/vbox_jvm", "crates/vbox_player"]
 
 [workspace.package]
 version = "0.1.2"

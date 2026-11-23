@@ -132,6 +132,7 @@ fn start_server(rule: String) -> String {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_and_registry_recognise_nmys() {
     use vbox_core::spider::catvod::families::family_of;
     use vbox_core::spider::catvod::registry::{blocked_reason, is_native_ready};
@@ -142,6 +143,7 @@ fn dispatch_and_registry_recognise_nmys() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_come_from_rule_home() {
     let base = start_server(RULE_TEMPLATE.to_string());
     let site = site(&base, RULE_TEMPLATE);
@@ -152,6 +154,7 @@ fn categories_come_from_rule_home() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_use_rule_cate_template() {
     let base = start_server(RULE_TEMPLATE.to_string());
     let site = site(&base, RULE_TEMPLATE);
@@ -163,6 +166,7 @@ fn videos_use_rule_cate_template() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_renames_lines_and_reverses_episodes() {
     let base = start_server(RULE_TEMPLATE.to_string());
     let site = site(&base, RULE_TEMPLATE);
@@ -184,6 +188,7 @@ fn detail_renames_lines_and_reverses_episodes() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_decodes_interleaved_base64() {
     let base = start_server(RULE_TEMPLATE.to_string());
     let site = site(&base, RULE_TEMPLATE);
@@ -202,6 +207,7 @@ fn player_decodes_interleaved_base64() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_rejects_id_without_src_num() {
     let base = start_server(RULE_TEMPLATE.to_string());
     let site = site(&base, RULE_TEMPLATE);
@@ -211,6 +217,7 @@ fn player_rejects_id_without_src_num() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_reports_missing_mac_url() {
     let base = start_server(RULE_TEMPLATE.to_string());
     let site = site(&base, RULE_TEMPLATE);
@@ -227,6 +234,7 @@ fn player_reports_missing_mac_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn rule_can_be_fetched_from_http_ext() {
     let base = start_server(RULE_TEMPLATE.to_string());
     let mut site = site(&base, RULE_TEMPLATE);

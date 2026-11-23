@@ -104,6 +104,7 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_are_fixed_twelve_via_dispatch() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -115,6 +116,7 @@ fn categories_are_fixed_twelve_via_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn category_page_lists_items_via_dispatch() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -133,6 +135,7 @@ fn category_page_lists_items_via_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn second_page_uses_index_suffix() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -143,6 +146,7 @@ fn second_page_uses_index_suffix() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_parses_magnets_and_metadata_via_dispatch() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -162,6 +166,7 @@ fn detail_parses_magnets_and_metadata_via_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_posts_form_and_parses_rows() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -173,6 +178,7 @@ fn search_posts_form_and_parses_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_returns_magnet_directly() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -189,6 +195,7 @@ fn player_returns_magnet_directly() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn missing_ext_reports_clear_error() {
     let cfg = TvConfig::default();
     let site = Site {

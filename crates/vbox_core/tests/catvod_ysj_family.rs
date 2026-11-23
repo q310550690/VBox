@@ -102,6 +102,7 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_from_home_page() {
     let base = start_server();
     let cats = vbox_core::sources::spider::list_categories(&TvConfig::default(), &site(&base))
@@ -112,6 +113,7 @@ fn categories_from_home_page() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn list_videos_passes_class_in_url() {
     let base = start_server();
     let items = vbox_core::sources::spider::list_videos(
@@ -129,6 +131,7 @@ fn list_videos_passes_class_in_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_parses_metadata_and_episodes() {
     let base = start_server();
     let d = vbox_core::sources::spider::get_detail(
@@ -150,6 +153,7 @@ fn detail_parses_metadata_and_episodes() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_returns_rows() {
     let base = start_server();
     let items = vbox_core::sources::spider::search(
@@ -164,6 +168,7 @@ fn search_returns_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_returns_play_page_url() {
     let base = start_server();
     let v = vbox_core::sources::spider::player_content(
@@ -212,6 +217,7 @@ fn live_dmmiku_categories_and_list() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn garbage_upstream_returns_stable_catvod_error() {
     let server = Server::http("127.0.0.1:0").expect("mock");
     let base = format!("http://{}", server.server_addr());

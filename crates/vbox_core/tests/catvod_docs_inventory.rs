@@ -14,6 +14,9 @@ fn root() -> PathBuf {
 }
 
 /// 自动生成文档 → 生成工具（仓库相对路径）
+///
+/// REA 冻结（2026-11-23）：`_rea/tools/` 已随 `_rea` 归档到仓库外，这些条目仅作历史登记，
+/// 对应校验测试已按冻结策略 `#[ignore]`。
 const AUTO: &[(&str, &str)] = &[
     ("docs/审计报告/站点覆盖报告.md", "_rea/tools/site-coverage.mjs"),
     ("docs/审计报告/真站回归矩阵.md", "_rea/tools/live-coverage.mjs"),
@@ -36,6 +39,18 @@ const MANUAL: &[&str] = &[
     "docs/功能设计/播放器-着色器与滤镜插件.md",
     "docs/功能设计/发布与自动更新.md",
     "docs/功能设计/图标体系.md",
+    "docs/type3兼容/C-加固验证记录.md",
+    "docs/type3兼容/P0-验证记录.md",
+    "docs/type3兼容/P1-验证记录.md",
+    "docs/type3兼容/P2-验证记录.md",
+    "docs/type3兼容/P4-验证记录.md",
+    "docs/type3兼容/P5-验证记录.md",
+    "docs/type3兼容/P6-验证记录.md",
+    "docs/type3兼容/type3-JVM兼容层实施计划.md",
+    "docs/type3兼容/壳家族盘点.md",
+    "docs/type3兼容/REA退役与冻结.md",
+    "docs/type3兼容/订阅源实测-2026-11-23.md",
+    "docs/type3兼容/遥测与兼容性反馈.md",
     "docs/type3兼容/type3-路线-REA原生重写.md",
     "docs/type3兼容/type3-实施计划-原生兼容100%.md",
     "docs/type3兼容/type3-翻译层与引擎工作包.md",

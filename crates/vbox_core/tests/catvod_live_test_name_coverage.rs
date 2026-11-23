@@ -122,6 +122,7 @@ fn read_matrix() -> String {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn matrix_lists_every_ignored_test_by_name() {
     let root = repo_root();
     let text = read_matrix();
@@ -185,6 +186,7 @@ fn matrix_lists_every_ignored_test_by_name() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn non_family_live_tests_are_documented() {
     let root = repo_root();
     let text = read_matrix();

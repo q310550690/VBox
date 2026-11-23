@@ -65,6 +65,7 @@ fn rea_rounds() -> Vec<String> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn latest_round_matches_between_plan_and_rea() {
     let plan = plan_rounds();
     let rea = rea_rounds();
@@ -86,6 +87,7 @@ fn latest_round_matches_between_plan_and_rea() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn round_sequences_are_monotonic() {
     let plan = plan_rounds();
     for pair in plan.windows(2) {

@@ -79,6 +79,7 @@ fn matrix_rows() -> Vec<Row> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn matrix_covers_exactly_declared_families() {
     let rows = matrix_rows();
     let declared = declared_families();
@@ -102,6 +103,7 @@ fn matrix_covers_exactly_declared_families() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn matrix_live_counts_match_test_files() {
     let rows = matrix_rows();
     let mut mismatched = Vec::new();
@@ -119,6 +121,7 @@ fn matrix_live_counts_match_test_files() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn matrix_status_counts_are_consistent() {
     let rows = matrix_rows();
     let mut counts: BTreeMap<&str, usize> = BTreeMap::new();

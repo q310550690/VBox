@@ -73,6 +73,7 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_are_fixed_eight() {
     let base = start_server();
     let cats = vbox_core::sources::spider::list_categories(&TvConfig::default(), &site(&base))
@@ -86,6 +87,7 @@ fn categories_are_fixed_eight() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn latest_category_lists_index_rows() {
     let base = start_server();
     let items = vbox_core::sources::spider::list_videos(
@@ -106,6 +108,7 @@ fn latest_category_lists_index_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn older_category_filters_by_year_threshold() {
     let base = start_server();
     let items = vbox_core::sources::spider::list_videos(
@@ -120,6 +123,7 @@ fn older_category_filters_by_year_threshold() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_builds_single_episode_group() {
     let base = start_server();
     let d = vbox_core::sources::spider::get_detail(
@@ -141,6 +145,7 @@ fn detail_builds_single_episode_group() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_matches_name_locally() {
     let base = start_server();
     let items = vbox_core::sources::spider::search(
@@ -155,6 +160,7 @@ fn search_matches_name_locally() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_posts_form_and_returns_cdn_url_with_cookies() {
     let base = start_server();
     let v = vbox_core::sources::spider::player_content(
@@ -172,6 +178,7 @@ fn player_posts_form_and_returns_cdn_url_with_cookies() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn garbage_upstream_returns_stable_catvod_error() {
     let server = Server::http("127.0.0.1:0").expect("mock");
     let base = format!("http://{}", server.server_addr());

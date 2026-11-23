@@ -48,6 +48,7 @@ fn badge_names() -> BTreeSet<String> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn badge_and_rulepack_profiles_are_two_way_consistent() {
     let badges = badge_names();
     assert!(badges.len() >= 90, "徽章数量异常（{}），疑似解析失败", badges.len());
@@ -118,6 +119,7 @@ fn engine_dispatch_names() -> BTreeSet<String> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn engine_aliases_agree_across_badge_dispatch_and_lane() {
     use vbox_core::model::Site;
     use vbox_core::sources::spider::{self, DispatchLane};

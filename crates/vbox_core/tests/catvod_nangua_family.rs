@@ -131,6 +131,7 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_are_the_five_static_ones() {
     let base = start_server();
     let cats = vbox_core::sources::spider::list_categories(&TvConfig::default(), &site(&base))
@@ -143,6 +144,7 @@ fn categories_are_the_five_static_ones() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn list_uses_signed_app_api() {
     let base = start_server();
     let items =
@@ -157,6 +159,7 @@ fn list_uses_signed_app_api() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_builds_groups_and_episodes() {
     let base = start_server();
     let d = vbox_core::sources::spider::get_detail(&TvConfig::default(), &site(&base), "12")
@@ -173,6 +176,7 @@ fn detail_builds_groups_and_episodes() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_strips_em_tags() {
     let base = start_server();
     let items = vbox_core::sources::spider::search(
@@ -189,6 +193,7 @@ fn search_strips_em_tags() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_follows_episode_url_and_headers() {
     let base = start_server();
     let s = site(&base);
@@ -207,6 +212,7 @@ fn player_follows_episode_url_and_headers() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_garbage_reports_parse_error() {
     let base = start_server();
     let err = vbox_core::sources::spider::get_detail(&TvConfig::default(), &site(&base), "bad")
@@ -216,6 +222,7 @@ fn detail_garbage_reports_parse_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_without_url_reports_parse_error() {
     let base = start_server();
     let s = site(&base);

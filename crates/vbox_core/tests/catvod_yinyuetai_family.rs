@@ -83,6 +83,7 @@ fn cfg() -> TvConfig {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_are_fixed_four() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -93,6 +94,7 @@ fn categories_are_fixed_four() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn list_channel_videos_uses_offset_paging() {
     let cfg = cfg();
     let (base, seen) = start_server();
@@ -109,6 +111,7 @@ fn list_channel_videos_uses_offset_paging() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn artist_anchor_category_returns_single_item() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -121,6 +124,7 @@ fn artist_anchor_category_returns_single_item() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn mv_detail_groups_episodes_by_display() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -138,6 +142,7 @@ fn mv_detail_groups_episodes_by_display() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn artist_detail_uses_list_by_artist() {
     let cfg = cfg();
     let (base, seen) = start_server();
@@ -154,6 +159,7 @@ fn artist_detail_uses_list_by_artist() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_posts_json_query() {
     let cfg = cfg();
     let (base, seen) = start_server();
@@ -165,6 +171,7 @@ fn search_posts_json_query() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_returns_direct_url_with_ua() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -182,6 +189,7 @@ fn player_returns_direct_url_with_ua() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn invalid_json_surfaces_error() {
     let cfg = cfg();
     let (base, _) = start_server();

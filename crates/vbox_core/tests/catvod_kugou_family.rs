@@ -96,6 +96,7 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_via_dispatch() {
     let cfg = TvConfig::default();
     let categories = vbox_core::sources::spider::list_categories(&cfg, &site("http://127.0.0.1:1"))
@@ -106,6 +107,7 @@ fn categories_via_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn list_charts_follows_category_index() {
     let server = start_server();
     let base = base_of(&server);
@@ -121,6 +123,7 @@ fn list_charts_follows_category_index() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn rank_page_detail_collects_songs() {
     let server = start_server();
     let base = base_of(&server);
@@ -136,6 +139,7 @@ fn rank_page_detail_collects_songs() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn mixsong_detail_is_single_episode() {
     let server = start_server();
     let base = base_of(&server);
@@ -148,6 +152,7 @@ fn mixsong_detail_is_single_episode() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn empty_page_reports_parse_error() {
     let server = start_server();
     let base = base_of(&server);
@@ -158,6 +163,7 @@ fn empty_page_reports_parse_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_reports_webview_dependency() {
     let cfg = TvConfig::default();
     let err = vbox_core::sources::spider::search(&cfg, &site("http://127.0.0.1:1"), "周杰伦", false)
@@ -166,6 +172,7 @@ fn search_reports_webview_dependency() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_returns_direct_url_with_ua() {
     let cfg = TvConfig::default();
     let value = vbox_core::sources::spider::player_content(

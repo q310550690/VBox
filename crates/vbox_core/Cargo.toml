@@ -5,6 +5,7 @@ edition = "2021"
 description = "VBox 核心引擎：订阅解析 / 源站适配 / 直链解析（兼容 TVBox 源格式，纯 Rust，无 Tauri 依赖）"
 
 [dependencies]
+vbox_jvm = { path = "../vbox_jvm" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_path_to_error = "0.1"

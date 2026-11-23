@@ -79,6 +79,7 @@ fn site_with_key(key: &str, ext: serde_json::Value) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_and_registry_recognise_panyq() {
     assert!(panyq::handles("csp_Panyq"));
     assert!(panyq::handles(" CSP_PANYQ "));
@@ -89,6 +90,7 @@ fn dispatch_and_registry_recognise_panyq() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_return_single_search_entry() {
     let cfg = TvConfig::default();
     let site = site_with_ext(json!({}));
@@ -99,6 +101,7 @@ fn categories_return_single_search_entry() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_are_empty() {
     let cfg = TvConfig::default();
     let site = site_with_ext(json!({}));
@@ -107,6 +110,7 @@ fn videos_are_empty() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_parses_hits_with_password_and_cover() {
     let mock = start_mock();
     let cfg = TvConfig::default();
@@ -125,6 +129,7 @@ fn search_parses_hits_with_password_and_cover() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_prefers_host_injected_sign() {
     let mock = start_mock();
     let cfg = TvConfig::default();
@@ -140,6 +145,7 @@ fn search_prefers_host_injected_sign() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_without_sign_reports_host_error() {
     let cfg = TvConfig::default();
     let site = site_with_key("panyq-nosign", json!({"base": "http://127.0.0.1:9"}));
@@ -153,6 +159,7 @@ fn search_without_sign_reports_host_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_empty_keyword_returns_empty_without_request() {
     let mock = start_mock();
     let cfg = TvConfig::default();
@@ -163,6 +170,7 @@ fn search_empty_keyword_returns_empty_without_request() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn empty_id_reports_parse_error() {
     let cfg = TvConfig::default();
     let site = site_with_ext(json!({}));

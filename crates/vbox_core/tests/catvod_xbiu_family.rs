@@ -128,6 +128,7 @@ fn decode_id(id: &str) -> serde_json::Value {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_and_registry_recognise_xbiu() {
     let api = "csp_XBiu";
     assert_eq!(
@@ -139,6 +140,7 @@ fn dispatch_and_registry_recognise_xbiu() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_follow_cate_manual() {
     let (root, _log) = start_server();
     let cats = spider::list_categories(&cfg(), &site(&root)).expect("categories");
@@ -148,6 +150,7 @@ fn categories_follow_cate_manual() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_parse_rows_and_encode_ids() {
     let (root, _log) = start_server();
     let items = spider::list_videos(&cfg(), &site(&root), "1", 1).expect("videos");
@@ -159,6 +162,7 @@ fn videos_parse_rows_and_encode_ids() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_use_page_placeholder() {
     let (root, log) = start_server();
     let _ = spider::list_videos(&cfg(), &site(&root), "1", 2).expect("videos p2");
@@ -170,6 +174,7 @@ fn videos_use_page_placeholder() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_extracts_fields_and_episode_groups() {
     let (root, _log) = start_server();
     let id = {
@@ -187,6 +192,7 @@ fn detail_extracts_fields_and_episode_groups() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_parses_rows() {
     let (root, log) = start_server();
     let items = spider::search(&cfg(), &site(&root), "沙丘", false).expect("search");
@@ -200,6 +206,7 @@ fn search_parses_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_reads_vod_url_and_marks_direct() {
     let (root, _log) = start_server();
     let play = spider::player_content(&cfg(), &site(&root), "线路一", &format!("{root}/play/100-1.html"), &[])
@@ -209,6 +216,7 @@ fn player_reads_vod_url_and_marks_direct() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_falls_back_when_not_video() {
     let (root, _log) = start_server();
     let target = format!("{root}/play/100-3.html");

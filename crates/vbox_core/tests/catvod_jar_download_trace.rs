@@ -59,6 +59,7 @@ fn spider_class_total(dex: &Value) -> u64 {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn download_index_matches_analysis_inventory() {
     let Some((index, dexinfo, _)) = load("index.json") else {
         eprintln!("跳过判据 65：_rea/samples/library 缺失（CI 不提交逆向产物）");
@@ -111,6 +112,7 @@ fn download_index_matches_analysis_inventory() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn duplicate_records_never_masquerade_as_analyzed() {
     let Some((index, dexinfo, _)) = load("index.json") else {
         eprintln!("跳过判据 65：_rea/samples/library 缺失");

@@ -17,6 +17,7 @@ import PlaybackCacheSection from './components/PlaybackCacheSection.vue'
 import PlaybackSection from './components/PlaybackSection.vue'
 import PluginSection from './components/PluginSection.vue'
 import PythonSection from './components/PythonSection.vue'
+import JvmSection from './components/JvmSection.vue'
 import SearchSection from './components/SearchSection.vue'
 import SourceHealthSection from './components/SourceHealthSection.vue'
 import SubscriptionSection from './components/SubscriptionSection.vue'
@@ -121,6 +122,7 @@ onBeforeUnmount(() => {
     >
       <h2 class="group-title">运行环境</h2>
       <PythonSection />
+      <JvmSection />
       <NodeSection />
       <FfmpegSection />
     </div>

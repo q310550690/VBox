@@ -102,6 +102,7 @@ fn site(base: &str, ext: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn app_shape_full_chain() {
     let base = start_server();
     let s = site(&base, "/api.php/app/");
@@ -128,6 +129,7 @@ fn app_shape_full_chain() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn vod_shape_full_chain() {
     let base = start_server();
     let s = site(&base, "/api.php/v1.vod");
@@ -151,6 +153,7 @@ fn vod_shape_full_chain() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn generic_shape_uses_fixed_categories_and_rejects_detail() {
     let base = start_server();
     let s = site(&base, "/api.php/v1/vod");
@@ -167,6 +170,7 @@ fn generic_shape_uses_fixed_categories_and_rejects_detail() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn ext_is_required() {
     let base = start_server();
     let mut s = site(&base, "");
@@ -176,6 +180,7 @@ fn ext_is_required() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn legacy_appys_plain_base_shares_app_protocol() {
     // 旧版 AppYs 的 ext 是裸基址（没有 ###flag），协议与 AppYsV2 的 App 形态一致。
     let base = start_server();

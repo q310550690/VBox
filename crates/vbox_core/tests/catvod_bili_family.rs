@@ -49,6 +49,7 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_come_from_ext() {
     let cfg = TvConfig::default();
     let cats = spider::list_categories(&cfg, &site(&start_server())).unwrap();
@@ -58,6 +59,7 @@ fn categories_come_from_ext() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn videos_go_through_search_api() {
     let cfg = TvConfig::default();
     let items = spider::list_videos(&cfg, &site(&start_server()), "1", 1).unwrap();
@@ -70,6 +72,7 @@ fn videos_go_through_search_api() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_maps_results() {
     let cfg = TvConfig::default();
     let items = spider::search(&cfg, &site(&start_server()), "白噪音", false).unwrap();
@@ -78,6 +81,7 @@ fn search_maps_results() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_maps_view_and_pages() {
     let cfg = TvConfig::default();
     let detail = spider::get_detail(&cfg, &site(&start_server()), "42").unwrap();
@@ -91,6 +95,7 @@ fn detail_maps_view_and_pages() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_returns_durl_with_referer_header() {
     let cfg = TvConfig::default();
     let value = spider::player_content(&cfg, &site(&start_server()), "B站", "42+ 12", &[]).unwrap();
@@ -100,6 +105,7 @@ fn player_returns_durl_with_referer_header() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_accepts_bare_aid_and_resolves_cid() {
     let cfg = TvConfig::default();
     let value = spider::player_content(&cfg, &site(&start_server()), "B站", "42", &[]).unwrap();
@@ -107,6 +113,7 @@ fn player_accepts_bare_aid_and_resolves_cid() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn unknown_video_reports_parse_error() {
     // 用一个不存在的 api 名验证不会误入 bili 家族。
     let cfg = TvConfig::default();

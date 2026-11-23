@@ -110,6 +110,7 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn home_categories_filter_menu_items() {
     let (base, _seen) = start_server();
     let cats = vbox_core::sources::spider::list_categories(&TvConfig::default(), &site(&base))
@@ -122,6 +123,7 @@ fn home_categories_filter_menu_items() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn list_parses_rows_and_second_page_url() {
     let (base, seen) = start_server();
     let items =
@@ -142,6 +144,7 @@ fn list_parses_rows_and_second_page_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_parses_metadata_and_known_groups() {
     let (base, _seen) = start_server();
     let d = vbox_core::sources::spider::get_detail(&TvConfig::default(), &site(&base), "123")
@@ -161,6 +164,7 @@ fn detail_parses_metadata_and_known_groups() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_without_content_reports_parse_error() {
     let (base, _seen) = start_server();
     let err = vbox_core::sources::spider::get_detail(&TvConfig::default(), &site(&base), "bad")
@@ -170,6 +174,7 @@ fn detail_without_content_reports_parse_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_fills_relative_cover() {
     let (base, _seen) = start_server();
     let items =
@@ -182,6 +187,7 @@ fn search_fills_relative_cover() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_follows_player_page_to_direct_url() {
     let (base, _seen) = start_server();
     let out = vbox_core::sources::spider::player_content(

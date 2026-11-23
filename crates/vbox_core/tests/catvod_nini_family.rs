@@ -91,6 +91,7 @@ fn setup() -> (String, Site, Arc<Mutex<Vec<String>>>) {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_and_registry_recognise_nini() {
     assert_eq!(family_of("csp_NiNi"), Some("nini"));
     assert!(is_native_ready("csp_NiNi"));
@@ -98,6 +99,7 @@ fn dispatch_and_registry_recognise_nini() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_and_request_carry_fixed_params_and_sign() {
     let (_, site, log) = setup();
     let cats = list_categories(&cfg(), &site).expect("categories");
@@ -113,6 +115,7 @@ fn categories_and_request_carry_fixed_params_and_sign() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn list_videos_parses_rows() {
     let (_, site, _) = setup();
     let items = list_videos(&cfg(), &site, "1", 1).expect("videos");
@@ -124,6 +127,7 @@ fn list_videos_parses_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn list_videos_page_two_uses_start_offset() {
     let (_, site, log) = setup();
     let items = list_videos(&cfg(), &site, "1", 2).expect("videos page2");
@@ -133,6 +137,7 @@ fn list_videos_page_two_uses_start_offset() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_builds_episode_urls() {
     let (_, site, _) = setup();
     let detail = get_detail(&cfg(), &site, "42").expect("detail");
@@ -147,6 +152,7 @@ fn detail_builds_episode_urls() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_maps_rows() {
     let (_, site, _) = setup();
     let items = search(&cfg(), &site, "泥巴", true).expect("search");
@@ -155,6 +161,7 @@ fn search_maps_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_content_returns_direct_url_and_headers() {
     let (_, site, _) = setup();
     let value: Value = player_content(&cfg(), &site, "", "42_p1", &[]).expect("player");
@@ -164,6 +171,7 @@ fn player_content_returns_direct_url_and_headers() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_content_reports_parse_error_for_empty_url() {
     let (_, site, _) = setup();
     let err = player_content(&cfg(), &site, "", "42_empty", &[]).unwrap_err();
@@ -171,6 +179,7 @@ fn player_content_reports_parse_error_for_empty_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_content_rejects_bad_id_without_network() {
     let (_, site, log) = setup();
     let err = player_content(&cfg(), &site, "", "noseparator", &[]).unwrap_err();

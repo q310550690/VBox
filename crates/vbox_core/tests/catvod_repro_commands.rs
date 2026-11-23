@@ -44,6 +44,7 @@ fn usage_line(script: &str) -> Option<String> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn repro_commands_are_traceable() {
     let text = report_text();
     let block = repro_block(&text);

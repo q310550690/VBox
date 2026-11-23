@@ -137,6 +137,7 @@ fn config() -> TvConfig {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_and_registry_recognise_bdys01() {
     assert_eq!(
         vbox_core::spider::catvod::families::family_of("csp_Bdys01"),
@@ -147,6 +148,7 @@ fn dispatch_and_registry_recognise_bdys01() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_are_fixed_three() {
     let base = start_server(false);
     let cfg = config();
@@ -157,6 +159,7 @@ fn categories_are_fixed_three() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn list_page_parses_rows() {
     let base = start_server(false);
     let cfg = config();
@@ -167,6 +170,7 @@ fn list_page_parses_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_parses_meta_and_episodes() {
     let base = start_server(false);
     let cfg = config();
@@ -182,6 +186,7 @@ fn detail_parses_meta_and_episodes() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_prefers_mp4_candidate() {
     let base = start_server(true);
     let cfg = config();
@@ -193,6 +198,7 @@ fn player_prefers_mp4_candidate() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_decodes_gzip_m3u8() {
     let base = start_server(false);
     let cfg = config();
@@ -210,6 +216,7 @@ fn player_decodes_gzip_m3u8() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_missing_pid_reports_parse_error() {
     let base = start_server(false);
     let cfg = config();
@@ -220,6 +227,7 @@ fn player_missing_pid_reports_parse_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_against_local_google_is_empty() {
     // 搜索依赖 Google（外网）；本机 mock 只覆盖站内路径，因此这里断言不 panic。
     let base = start_server(false);

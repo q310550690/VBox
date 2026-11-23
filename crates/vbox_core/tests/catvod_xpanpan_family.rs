@@ -100,12 +100,14 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn dispatch_routes_xpanpan_to_native_family() {
     assert!(vbox_core::spider::catvod::is_native_ready("csp_Xpanpan"));
     assert!(vbox_core::spider::catvod::blocked_reason("csp_Xpanpan").is_none());
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_come_from_nav() {
     let base = start_server();
     let cats = list_categories(&cfg(), &site(&base)).expect("categories");
@@ -115,6 +117,7 @@ fn categories_come_from_nav() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn category_page_lists_articles() {
     let base = start_server();
     let items = list_videos(&cfg(), &site(&base), "/category/dianying/", 2).expect("videos");
@@ -125,6 +128,7 @@ fn category_page_lists_articles() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_exposes_pan_lines_with_degraded_episode() {
     let base = start_server();
     let detail = get_detail(&cfg(), &site(&base), "/archives/101").expect("detail");
@@ -141,6 +145,7 @@ fn detail_exposes_pan_lines_with_degraded_episode() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_hits_browse_page() {
     let base = start_server();
     let items = search(&cfg(), &site(&base), "沙丘", false).expect("search");
@@ -149,6 +154,7 @@ fn search_hits_browse_page() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_rejects_thunder_with_host_error() {
     let base = start_server();
     let err = player_content(
@@ -165,6 +171,7 @@ fn player_rejects_thunder_with_host_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_rejects_unexpanded_episode() {
     let base = start_server();
     let err = player_content(

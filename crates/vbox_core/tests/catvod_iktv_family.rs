@@ -69,6 +69,7 @@ fn cfg() -> TvConfig {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_are_fixed_three() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -81,6 +82,7 @@ fn categories_are_fixed_three() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn songs_list_parses_number_name_and_singer() {
     let cfg = cfg();
     let (base, seen) = start_server();
@@ -106,6 +108,7 @@ fn songs_list_parses_number_name_and_singer() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn singers_list_uses_singger_id_and_singer_cover() {
     let cfg = cfg();
     let (base, seen) = start_server();
@@ -124,6 +127,7 @@ fn singers_list_uses_singger_id_and_singer_cover() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn ktv1_is_unsupported_without_app_input() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -138,6 +142,7 @@ fn ktv1_is_unsupported_without_app_input() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn song_detail_is_single_karaoke_episode() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -155,6 +160,7 @@ fn song_detail_is_single_karaoke_episode() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn singer_detail_fetches_all_songs() {
     let cfg = cfg();
     let (base, seen) = start_server();
@@ -176,6 +182,7 @@ fn singer_detail_fetches_all_songs() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_uses_where_name_and_encodes_keyword() {
     let cfg = cfg();
     let (base, seen) = start_server();
@@ -191,6 +198,7 @@ fn search_uses_where_name_and_encodes_keyword() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_passes_url_through_with_user_agent() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -214,6 +222,7 @@ fn player_passes_url_through_with_user_agent() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_with_invalid_id_errors() {
     let cfg = cfg();
     let (base, _) = start_server();

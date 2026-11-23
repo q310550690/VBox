@@ -90,6 +90,7 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_parse_catalog_labels() {
     let server = start_server();
     let cfg = TvConfig::default();
@@ -101,6 +102,7 @@ fn categories_parse_catalog_labels() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn list_videos_via_dispatch() {
     let server = start_server();
     let cfg = TvConfig::default();
@@ -115,6 +117,7 @@ fn list_videos_via_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn list_videos_applies_region_filter() {
     let server = start_server();
     let cfg = TvConfig::default();
@@ -125,6 +128,7 @@ fn list_videos_applies_region_filter() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_maps_meta_and_two_playlists() {
     let server = start_server();
     let cfg = TvConfig::default();
@@ -142,6 +146,7 @@ fn detail_maps_meta_and_two_playlists() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_reports_parse_error_when_layout_changes() {
     let server = start_server();
     let cfg = TvConfig::default();
@@ -151,6 +156,7 @@ fn detail_reports_parse_error_when_layout_changes() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_via_dispatch() {
     let server = start_server();
     let cfg = TvConfig::default();
@@ -162,6 +168,7 @@ fn search_via_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_prefixes_base_and_returns_ua_header() {
     let server = start_server();
     let cfg = TvConfig::default();

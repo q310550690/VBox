@@ -25,7 +25,7 @@
         "decorations": false,
         "shadow": true,
         "transparent": true,
-      "visible": false
+        "visible": false
       }
     ],
     "security": {
@@ -41,7 +41,8 @@
       "resources/libmpv-2.dll",
       "resources/ffmpeg/",
       "resources/python/",
-      "resources/node/"
+      "resources/node/",
+      "resources/jvm/"
     ],
     "icon": [
       "icons/32x32.png",

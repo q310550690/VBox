@@ -156,6 +156,7 @@ fn encrypted_player_body() -> String {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_routes_bttwoo_to_native_family() {
     let site = site("https://mock.invalid/");
     assert!(vbox_core::spider::catvod::registry::is_native_ready(&site.api));
@@ -163,6 +164,7 @@ fn dispatch_routes_bttwoo_to_native_family() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_come_from_home_nav() {
     let base = start_server(encrypted_player_body());
     let site = site(&base);
@@ -174,6 +176,7 @@ fn categories_come_from_home_nav() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn home_videos_parse_leibox_rows() {
     let base = start_server(encrypted_player_body());
     let site = site(&base);
@@ -186,6 +189,7 @@ fn home_videos_parse_leibox_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn list_videos_parse_rows_and_page_meta() {
     let base = start_server(encrypted_player_body());
     let site = site(&base);
@@ -203,6 +207,7 @@ fn list_videos_parse_rows_and_page_meta() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_maps_fields_and_play_groups() {
     let base = start_server(encrypted_player_body());
     let site = site(&base);
@@ -224,6 +229,7 @@ fn detail_maps_fields_and_play_groups() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_parses_rows_and_empty_page() {
     let base = start_server(encrypted_player_body());
     let site = site(&base);
@@ -238,6 +244,7 @@ fn search_parses_rows_and_empty_page() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_decrypts_dncry_and_keeps_original_output_shape() {
     let base = start_server(encrypted_player_body());
     let site = site(&base);
@@ -250,6 +257,7 @@ fn player_decrypts_dncry_and_keeps_original_output_shape() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_without_dncry_reports_host_error() {
     let base = start_server("<html><body>no player here</body></html>".to_string());
     let site = site(&base);
@@ -259,6 +267,7 @@ fn player_without_dncry_reports_host_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn empty_category_page_reports_parse_error() {
     let server = Arc::new(Server::http("127.0.0.1:0").expect("mock server"));
     let base = format!("http://{}", server.server_addr());

@@ -46,6 +46,7 @@ fn api_strategies(p: &Value) -> BTreeMap<String, i64> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn counts_agree_across_profiles_sites_and_reports() {
     let prof = profiles();
     let sites = sites_json();
@@ -145,6 +146,7 @@ fn counts_agree_across_profiles_sites_and_reports() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn report_headers_are_fresh_and_consistent() {
     // 四份证据报告的头部必须含「生成时间」与「生成命令」，且覆盖既有文件；
     // 具体的新鲜度阈值由 `_rea/tools/compat-audit.mjs` 的第十一节判定，这里只做静态检查。

@@ -118,6 +118,7 @@ fn start_server() -> (String, Arc<Mutex<Vec<String>>>) {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_come_from_nav() {
     let (base, hits) = start_server();
     let cfg = TvConfig::default();
@@ -129,6 +130,7 @@ fn categories_come_from_nav() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_use_twelve_segment_route() {
     let (base, hits) = start_server();
     let cfg = TvConfig::default();
@@ -143,6 +145,7 @@ fn videos_use_twelve_segment_route() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_second_page_sets_page_segment() {
     let (base, hits) = start_server();
     let cfg = TvConfig::default();
@@ -153,6 +156,7 @@ fn videos_second_page_sets_page_segment() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_parses_meta_and_groups() {
     let (base, _hits) = start_server();
     let cfg = TvConfig::default();
@@ -173,6 +177,7 @@ fn detail_parses_meta_and_groups() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_without_playlist_reports_parse_error() {
     let (base, _hits) = start_server();
     let cfg = TvConfig::default();
@@ -182,6 +187,7 @@ fn detail_without_playlist_reports_parse_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_uses_vodsearch_route() {
     let (base, hits) = start_server();
     let cfg = TvConfig::default();
@@ -193,6 +199,7 @@ fn search_uses_vodsearch_route() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_returns_url_and_referer() {
     let (base, _hits) = start_server();
     let cfg = TvConfig::default();
@@ -213,6 +220,7 @@ fn player_returns_url_and_referer() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_without_config_reports_contract_gap() {
     let (base, _hits) = start_server();
     let cfg = TvConfig::default();
@@ -223,6 +231,7 @@ fn player_without_config_reports_contract_gap() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn family_handles_api_name() {
     assert!(zxzj::handles("csp_Zxzj"));
     assert!(!zxzj::handles("csp_SixV"));

@@ -94,6 +94,7 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn lists_videos_and_sends_signed_headers() {
     let payloads = Arc::new(std::sync::Mutex::new(Vec::new()));
     let (base, _h) = start_server(payloads.clone());
@@ -110,6 +111,7 @@ fn lists_videos_and_sends_signed_headers() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_builds_groups_and_metadata() {
     let payloads = Arc::new(std::sync::Mutex::new(Vec::new()));
     let (base, _h) = start_server(payloads);
@@ -126,6 +128,7 @@ fn detail_builds_groups_and_metadata() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_filters_by_keyword() {
     let payloads = Arc::new(std::sync::Mutex::new(Vec::new()));
     let (base, _h) = start_server(payloads);
@@ -137,6 +140,7 @@ fn search_filters_by_keyword() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_resolves_known_site_url() {
     let payloads = Arc::new(std::sync::Mutex::new(Vec::new()));
     let (base, _h) = start_server(payloads);
@@ -158,6 +162,7 @@ fn player_resolves_known_site_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_passes_through_direct_links() {
     let payloads = Arc::new(std::sync::Mutex::new(Vec::new()));
     let (base, _h) = start_server(payloads);
@@ -178,6 +183,7 @@ fn player_passes_through_direct_links() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn garbage_upstream_returns_stable_catvod_error() {
     let server = Server::http("127.0.0.1:0").expect("mock");
     let base = format!("http://{}", server.server_addr());

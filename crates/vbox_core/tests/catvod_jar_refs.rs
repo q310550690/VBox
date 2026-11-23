@@ -44,6 +44,7 @@ fn is_md5(text: &str) -> bool {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn jar_references_are_well_formed_and_dynamic_endpoint_is_isolated() {
     let Some(sites) = load("_rea/samples/inventory/sites.json") else {
         return;
@@ -90,6 +91,7 @@ fn jar_references_are_well_formed_and_dynamic_endpoint_is_isolated() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn declared_md5s_reconcile_with_local_canonical_ledger() {
     let Some(sites) = load("_rea/samples/inventory/sites.json") else {
         return;

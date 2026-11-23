@@ -150,6 +150,7 @@ fn site(root: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_and_registry_recognise_gaoqing() {
     assert_eq!(
         vbox_core::spider::catvod::families::family_of("csp_Gaoqing"),
@@ -162,6 +163,7 @@ fn dispatch_and_registry_recognise_gaoqing() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn home_categories_and_challenge_retry() {
     let (root, log) = start_server();
     let cfg = config();
@@ -184,6 +186,7 @@ fn home_categories_and_challenge_retry() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn category_videos_use_page_segment() {
     let (root, log) = start_server();
     let cfg = config();
@@ -196,6 +199,7 @@ fn category_videos_use_page_segment() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_parses_magnets_and_pan_episodes() {
     let (root, _log) = start_server();
     let cfg = config();
@@ -220,6 +224,7 @@ fn detail_parses_magnets_and_pan_episodes() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_passes_urlencoded_keyword() {
     let (root, log) = start_server();
     let cfg = config();
@@ -235,6 +240,7 @@ fn search_passes_urlencoded_keyword() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_magnet_and_ed2k_direct() {
     let (root, _log) = start_server();
     let cfg = config();
@@ -248,6 +254,7 @@ fn player_magnet_and_ed2k_direct() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_pan_episode_resolves_alias_download_url() {
     let (root, _log) = start_server();
     let cfg = config();
@@ -259,6 +266,7 @@ fn player_pan_episode_resolves_alias_download_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_rejects_illegal_id() {
     let (root, _log) = start_server();
     let cfg = config();

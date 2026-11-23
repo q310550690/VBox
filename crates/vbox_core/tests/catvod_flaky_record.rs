@@ -82,6 +82,7 @@ fn ref_path() -> &'static Path {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn report_flaky_counts_match_log() {
     let text = report_text();
     let (reported_7d, reported_total) = reported_flaky_counts(&text);
@@ -106,6 +107,7 @@ fn report_flaky_counts_match_log() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn flaky_log_lines_are_iso_utc() {
     for s in logged_flaky_stamps() {
         assert!(s.ends_with('Z'), "flaky 日志必须是 UTC ISO 时间戳（以 Z 结尾）：{s}");

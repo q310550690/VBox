@@ -107,6 +107,7 @@ fn cfg() -> TvConfig {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_are_fixed_four() {
     let cats = spider::list_categories(&cfg(), &site("http://127.0.0.1:1")).expect("categories");
     let ids: Vec<&str> = cats.iter().map(|c| c.type_id.as_str()).collect();
@@ -115,6 +116,7 @@ fn categories_are_fixed_four() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn videos_sign_request_and_map_rows() {
     let (base, seen) = start_server();
     let items = spider::list_videos(&cfg(), &site(&base), "2", 1).expect("list");
@@ -134,6 +136,7 @@ fn videos_sign_request_and_map_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_skips_ethics_and_signs() {
     let (base, seen) = start_server();
     let items = spider::search(&cfg(), &site(&base), "海贼王", false).expect("search");
@@ -148,6 +151,7 @@ fn search_skips_ethics_and_signs() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_builds_single_online_group() {
     let (base, _seen) = start_server();
     let detail = spider::get_detail(&cfg(), &site(&base), "114815").expect("detail");
@@ -165,6 +169,7 @@ fn detail_builds_single_online_group() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_empty_reports_parse_error() {
     let (base, _seen) = start_server();
     let err = spider::get_detail(&cfg(), &site(&base), "empty").expect_err("must fail");
@@ -172,6 +177,7 @@ fn detail_empty_reports_parse_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_returns_m3u8_with_headers() {
     let (base, seen) = start_server();
     let value = spider::player_content(&cfg(), &site(&base), "", "114815@795979", &[]).expect("player");
@@ -184,6 +190,7 @@ fn player_returns_m3u8_with_headers() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_empty_url_reports_host_unsupported() {
     let (base, _seen) = start_server();
     let err = spider::player_content(&cfg(), &site(&base), "", "114815@0", &[]).expect_err("must fail");
@@ -191,6 +198,7 @@ fn player_empty_url_reports_host_unsupported() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_requires_at_separator() {
     let err = spider::player_content(&cfg(), &site("http://127.0.0.1:1"), "", "114815", &[]).expect_err("must fail");
     assert!(format!("{err:?}").contains("catvod.host.unsupported"), "{err:?}");

@@ -68,6 +68,7 @@ fn quoted_literals(body: &str, flag: &str) -> bool {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn every_gate_tool_documents_its_flags_and_implements_them() {
     let root = repo_root();
     let mut problems = Vec::new();

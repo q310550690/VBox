@@ -214,6 +214,7 @@ fn site(api: &str, base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn pansou_search_via_dispatch() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -227,6 +228,7 @@ fn pansou_search_via_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn upyun_search_decodes_base64_json() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -239,6 +241,7 @@ fn upyun_search_decodes_base64_json() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn pan_family_detail_reports_contract_gap() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -253,6 +256,7 @@ fn pan_family_detail_reports_contract_gap() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn funletu_search_via_dispatch() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -266,6 +270,7 @@ fn funletu_search_via_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn quarkpanso_search_via_dispatch() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -279,6 +284,7 @@ fn quarkpanso_search_via_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn upyunso_search_filters_alipan_and_decodes_base64() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -296,6 +302,7 @@ fn upyunso_search_filters_alipan_and_decodes_base64() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn yisou_search_decrypts_links() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -313,6 +320,7 @@ fn yisou_search_decrypts_links() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn alips_search_prefixes_type_label() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -332,6 +340,7 @@ fn alips_search_prefixes_type_label() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn hunhepan_search_classifies_links() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -354,6 +363,7 @@ fn hunhepan_search_classifies_links() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dapanso_search_signs_request_with_sha256() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -371,6 +381,7 @@ fn dapanso_search_signs_request_with_sha256() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn miaosou_search_via_dispatch() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -383,6 +394,7 @@ fn miaosou_search_via_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn eighteight_search_via_dispatch_returns_first_page_only() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -393,6 +405,7 @@ fn eighteight_search_via_dispatch_returns_first_page_only() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn yunpanone_search_builds_discussion_ids() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -405,6 +418,7 @@ fn yunpanone_search_builds_discussion_ids() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn pikaso_search_via_dispatch_parses_html_rows() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -417,6 +431,7 @@ fn pikaso_search_via_dispatch_parses_html_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn qianfan_search_via_dispatch_parses_rows() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -429,6 +444,7 @@ fn qianfan_search_via_dispatch_parses_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn yunso_search_posts_and_parses_cards() {
     let base = start_server();
     let cfg = TvConfig::default();

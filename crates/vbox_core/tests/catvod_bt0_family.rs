@@ -109,6 +109,7 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_and_registry_recognise_bt0() {
     assert_eq!(family_of("csp_Bt0"), Some("bt0"));
     assert_eq!(family_of(" CSP_BT0 "), Some("bt0"));
@@ -117,6 +118,7 @@ fn dispatch_and_registry_recognise_bt0() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_are_fixed_five() {
     let (base, _log) = start_server();
     let cats = bt0::categories(&Default::default(), &site(&base)).expect("categories");
@@ -127,6 +129,7 @@ fn categories_are_fixed_five() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn home_bootstrap_cookie_is_retried_with_cookie() {
     let (base, log) = start_server();
     let items = bt0::home_videos(&Default::default(), &site(&base)).expect("home");
@@ -138,6 +141,7 @@ fn home_bootstrap_cookie_is_retried_with_cookie() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_parses_groups_and_sorts_episodes() {
     let (base, _log) = start_server();
     let d = bt0::detail(&Default::default(), &site(&base), "/tr/1.html").expect("detail");
@@ -151,6 +155,7 @@ fn detail_parses_groups_and_sorts_episodes() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_uses_masonry_and_h5() {
     let (base, _log) = start_server();
     let items = bt0::search(&Default::default(), &site(&base), "搜索", false).expect("search");
@@ -160,6 +165,7 @@ fn search_uses_masonry_and_h5() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_url_is_encoded() {
     let (base, _log) = start_server();
     let _ = bt0::search(&Default::default(), &site(&base), "斗罗 大陆", true);
@@ -167,6 +173,7 @@ fn search_url_is_encoded() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_returns_magnet_directly() {
     let value: Value = bt0::player_content(
         &Default::default(),
@@ -182,6 +189,7 @@ fn player_returns_magnet_directly() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_rejects_empty_id() {
     let err = bt0::player_content(&Default::default(), &site("http://127.0.0.1:1/"), "", "  ")
         .expect_err("empty id");

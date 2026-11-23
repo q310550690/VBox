@@ -73,6 +73,7 @@ fn assert_classified(api: &str, ext: serde_json::Value) {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn csp_api_ext_never_enters_script_lane() {
     let profiles = profiles();
     let mut checked = 0;
@@ -99,6 +100,7 @@ fn csp_api_ext_never_enters_script_lane() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn inventory_regression_cases_stay_classified() {
     // 来自 `_rea/samples/inventory/sites.json` 的真实配置（612 站点盘点中
     // 11 个 csp_ 站点命中 python 启发式；csp_AppYs 于第 194 轮并入原生家族后，

@@ -5657,6 +5657,7 @@ dependencies = [
  "unrar",
  "url",
  "vbox_core",
+ "vbox_jvm",
  "vbox_player",
  "webview2-com",
  "window-vibrancy 0.6.0",
@@ -5695,7 +5696,20 @@ dependencies = [
  "thiserror 1.0.69",
  "tracing",
  "url",
+ "vbox_jvm",
  "wait-timeout",
+]
+
+[[package]]
+name = "vbox_jvm"
+version = "0.1.2"
+dependencies = [
+ "flate2",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror 1.0.69",
+ "tracing",
 ]
 
 [[package]]

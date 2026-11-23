@@ -93,12 +93,14 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn dispatch_routes_appmao_to_native_family() {
     assert!(vbox_core::spider::catvod::is_native_ready("csp_AppMao"));
     assert!(vbox_core::spider::catvod::blocked_reason("csp_AppMao").is_none());
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_come_from_config() {
     let base = start_server();
     let cats = list_categories(&cfg(), &site(&base)).expect("categories");
@@ -109,6 +111,7 @@ fn categories_come_from_config() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn list_videos_absolutises_relative_covers() {
     let base = start_server();
     let items = list_videos(&cfg(), &site(&base), "1", 1).expect("videos");
@@ -121,6 +124,7 @@ fn list_videos_absolutises_relative_covers() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_maps_play_lines_and_strips_html() {
     let base = start_server();
     let detail = get_detail(&cfg(), &site(&base), "11").expect("detail");
@@ -133,6 +137,7 @@ fn detail_maps_play_lines_and_strips_html() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_maps_rows() {
     let base = start_server();
     let items = search(&cfg(), &site(&base), "测试", false).expect("search");
@@ -141,6 +146,7 @@ fn search_maps_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_resolves_through_parsing_proxy() {
     let base = start_server();
     let play = player_content(&cfg(), &site(&base), "线路一", "https://v/1.m3u8@11", &[])
@@ -150,6 +156,7 @@ fn player_resolves_through_parsing_proxy() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_requires_at_key_separator() {
     let base = start_server();
     let err = player_content(&cfg(), &site(&base), "线路一", "no-separator", &[]).unwrap_err();

@@ -102,6 +102,7 @@ fn cfg() -> TvConfig {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_are_fixed_nine() {
     let cats = vbox_core::spider::catvod::families::mp4mov::categories();
     assert_eq!(cats.len(), 9);
@@ -112,6 +113,7 @@ fn categories_are_fixed_nine() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_parse_list_page() {
     let (server, _) = start_server();
     let base = base_of(&server);
@@ -127,6 +129,7 @@ fn videos_parse_list_page() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_maps_title_cover_and_groups() {
     let (server, _) = start_server();
     let base = base_of(&server);
@@ -144,6 +147,7 @@ fn detail_maps_title_cover_and_groups() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_without_content_reports_parse_error() {
     let (server, _) = start_server();
     let base = base_of(&server);
@@ -154,6 +158,7 @@ fn detail_without_content_reports_parse_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_passes_signed_token() {
     let (server, seen) = start_server();
     let base = base_of(&server);
@@ -173,6 +178,7 @@ fn search_passes_signed_token() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_passthrough_parse_zero() {
     let (server, _) = start_server();
     let base = base_of(&server);

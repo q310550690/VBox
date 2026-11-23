@@ -23,6 +23,7 @@ fn jar_names() -> BTreeSet<String> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn jar_manifest_entries_are_well_formed() {
     let p = registry::profiles();
     assert_eq!(p.jars.len(), 20, "jar 台账应恰有 20 个条目");
@@ -56,6 +57,7 @@ fn jar_manifest_entries_are_well_formed() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn jar_references_are_a_closed_set() {
     let p = registry::profiles();
     let names = jar_names();
@@ -84,6 +86,7 @@ fn jar_references_are_a_closed_set() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn every_rulepack_api_owns_at_least_one_jar() {
     let p = registry::profiles();
     let names = jar_names();
@@ -109,6 +112,7 @@ fn every_rulepack_api_owns_at_least_one_jar() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn guarded_jars_are_only_used_by_guard_shells() {
     let p = registry::profiles();
     let guarded_jars: BTreeSet<String> = p

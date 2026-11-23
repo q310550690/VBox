@@ -18,6 +18,7 @@ pub mod appto;
 pub mod contract;
 pub mod descriptor;
 pub mod families;
+pub mod jvm;
 pub mod loader;
 pub mod normalize;
 pub mod registry;

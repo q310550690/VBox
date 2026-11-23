@@ -60,30 +60,35 @@ fn assert_code(api: &str, ext: serde_json::Value, id: &str, code: &str) {
 const PARSE: &str = "catvod.result.parse";
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn tzfile_garbage_upstream_errors() {
     let base = garbage_server();
     assert_code("csp_TZFile", json!(format!("{base}/")), "119749.html", PARSE);
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn auete_garbage_upstream_errors() {
     let base = garbage_server();
     assert_code("csp_Auete", json!(format!("{base}/")), "Dm/donghua/baxian_/", PARSE);
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn meijumi_garbage_upstream_errors() {
     let base = garbage_server();
     assert_code("csp_Meijumi", json!(base), "45785.html", PARSE);
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn tangrenjie_garbage_upstream_errors() {
     let base = garbage_server();
     assert_code("csp_Tangrenjie", json!(format!("{base}/")), "SCCCCKyi", PARSE);
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn moli_garbage_upstream_errors() {
     let base = garbage_server();
     assert_code(
@@ -95,36 +100,42 @@ fn moli_garbage_upstream_errors() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn ddrk_garbage_upstream_errors() {
     let base = garbage_server();
     assert_code("csp_Ddrk", json!(format!("{base}/")), "huanshi", PARSE);
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn xb6v_garbage_upstream_errors() {
     let base = garbage_server();
     assert_code("csp_Xb6v", json!(format!("{base}/")), "12345", PARSE);
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn zxzj_garbage_upstream_errors() {
     let base = garbage_server();
     assert_code("csp_Zxzj", json!(format!("{base}/")), "1", PARSE);
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn jpys_garbage_upstream_errors() {
     let base = garbage_server();
     assert_code("csp_Jpys", json!(format!("{base}/")), "1@1", PARSE);
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn ysj_garbage_upstream_errors_first_page() {
     let base = garbage_server();
     assert_code("csp_Ysj", json!(format!("{base}/")), "1", PARSE);
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn iktv_garbage_upstream_errors() {
     // csp_Iktv 的 detail 由 id 直接拼直链（不访问上游），因此用会访问上游的 list_videos 验证错误路径。
     let base = garbage_server();
@@ -136,24 +147,28 @@ fn iktv_garbage_upstream_errors() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn yinyuetai_garbage_upstream_errors() {
     let base = garbage_server();
     assert_code("csp_Yinyuetai", json!(format!("{base}/")), "123456", PARSE);
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn appysv2_garbage_upstream_errors() {
     let base = garbage_server();
     assert_code("csp_AppYsV2", json!(format!("{base}/api.php/app/")), "1", PARSE);
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn alist_garbage_upstream_errors() {
     let base = garbage_server();
     assert_code("csp_Alist", json!({ "garbage": format!("{base}/") }), "garbage/x.mp4", PARSE);
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn share_garbage_upstream_errors() {
     let base = garbage_server();
     let ext = format!(
@@ -168,6 +183,7 @@ fn share_garbage_upstream_errors() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn quark_garbage_upstream_errors() {
     let base = garbage_server();
     assert_code(
@@ -180,6 +196,7 @@ fn quark_garbage_upstream_errors() {
 
 /// 网络层失败：连接被拒绝时应收口成 `catvod.net.http`，而不是裸 `HTTP 请求失败: …`。
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn connect_refused_maps_to_catvod_net_connect() {
     let cfg = TvConfig::default();
     let s = site("csp_Xb6v", json!("http://127.0.0.1:1/"));
@@ -192,6 +209,7 @@ fn connect_refused_maps_to_catvod_net_connect() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn dns_failure_maps_to_catvod_net_dns() {
     let cfg = TvConfig::default();
     let s = site("csp_Xb6v", json!("http://nonexistent.invalid/"));
@@ -205,6 +223,7 @@ fn dns_failure_maps_to_catvod_net_dns() {
 
 /// 网盘引擎返回 41006（分享不存在/失效）→ `catvod.pan.share_unavailable`。
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn share_unavailable_maps_to_catvod_pan_share_unavailable() {
     let server = Arc::new(Server::http("127.0.0.1:0").expect("pan mock"));
     let base = format!("http://{}", server.server_addr());
@@ -240,6 +259,7 @@ fn share_unavailable_maps_to_catvod_pan_share_unavailable() {
 
 /// 网盘直链缺少 Cookie → `catvod.pan.cookie_required`。
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn missing_cookie_maps_to_catvod_pan_cookie_required() {
     let s = site("csp_Quark", json!(r#"{"drive_base":"http://127.0.0.1:1/"}"#));
     let err = vbox_core::sources::spider::player_content(
@@ -258,6 +278,7 @@ fn missing_cookie_maps_to_catvod_pan_cookie_required() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn timeout_maps_to_catvod_net_timeout() {
     let slow = Server::http("127.0.0.1:0").expect("slow server");
     let base = format!("http://{}", slow.server_addr());

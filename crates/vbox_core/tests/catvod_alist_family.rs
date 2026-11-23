@@ -160,6 +160,7 @@ fn login_site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_come_from_flat_ext_map() {
     let cfg = cfg();
     let (base, _) = start_server(false);
@@ -170,6 +171,7 @@ fn categories_come_from_flat_ext_map() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_list_dirs_before_files_and_keep_sizes() {
     let cfg = cfg();
     let (base, _) = start_server(false);
@@ -186,6 +188,7 @@ fn videos_list_dirs_before_files_and_keep_sizes() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_nested_category_uses_alist_path() {
     let cfg = cfg();
     let (base, _) = start_server(false);
@@ -200,6 +203,7 @@ fn videos_nested_category_uses_alist_path() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_page_two_is_empty() {
     let cfg = cfg();
     let (base, _) = start_server(false);
@@ -208,6 +212,7 @@ fn videos_page_two_is_empty() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_builds_single_group_from_parent_dir() {
     let cfg = cfg();
     let (base, _) = start_server(false);
@@ -228,6 +233,7 @@ fn detail_builds_single_group_from_parent_dir() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_without_video_files_returns_empty_episodes() {
     let cfg = cfg();
     let (base, _) = start_server(false);
@@ -238,6 +244,7 @@ fn detail_without_video_files_returns_empty_episodes() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_resolves_raw_url() {
     let cfg = cfg();
     let (base, _) = start_server(false);
@@ -256,6 +263,7 @@ fn player_resolves_raw_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_filters_dirs_and_non_video_files() {
     let cfg = cfg();
     let (base, _) = start_server(false);
@@ -268,6 +276,7 @@ fn search_filters_dirs_and_non_video_files() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn invalid_id_surfaces_parse_error() {
     let cfg = cfg();
     let (base, _) = start_server(false);
@@ -276,6 +285,7 @@ fn invalid_id_surfaces_parse_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn guest_disabled_login_retry_with_401() {
     let cfg = cfg();
     let (base, state) = start_server(true);
@@ -290,6 +300,7 @@ fn guest_disabled_login_retry_with_401() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn hidden_drive_is_not_a_category() {
     let cfg = cfg();
     let (base, _) = start_server(false);

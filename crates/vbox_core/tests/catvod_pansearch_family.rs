@@ -68,6 +68,7 @@ fn site() -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_follows_next_data_two_step_protocol() {
     let base = start_server();
     let cfg = TvConfig::default();
@@ -84,12 +85,14 @@ fn search_follows_next_data_two_step_protocol() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_reports_parse_error_when_build_id_missing() {
     // 未起服务前先验证错误分支：用一个不存在的端口会走 Http 错误，因此这里只测纯函数。
     assert!(pansearch::extract_build_id("<html>no next data</html>").is_none());
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn non_search_entries_return_explicit_host_api_error() {
     let cfg = TvConfig::default();
     let site = site();

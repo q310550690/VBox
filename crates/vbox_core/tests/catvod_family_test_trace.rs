@@ -137,6 +137,7 @@ fn test_file(module: &str) -> PathBuf {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn family_module_has_owned_api_referenced_by_its_test() {
     let modules = declared_modules();
     let mut errors = Vec::new();
@@ -183,6 +184,7 @@ fn family_module_has_owned_api_referenced_by_its_test() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn every_rulepack_api_is_owned_by_exactly_one_family() {
     let modules = declared_modules();
     // 小写 api → 拥有它的模块集合（同一模块重复声明只算一次）。

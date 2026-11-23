@@ -125,6 +125,7 @@ fn cfg() -> TvConfig {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_and_registry_recognise_zhaozy() {
     let api = "csp_Zhaozy";
     assert_eq!(
@@ -136,6 +137,7 @@ fn dispatch_and_registry_recognise_zhaozy() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn login_posts_form_and_cookie_is_reused() {
     let (root, log) = start_server();
     let site = site(&root);
@@ -155,6 +157,7 @@ fn login_posts_form_and_cookie_is_reused() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_parses_rows_and_filters_keyword() {
     let (root, _log) = start_server();
     let site = site(&root);
@@ -168,6 +171,7 @@ fn search_parses_rows_and_filters_keyword() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_url_encodes_keyword() {
     let (root, log) = start_server();
     let site = site(&root);
@@ -181,6 +185,7 @@ fn search_url_encodes_keyword() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn empty_keyword_does_not_touch_network() {
     let (root, log) = start_server();
     let site = site(&root);
@@ -190,6 +195,7 @@ fn empty_keyword_does_not_touch_network() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_from_page_extracts_ali_share() {
     let (root, log) = start_server();
     let site = site(&root);
@@ -203,6 +209,7 @@ fn detail_from_page_extracts_ali_share() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_accepts_direct_ali_share_id() {
     let (root, log) = start_server();
     let site = site(&root);
@@ -216,6 +223,7 @@ fn detail_accepts_direct_ali_share_id() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_resolves_ali_episode() {
     let (root, _log) = start_server();
     let site = site(&root);
@@ -236,6 +244,7 @@ fn player_resolves_ali_episode() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_and_videos_are_empty() {
     let (root, log) = start_server();
     let site = site(&root);

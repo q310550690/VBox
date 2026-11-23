@@ -126,6 +126,7 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_come_from_top_type() {
     let base = start_server();
     let cats = vbox_core::sources::spider::list_categories(&cfg(), &site(&base)).expect("cats");
@@ -135,6 +136,7 @@ fn categories_come_from_top_type() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn home_videos_parse_cai_items() {
     let base = start_server();
     // 首页推荐不走 `sources::spider` 的五个入口，直接调家族公开函数。
@@ -149,6 +151,7 @@ fn home_videos_parse_cai_items() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn type_search_maps_vod_fields() {
     let base = start_server();
     let items = vbox_core::sources::spider::list_videos(&cfg(), &site(&base), "2", 3).expect("v");
@@ -158,6 +161,7 @@ fn type_search_maps_vod_fields() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_maps_lines_flags_and_metadata() {
     let base = start_server();
     let detail =
@@ -181,6 +185,7 @@ fn detail_maps_lines_flags_and_metadata() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_passes_through_when_flag_is_short() {
     let base = start_server();
     let value = vbox_core::sources::spider::player_content(
@@ -196,6 +201,7 @@ fn player_passes_through_when_flag_is_short() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_resolves_parse_flag_through_signed_get() {
     let base = start_server();
     let id = format!("http://cdn/need.m3u8|{base}/parse?u=");
@@ -206,6 +212,7 @@ fn player_resolves_parse_flag_through_signed_get() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_rejects_unknown_site() {
     let base = start_server();
     let err = vbox_core::sources::spider::player_content(
@@ -221,6 +228,7 @@ fn player_rejects_unknown_site() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn empty_type_id_is_a_parse_error() {
     let base = start_server();
     let err = vbox_core::sources::spider::list_videos(&cfg(), &site(&base), "  ", 1)
@@ -230,6 +238,7 @@ fn empty_type_id_is_a_parse_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_fall_back_when_upstream_has_no_list() {
     let base = start_server();
     // 给基址加前缀，mock 返回 {"code":404} → 没有 data.list → 回退硬编码 4 类。

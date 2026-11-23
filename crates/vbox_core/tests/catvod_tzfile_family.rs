@@ -132,6 +132,7 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_are_five_fixed() {
     let cfg = cfg();
     let base = start_server();
@@ -143,6 +144,7 @@ fn categories_are_five_fixed() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_first_page_parses_rows() {
     let cfg = cfg();
     let base = start_server();
@@ -162,6 +164,7 @@ fn videos_first_page_parses_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_second_page_uses_page_route() {
     let cfg = cfg();
     let base = start_server();
@@ -173,6 +176,7 @@ fn videos_second_page_uses_page_route() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_parses_metadata_without_pan_links() {
     let cfg = cfg();
     let base = start_server();
@@ -201,6 +205,7 @@ fn detail_parses_metadata_without_pan_links() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_missing_title_maps_to_parse_error() {
     let cfg = cfg();
     let base = start_server();
@@ -210,6 +215,7 @@ fn detail_missing_title_maps_to_parse_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_parses_rows() {
     let cfg = cfg();
     let base = start_server();
@@ -220,6 +226,7 @@ fn search_parses_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn rest_chain_extracts_pan_share_link() {
     let cfg = cfg();
     let base = start_server();
@@ -231,6 +238,7 @@ fn rest_chain_extracts_pan_share_link() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_rejects_unknown_share_link() {
     let cfg = cfg();
     let base = start_server();
@@ -246,6 +254,7 @@ fn player_rejects_unknown_share_link() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_rejects_empty_id() {
     let cfg = cfg();
     let base = start_server();

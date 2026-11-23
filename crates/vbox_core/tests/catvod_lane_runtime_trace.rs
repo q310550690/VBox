@@ -85,6 +85,7 @@ fn report_lane_table() -> BTreeMap<String, u64> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn runtime_lane_tally_matches_report_table() {
     let Some(sites) = real_sites() else {
         eprintln!("跳过判据 64：sites.json 不存在（CI 不提交逆向产物）");
@@ -122,6 +123,7 @@ fn runtime_lane_tally_matches_report_table() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn every_real_site_lands_in_its_strategy_lane() {
     let Some(sites) = real_sites() else {
         eprintln!("跳过判据 64：sites.json 不存在");

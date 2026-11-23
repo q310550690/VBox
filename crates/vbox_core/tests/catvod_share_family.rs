@@ -67,6 +67,7 @@ fn cfg() -> TvConfig {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_return_manifest_entries() {
     let (_server, base) = start_server();
     let site = site(&base, "csp_QuarkShare", "s1");
@@ -77,6 +78,7 @@ fn categories_return_manifest_entries() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn videos_browse_share_files() {
     let (_server, base) = start_server();
     let site = site(&base, "csp_QuarkShare", "s1");
@@ -94,6 +96,7 @@ fn videos_browse_share_files() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_expands_episodes() {
     let (_server, base) = start_server();
     let site = site(&base, "csp_QuarkShare", "s1");
@@ -110,6 +113,7 @@ fn detail_expands_episodes() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_filters_manifest_names() {
     let (_server, base) = start_server();
     let site = site(&base, "csp_QuarkShare", "s1");
@@ -119,6 +123,7 @@ fn search_filters_manifest_names() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_returns_direct_url() {
     let (_server, base) = start_server();
     let site = site(&base, "csp_QuarkShare", "s1");
@@ -135,6 +140,7 @@ fn player_returns_direct_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn uc_api_uses_uc_prefix() {
     let (_server, base) = start_server();
     let site = site(&base, "csp_UCShare", "u1");
@@ -143,6 +149,7 @@ fn uc_api_uses_uc_prefix() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn second_page_is_empty() {
     let (_server, base) = start_server();
     let site = site(&base, "csp_QuarkShare", "s1");

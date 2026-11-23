@@ -44,6 +44,7 @@ fn site(api: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn error_class_codes_are_stable_and_unique() {
     let mut seen = BTreeSet::new();
     for class in ALL_CLASSES {
@@ -58,6 +59,7 @@ fn error_class_codes_are_stable_and_unique() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn families_do_not_construct_raw_core_errors() {
     let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("src/spider/catvod/families");
@@ -84,6 +86,7 @@ fn families_do_not_construct_raw_core_errors() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn blocked_reason_in_profiles_matches_registry() {
     let p = registry::profiles();
     let mut checked = 0usize;
@@ -114,6 +117,7 @@ fn blocked_reason_in_profiles_matches_registry() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn site_error_has_stable_code_for_known_shapes() {
     // 已画像未移植
     let msg = registry::site_error(&site("csp_PushAgent")).to_string();

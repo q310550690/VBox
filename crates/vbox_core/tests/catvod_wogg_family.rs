@@ -116,6 +116,7 @@ fn site(api: &str, base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_come_from_nav_links() {
     let base = start_server();
     let cats = vbox_core::sources::spider::list_categories(&cfg(), &site("csp_Wogg", &base))
@@ -128,6 +129,7 @@ fn categories_come_from_nav_links() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn list_videos_parses_module_items() {
     let base = start_server();
     let items = vbox_core::sources::spider::list_videos(&cfg(), &site("csp_Wogg", &base), "1", 1)
@@ -143,6 +145,7 @@ fn list_videos_parses_module_items() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn home_videos_parses_home_page() {
     let base = start_server();
     let site = site("csp_Wogg", &base);
@@ -153,6 +156,7 @@ fn home_videos_parses_home_page() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_parses_search_items() {
     let base = start_server();
     let items = vbox_core::sources::spider::search(&cfg(), &site("csp_Wogg", &base), "测试", false)
@@ -163,6 +167,7 @@ fn search_parses_search_items() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn wobg_template_uses_vod_type_path() {
     let base = start_server();
     // Wobg 的列表模板是 /index.php/vod/type/id/{id}/page/{page}.html。
@@ -172,6 +177,7 @@ fn wobg_template_uses_vod_type_path() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn wo4k_template_uses_pianku_path() {
     let base = start_server();
     // Wo4k 的列表模板是 /pianku/{id}.html（分页才加 query）。
@@ -181,6 +187,7 @@ fn wo4k_template_uses_pianku_path() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_keeps_unsupported_pan_lines_without_network() {
     let base = start_server();
     let detail = vbox_core::sources::spider::get_detail(
@@ -206,6 +213,7 @@ fn detail_keeps_unsupported_pan_lines_without_network() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_rejects_thunder_line_with_host_unsupported() {
     let base = start_server();
     let s = site("csp_Wogg", &base);
@@ -223,6 +231,7 @@ fn player_rejects_thunder_line_with_host_unsupported() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_rejects_unexpanded_line() {
     let base = start_server();
     let s = site("csp_Wogg", &base);

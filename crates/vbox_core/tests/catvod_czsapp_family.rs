@@ -137,6 +137,7 @@ fn aes_payload() -> (String, &'static str) {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_and_registry_recognise_czsapp() {
     assert_eq!(
         vbox_core::spider::catvod::families::family_of("csp_Czsapp"),
@@ -149,6 +150,7 @@ fn dispatch_and_registry_recognise_czsapp() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_skip_home_entry() {
     let (b64, _) = aes_payload();
     let base = start_server(b64);
@@ -159,6 +161,7 @@ fn categories_skip_home_entry() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn category_page_lists_videos() {
     let (b64, _) = aes_payload();
     let base = start_server(b64);
@@ -170,6 +173,7 @@ fn category_page_lists_videos() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_has_metadata_and_playlist() {
     let (b64, _) = aes_payload();
     let base = start_server(b64);
@@ -187,6 +191,7 @@ fn detail_has_metadata_and_playlist() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_returns_rows() {
     let (b64, _) = aes_payload();
     let base = start_server(b64);
@@ -199,6 +204,7 @@ fn search_returns_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_decrypts_legacy_page() {
     let (b64, _) = aes_payload();
     let base = start_server(b64);
@@ -219,6 +225,7 @@ fn player_decrypts_legacy_page() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_falls_back_to_iframe_embedded_media() {
     let (b64, _) = aes_payload();
     let base = start_server(b64);
@@ -234,6 +241,7 @@ fn player_falls_back_to_iframe_embedded_media() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_errors_when_no_media() {
     let (b64, _) = aes_payload();
     let base = start_server(b64);

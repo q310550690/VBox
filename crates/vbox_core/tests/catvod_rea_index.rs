@@ -156,6 +156,7 @@ fn parse_index_rows(plan: &str) -> Vec<IndexRow> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn rea_index_matches_runtime_family_mapping() {
     let plan = read(PLAN_DOC);
     let rea = read(REA_DOC);
@@ -278,6 +279,7 @@ fn rea_index_matches_runtime_family_mapping() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn rea_appendices_are_unique_and_well_formed() {
     let plan = read(PLAN_DOC);
     let rea = read(REA_DOC);

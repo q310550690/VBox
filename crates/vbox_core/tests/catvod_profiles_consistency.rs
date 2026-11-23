@@ -27,6 +27,7 @@ const ALLOWED_BLOCKED: &[&str] = &[
 ];
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn totals_match_api_and_jar_tables() {
     let p = registry::profiles();
     assert_eq!(
@@ -56,6 +57,7 @@ fn totals_match_api_and_jar_tables() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn unported_apis_all_carry_a_blocked_reason() {
     let p = registry::profiles();
     for (api, profile) in &p.apis {
@@ -69,6 +71,7 @@ fn unported_apis_all_carry_a_blocked_reason() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn blocked_reasons_use_known_vocabulary() {
     let allowed: BTreeSet<&str> = ALLOWED_BLOCKED.iter().copied().collect();
     let p = registry::profiles();
@@ -83,6 +86,7 @@ fn blocked_reasons_use_known_vocabulary() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn native_apis_are_wired_to_a_family() {
     let p = registry::profiles();
     let mut checked = 0usize;
@@ -103,6 +107,7 @@ fn native_apis_are_wired_to_a_family() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn family_dispatch_targets_are_native_ready() {
     let p = registry::profiles();
     let mut wired = 0usize;
@@ -119,6 +124,7 @@ fn family_dispatch_targets_are_native_ready() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn rulepack_apis_have_difficulty() {
     let p = registry::profiles();
     for (api, profile) in &p.apis {
@@ -132,6 +138,7 @@ fn rulepack_apis_have_difficulty() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn sites_json_references_only_known_apis() {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../_rea/samples/inventory/sites.json");

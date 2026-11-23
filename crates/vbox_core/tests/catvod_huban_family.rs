@@ -24,12 +24,14 @@ fn site() -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn dispatch_routes_huban_to_native_family() {
     assert!(vbox_core::spider::catvod::is_native_ready("csp_Huban"));
     assert!(vbox_core::spider::catvod::blocked_reason("csp_Huban").is_none());
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_through_dispatch() {
     let cats = list_categories(&cfg(), &site()).expect("categories");
     assert_eq!(cats.len(), 1);
@@ -38,6 +40,7 @@ fn categories_through_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn action_item_only_on_first_page() {
     let items = list_videos(&cfg(), &site(), "1", 1).expect("page 1");
     assert_eq!(items.len(), 1);
@@ -55,6 +58,7 @@ fn action_item_only_on_first_page() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_exposes_config_line() {
     let d = get_detail(&cfg(), &site(), "弹幕弹窗设置").expect("detail");
     assert_eq!(d.id, "弹幕弹窗设置");
@@ -67,6 +71,7 @@ fn detail_exposes_config_line() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_rejects_blank_id() {
     let err = get_detail(&cfg(), &site(), " ").expect_err("blank id must fail");
     let text = format!("{err}");
@@ -74,6 +79,7 @@ fn detail_rejects_blank_id() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_is_empty_by_design() {
     assert!(search(&cfg(), &site(), "任何关键词", false)
         .expect("search")
@@ -81,6 +87,7 @@ fn search_is_empty_by_design() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_reports_missing_configuration() {
     let v = player_content(&cfg(), &site(), "配置中心", "弹幕弹窗设置", &[]).expect("player");
     assert_eq!(v["parse"], json!(0));

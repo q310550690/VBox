@@ -56,6 +56,7 @@ fn appendix_letters(text: &str) -> Vec<String> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn plan_progress_sections_are_contiguous() {
     let text = read("docs/type3兼容/type3-实施计划-原生兼容100%.md");
     let nums = plan_section_numbers(&text);
@@ -82,6 +83,7 @@ fn plan_progress_sections_are_contiguous() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn rea_appendices_are_contiguous() {
     let text = read("docs/type3兼容/type3-路线-REA原生重写.md");
     let letters = appendix_letters(&text);

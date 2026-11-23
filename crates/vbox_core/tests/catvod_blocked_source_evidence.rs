@@ -172,6 +172,7 @@ fn profiles() -> serde_json::Value {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn blocked_reasons_are_backed_by_declared_variant_evidence() {
     let root = decompiled_root();
     if !root.is_dir() {
@@ -248,6 +249,7 @@ fn blocked_reasons_are_backed_by_declared_variant_evidence() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn cross_jar_non_spider_collisions_are_documented() {
     let root = decompiled_root();
     if !root.is_dir() {

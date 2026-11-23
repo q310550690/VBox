@@ -12,6 +12,8 @@
     "fetch:python": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/fetch-python.ps1",
     "fetch:node": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/fetch-node.ps1",
     "fetch:tools": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/fetch-tools.ps1",
+    "fetch:jre": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/fetch-jre.ps1",
+    "build:jvm": "node scripts/build-jvm.mjs",
     "ensure:tools": "node scripts/ensure-tools.mjs",
     "tauri:build": "node scripts/build.mjs",
     "tauri": "tauri"

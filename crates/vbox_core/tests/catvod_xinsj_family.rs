@@ -133,6 +133,7 @@ fn start_server() -> String {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_routes_xinsj_to_native_family() {
     let site = site("https://mock.invalid");
     assert!(vbox_core::spider::catvod::registry::is_native_ready(&site.api));
@@ -144,6 +145,7 @@ fn dispatch_routes_xinsj_to_native_family() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_keep_four_mac_cms_entries() {
     let base = start_server();
     let cats = list_categories(&cfg(), &site(&base)).expect("分类");
@@ -154,6 +156,7 @@ fn categories_keep_four_mac_cms_entries() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn category_list_through_dispatch() {
     let base = start_server();
     let items = list_videos(&cfg(), &site(&base), "1", 2).expect("分类页");
@@ -165,6 +168,7 @@ fn category_list_through_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_through_dispatch_skips_quark_line() {
     let base = start_server();
     let detail = get_detail(&cfg(), &site(&base), "300").expect("详情");
@@ -183,6 +187,7 @@ fn detail_through_dispatch_skips_quark_line() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_through_dispatch() {
     let base = start_server();
     let items = search(&cfg(), &site(&base), "搜索词", false).expect("搜索");
@@ -193,6 +198,7 @@ fn search_through_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_through_dispatch_returns_direct_url() {
     let base = start_server();
     let value = player_content(&cfg(), &site(&base), "线路一", "300-1-1", &[]).expect("播放");
@@ -202,6 +208,7 @@ fn player_through_dispatch_returns_direct_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_encrypted_payload_is_explicit_parse_error() {
     let base = start_server();
     let err = player_content(&cfg(), &site(&base), "线路一", "999-1-1", &[]).expect_err("加密串");
@@ -210,6 +217,7 @@ fn player_encrypted_payload_is_explicit_parse_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn category_url_keeps_double_slash_shape() {
     let base = start_server();
     // 家族内构造的 URL 与原类一致是 `…//vodshow/…`，这里用 URL 形态断言防止回归。

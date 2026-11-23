@@ -71,6 +71,7 @@ fn test_refs(cell: &str) -> BTreeSet<String> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn verdict_rows_each_reference_existing_tests() {
     let rows = verdict_rows(&report());
     assert_eq!(rows.len(), 5, "「判定五条」应有且仅有 5 行，实际 {}", rows.len());
@@ -99,6 +100,7 @@ fn verdict_rows_each_reference_existing_tests() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn verdict_conclusions_are_marked() {
     let text = report();
     let mut in_section = false;

@@ -102,6 +102,7 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_and_registry_recognise_gitcafe() {
     let base = start_server();
     let cfg = config();
@@ -113,6 +114,7 @@ fn dispatch_and_registry_recognise_gitcafe() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_returns_only_valid_shares() {
     let base = start_server();
     let items = spider::search(&config(), &site(&base), "三体", true).expect("search");
@@ -128,6 +130,7 @@ fn search_returns_only_valid_shares() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_with_blank_keyword_returns_empty() {
     let base = start_server();
     let items = spider::search(&config(), &site(&base), "   ", true).expect("search");
@@ -135,6 +138,7 @@ fn search_with_blank_keyword_returns_empty() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_expands_ali_share_into_ali_line() {
     let base = start_server();
     let s = site(&base);
@@ -151,6 +155,7 @@ fn detail_expands_ali_share_into_ali_line() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_resolves_ali_direct_url() {
     let base = start_server();
     let s = site(&base);
@@ -161,6 +166,7 @@ fn player_resolves_ali_direct_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_rejects_blank_id() {
     let base = start_server();
     let err = spider::get_detail(&config(), &site(&base), "  ").expect_err("blank id");

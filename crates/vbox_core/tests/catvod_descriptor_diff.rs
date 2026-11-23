@@ -28,6 +28,7 @@ fn parse_json(text: &str) -> Value {
 
 /// lock 与内嵌描述三方一致：api 对齐、jar 指纹一致、描述字节 sha256 一致。
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn lock_matches_embedded_descriptors() {
     let lock = parse_json(LOCK);
     assert_eq!(lock["schema"], 1, "lock schema 版本应为 1");
@@ -59,6 +60,7 @@ fn lock_matches_embedded_descriptors() {
 
 /// jar 指纹与 profiles.json 一致（jar 更新未重抽取 => 待审差分，判据变红）。
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn lock_is_current_with_profiles() {
     let profiles = parse_json(PROFILES);
     let jars = profiles["jars"].as_array().expect("profiles.jars 缺失");
@@ -115,6 +117,7 @@ fn temp_pair(tag: &str) -> (PathBuf, PathBuf, PathBuf) {
 
 /// 同一对输入两次 diff 结果必须完全一致；空 diff 返回 0。
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn diff_is_reproducible() {
     let src = data_dir().join("ysj.json");
     let (dir, old, new) = temp_pair("repro");
@@ -130,6 +133,7 @@ fn diff_is_reproducible() {
 
 /// 语义差异必须判红；仅证据行号漂移不算语义差异。
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn diff_classifies_semantic_and_evidence_only() {
     let src = data_dir().join("ysj.json");
     let text = std::fs::read_to_string(&src).expect("读取描述失败");

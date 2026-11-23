@@ -94,6 +94,7 @@ fn parse_section(plan: &str) -> Vec<Row> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn residual_triage_matrix_matches_profiles_and_evidence() {
     let plan = plan_text();
     let rows = parse_section(&plan);
@@ -277,6 +278,7 @@ fn residual_triage_matrix_matches_profiles_and_evidence() {
 // 判据 38：复评线索矩阵必须覆盖全部 unported，并给出可行动的「解阻条件 / 结论」。
 // 只有「为什么阻断」（§154）而没有「何时能解阻」（§156）时，阻断结论会随时间失去可复核性。
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn review_clues_matrix_matches_unported() {
     let plan = plan_text();
     let start = plan
@@ -368,6 +370,7 @@ fn review_clues_matrix_matches_unported() {
 /// §154.4 的「合计 N 项 / M 站」与「L1/L2/L3 分布」也一直是手写文字。难度是排期与
 /// 100% 判定里「剩余工作规模」的唯一口径，手写数字漂移不会触发任何门禁。
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn triage_matrix_difficulty_and_summary_match_profiles() {
     let plan = plan_text();
     let rows = parse_section(&plan);
@@ -447,6 +450,7 @@ fn triage_matrix_difficulty_and_summary_match_profiles() {
 /// 「维持阻断 14 项」「暂缓 2 项」、标题里的「16 项」、§156.6 的「剩余 16 项」
 /// 都是独立手写文字。改表不改文案（或反之）时，读者会得到与数据矛盾的说明。
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn review_clues_prose_counts_match_table() {
     let plan = plan_text();
     let start = plan.find("\n## 156.").expect("plan 中应有 §156 复评线索矩阵");

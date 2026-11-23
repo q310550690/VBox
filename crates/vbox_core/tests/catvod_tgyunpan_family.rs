@@ -77,6 +77,7 @@ fn decode_request_body(body: &str) -> String {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn handles_matches_both_apis() {
     assert!(tgyunpan::handles("csp_TGYunPan"));
     assert!(tgyunpan::handles("csp_TGYunPanLocal"));
@@ -88,6 +89,7 @@ fn handles_matches_both_apis() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_fixed_jar_search() {
     let base = start_server(|_url, _body| String::new());
     let categories = tgyunpan::categories(&config(), &site(tgyunpan::API, &base)).expect("分类");
@@ -97,6 +99,7 @@ fn categories_fixed_jar_search() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_jar_search_pages_are_empty_without_request() {
     let requests = recorder();
     let record = Arc::clone(&requests);
@@ -123,6 +126,7 @@ fn videos_jar_search_pages_are_empty_without_request() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_parses_base64_quark_line() {
     // 消息行：`chat\tmsgId\ttext\tmedia`，整行再 Base64。
     let inner = "testchat\t1001\t<strong>测试资源</strong> https://pan.quark.cn/s/abcd1234\t";
@@ -140,6 +144,7 @@ fn search_parses_base64_quark_line() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_parses_plaintext_magnet_line() {
     let magnet = "magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567&dn=Test%20Movie&tr=udp%3A%2F%2Ftracker.test%3A80";
     let line = format!("testchat 1002 <strong>磁力资源</strong> {magnet}");
@@ -160,6 +165,7 @@ fn search_parses_plaintext_magnet_line() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_local_uses_channel_endpoint_and_page_string() {
     let requests = recorder();
     let record = Arc::clone(&requests);
@@ -197,6 +203,7 @@ fn videos_local_uses_channel_endpoint_and_page_string() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_empty_keyword_makes_no_request() {
     let requests = recorder();
     let record = Arc::clone(&requests);
@@ -216,6 +223,7 @@ fn search_empty_keyword_makes_no_request() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_empty_response_is_empty_list() {
     let config = config();
     // 上游空响应等价「没有结果」（`extractAllMessageTexts("")` 解析为空）。
@@ -234,6 +242,7 @@ fn search_empty_response_is_empty_list() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_rejects_non_json_response() {
     let config = config();
     let base = start_server(|_url, _body| r#"{"code":500,"msg":"tgsearch 未启动"}"#.to_string());
@@ -250,6 +259,7 @@ fn search_rejects_non_json_response() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_uses_ext_object_base_and_115_cover() {
     let line = "testchat 1003 <strong>115 资源</strong> https://115.com/s/swn8xyz?password=abc4";
     let base = start_server(move |_url, _body| line.to_string());
@@ -267,6 +277,7 @@ fn search_uses_ext_object_base_and_115_cover() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_parses_base64_media_image_line() {
     // `media` 为 `123456:I` 时，图片取 `{base}/i/{msgId}/123456`。
     let inner = "imgchat\t2001\t<strong>图片资源</strong> https://pan.quark.cn/s/imgtest\t123456:I";
@@ -281,6 +292,7 @@ fn search_parses_base64_media_image_line() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_filters_plain_web_links() {
     let line = "testchat 1004 <strong>普通网页</strong> https://example.com/page";
     let base = start_server(move |_url, _body| line.to_string());
@@ -289,6 +301,7 @@ fn search_filters_plain_web_links() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_content_shape() {
     let base = start_server(|_url, _body| String::new());
     let config = config();
@@ -304,6 +317,7 @@ fn player_content_shape() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_returns_single_episode_for_magnet() {
     let base = start_server(|_url, _body| String::new());
     let id = "magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567&dn=Test%20Movie";

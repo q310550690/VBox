@@ -110,6 +110,7 @@ fn start_server() -> String {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_routes_yj1211_to_native_family() {
     let site = site("https://mock.invalid");
     assert!(vbox_core::spider::catvod::registry::is_native_ready(&site.api));
@@ -121,6 +122,7 @@ fn dispatch_routes_yj1211_to_native_family() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_are_hardcoded_five() {
     let cats = list_categories(&cfg(), &site("https://mock.invalid")).expect("分类");
     let names: Vec<&str> = cats.iter().map(|c| c.type_name.as_str()).collect();
@@ -139,6 +141,7 @@ fn categories_are_hardcoded_five() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn recommend_list_through_dispatch() {
     let base = start_server();
     let items = list_videos(&cfg(), &site(&base), "?", 1).expect("推荐列表");
@@ -154,6 +157,7 @@ fn recommend_list_through_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn recommend_page_two_uses_page_query() {
     let base = start_server();
     let items = list_videos(&cfg(), &site(&base), "?", 2).expect("第 2 页");
@@ -163,6 +167,7 @@ fn recommend_page_two_uses_page_query() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn platform_category_uses_platform_endpoint() {
     let base = start_server();
     let items = list_videos(&cfg(), &site(&base), "ByPlatform?platform=douyu&", 1)
@@ -174,6 +179,7 @@ fn platform_category_uses_platform_endpoint() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_joins_room_info_and_streams() {
     let base = start_server();
     let detail = get_detail(&cfg(), &site(&base), "douyu&1").expect("详情");
@@ -192,6 +198,7 @@ fn detail_joins_room_info_and_streams() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_without_streams_falls_back_to_nostream() {
     let base = start_server();
     let detail = get_detail(&cfg(), &site(&base), "huya&404").expect("详情");
@@ -202,6 +209,7 @@ fn detail_without_streams_falls_back_to_nostream() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_rejects_malformed_id() {
     let base = start_server();
     let err = get_detail(&cfg(), &site(&base), "douyu").expect_err("非法 id");
@@ -210,6 +218,7 @@ fn detail_rejects_malformed_id() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_through_dispatch() {
     let base = start_server();
     let items = search(&cfg(), &site(&base), "主播", false).expect("搜索");
@@ -220,6 +229,7 @@ fn search_through_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_returns_parse_one_with_header() {
     let base = start_server();
     let value = player_content(&cfg(), &site(&base), "YJ1211", "http://live.example.com/x.m3u8", &[])

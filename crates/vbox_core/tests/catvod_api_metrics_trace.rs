@@ -64,6 +64,7 @@ fn dex_facts(dexinfo: &serde_json::Value) -> DexFacts {
 const CLASS_PREFIX: &str = "com.github.catvod.spider.";
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn class_bearing_api_metrics_match_dex_analysis() {
     let root = repo_root();
     let profiles = load(&root.join("crates/vbox_core/src/spider/catvod/profiles.json"))
@@ -147,6 +148,7 @@ fn class_bearing_api_metrics_match_dex_analysis() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn guarded_shells_are_never_native() {
     let root = repo_root();
     let profiles = load(&root.join("crates/vbox_core/src/spider/catvod/profiles.json"))

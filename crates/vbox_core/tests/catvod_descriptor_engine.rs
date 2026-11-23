@@ -26,6 +26,7 @@ fn root() -> std::path::PathBuf {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn embedded_descriptors_are_complete_and_traceable() {
     let all = registry::all();
     let mut apis: Vec<String> = all.iter().map(|d| d.api.clone()).collect();
@@ -168,6 +169,7 @@ fn liteapple() -> &'static vbox_core::spider::catvod::descriptor::schema::Descri
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn liteapple_engine_direct_covers_all_entries_and_dynamic_headers() {
     let (base, hits) = start_server();
     let site: Site = serde_json::from_value(json!({
@@ -236,6 +238,7 @@ fn liteapple_engine_direct_covers_all_entries_and_dynamic_headers() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn unknown_api_has_no_descriptor() {
     assert!(registry::find("csp_NotRegistered").is_none());
 }

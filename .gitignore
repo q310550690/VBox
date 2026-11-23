@@ -41,6 +41,15 @@ src-tauri/resources/python/*
 !src-tauri/resources/python/README.txt
 src-tauri/resources/node/*
 !src-tauri/resources/node/README.txt
+
+# 本地 JVM 兼容层产物（stubs.jar / spider-host.jar / libs/ / jre/，用 scripts/build-jvm.mjs
+# 与 scripts/fetch-jre.ps1 生成；manifest.json 与 README.txt 入库以便识别与校验）
+src-tauri/resources/jvm/*
+!src-tauri/resources/jvm/README.txt
+!src-tauri/resources/jvm/manifest.json
+jvm/build/
+jvm/samples/
+jvm/vendor/
 src-tauri/tauri.build.conf.json
 
 # IDE workspace

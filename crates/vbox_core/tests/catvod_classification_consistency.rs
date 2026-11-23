@@ -52,6 +52,7 @@ fn expected_error_class(api: &str) -> ErrorClass {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn classification_strategy_matches_profile() {
     let profiles = profiles();
     assert!(
@@ -80,6 +81,7 @@ fn classification_strategy_matches_profile() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn classification_variant_details_match_profile() {
     let profiles = profiles();
     for (api, profile) in &profiles.apis {
@@ -118,6 +120,7 @@ fn classification_variant_details_match_profile() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn classification_errors_are_taxonomy_coded() {
     let profiles = profiles();
     let mut problems = Vec::new();
@@ -144,6 +147,7 @@ fn classification_errors_are_taxonomy_coded() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn empty_api_boundaries() {
     // 无 api、无 jar → Unknown（画像表里没有可查项）。
     let site = Site {

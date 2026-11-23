@@ -105,6 +105,7 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_routes_appsk_to_native_family() {
     assert!(appsk::handles("csp_AppSK"));
     assert!(appsk::handles(" CSP_APPSK "));
@@ -119,6 +120,7 @@ fn dispatch_routes_appsk_to_native_family() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_through_dispatch() {
     let base = start_server();
     let cats = list_categories(&cfg(), &site(&base)).expect("categories");
@@ -129,6 +131,7 @@ fn categories_through_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_normalize_cover_and_fallback_remark() {
     let base = start_server();
     let items = list_videos(&cfg(), &site(&base), "1", 2).expect("videos");
@@ -141,6 +144,7 @@ fn videos_normalize_cover_and_fallback_remark() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn home_videos_direct_call() {
     let base = start_server();
     let items = appsk::home_videos(&cfg(), &site(&base)).expect("home");
@@ -149,6 +153,7 @@ fn home_videos_direct_call() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_uses_server_play_lists_and_sends_bearer() {
     let base = start_server();
     let detail = get_detail(&cfg(), &site(&base), "42").expect("detail");
@@ -162,6 +167,7 @@ fn detail_uses_server_play_lists_and_sends_bearer() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_through_dispatch() {
     let base = start_server();
     let items = search(&cfg(), &site(&base), "关键词", false).expect("search");
@@ -171,6 +177,7 @@ fn search_through_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_resolves_skjson_url() {
     let base = start_server();
     let value = player_content(&cfg(), &site(&base), "线路一", "https://page.example.com/play/1", &[])
@@ -180,6 +187,7 @@ fn player_resolves_skjson_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_passes_through_direct_video_without_network() {
     // 直链分支不需要 mock：即便 host 不可达也应直接返回。
     let s = Site {
@@ -196,6 +204,7 @@ fn player_passes_through_direct_video_without_network() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_rejects_blank_id() {
     let base = start_server();
     let err = get_detail(&cfg(), &site(&base), "  ").expect_err("blank id");

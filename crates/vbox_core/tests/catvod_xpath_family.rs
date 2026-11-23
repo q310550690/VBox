@@ -155,6 +155,7 @@ fn start_server(rule: String, json_rule: String) -> String {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_and_registry_recognise_xpath() {
     use vbox_core::spider::catvod::families::family_of;
     use vbox_core::spider::catvod::registry::{blocked_reason, is_native_ready};
@@ -164,6 +165,7 @@ fn dispatch_and_registry_recognise_xpath() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_from_rule_home() {
     let base = start_server(RULE_TEMPLATE.to_string(), JSON_RULE_TEMPLATE.to_string());
     let site = site(&base, RULE_TEMPLATE);
@@ -174,6 +176,7 @@ fn categories_from_rule_home() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_use_cate_and_page_template() {
     let base = start_server(RULE_TEMPLATE.to_string(), JSON_RULE_TEMPLATE.to_string());
     let site = site(&base, RULE_TEMPLATE);
@@ -186,6 +189,7 @@ fn videos_use_cate_and_page_template() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_reads_fields_and_two_lines() {
     let base = start_server(RULE_TEMPLATE.to_string(), JSON_RULE_TEMPLATE.to_string());
     let site = site(&base, RULE_TEMPLATE);
@@ -203,6 +207,7 @@ fn detail_reads_fields_and_two_lines() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_html_rows() {
     let base = start_server(RULE_TEMPLATE.to_string(), JSON_RULE_TEMPLATE.to_string());
     let site = site(&base, RULE_TEMPLATE);
@@ -214,6 +219,7 @@ fn search_html_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn rule_url_is_fetched_from_http_ext() {
     let base = start_server(RULE_TEMPLATE.to_string(), JSON_RULE_TEMPLATE.to_string());
     let mut s = site(&base, RULE_TEMPLATE);
@@ -223,6 +229,7 @@ fn rule_url_is_fetched_from_http_ext() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_json_path_rows() {
     let base = start_server(RULE_TEMPLATE.to_string(), JSON_RULE_TEMPLATE.to_string());
     let mut s = site(&base, RULE_TEMPLATE);
@@ -237,6 +244,7 @@ fn search_json_path_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_uses_template_and_headers() {
     let base = start_server(RULE_TEMPLATE.to_string(), JSON_RULE_TEMPLATE.to_string());
     let site = site(&base, RULE_TEMPLATE);
@@ -270,6 +278,7 @@ const DM84_DETAIL_BODY: &str = r##"<!doctype html><html><body>
 /// 锁定 scVod*（ul.v_list）与 dt*（v_content / play_from / play_list）选择器，
 /// 不再只依赖简化模板 div.result 或真站可达性。
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dm84_fixture_selectors_match_real_search_markup() {
     let server = Arc::new(Server::http("127.0.0.1:0").expect("server"));
     let base = format!("http://{}", server.server_addr());

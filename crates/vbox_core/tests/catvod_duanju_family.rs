@@ -133,6 +133,7 @@ fn cfg() -> TvConfig {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_are_fixed_eight() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -144,6 +145,7 @@ fn categories_are_fixed_eight() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn videos_use_twelve_segment_url_and_parse_rows() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -156,6 +158,7 @@ fn videos_use_twelve_segment_url_and_parse_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn videos_page_two_hits_page_segment() {
     let cfg = cfg();
     let (base, seen) = start_server();
@@ -170,6 +173,7 @@ fn videos_page_two_hits_page_segment() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_pairs_tabs_with_episode_containers() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -189,6 +193,7 @@ fn detail_pairs_tabs_with_episode_containers() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_without_episodes_reports_parse_error() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -199,6 +204,7 @@ fn detail_without_episodes_reports_parse_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_parses_module_search_rows() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -210,6 +216,7 @@ fn search_parses_module_search_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_returns_player_aaaa_url() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -221,6 +228,7 @@ fn player_returns_player_aaaa_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_without_player_aaaa_reports_host_api_error() {
     let cfg = cfg();
     let (base, _) = start_server();

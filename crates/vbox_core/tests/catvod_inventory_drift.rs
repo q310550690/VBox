@@ -105,6 +105,7 @@ fn row_value<'a>(rows: &'a [(String, i64, i64, i64)], name: &str) -> &'a (String
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn drift_report_matches_disk_baseline() {
     let report = read("docs/审计报告/订阅漂移复核.md");
     let sites = json("_rea/samples/inventory/sites.json");
@@ -156,6 +157,7 @@ fn drift_report_matches_disk_baseline() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn baseline_triangle_matches_profiles() {
     let sites = json("_rea/samples/inventory/sites.json");
     let profiles = json("crates/vbox_core/src/spider/catvod/profiles.json");

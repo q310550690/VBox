@@ -42,6 +42,7 @@ fn report_apis() -> BTreeSet<String> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn profile_site_dead_set_matches_recheck_report() {
     let dead = site_dead_apis();
     let rows = report_apis();
@@ -57,6 +58,7 @@ fn profile_site_dead_set_matches_recheck_report() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn recheck_summary_count_matches_rows() {
     let dead = site_dead_apis();
     let doc = read("docs/审计报告/阻断复核.md");

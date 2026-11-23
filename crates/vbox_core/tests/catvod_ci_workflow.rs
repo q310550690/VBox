@@ -25,6 +25,7 @@ fn workflow() -> String {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn release_workflow_triggers_on_tags_and_manual_dispatch() {
     let w = workflow();
     for key in ["workflow_dispatch:", "push:", "tags:", "- \"v*\""] {
@@ -36,6 +37,7 @@ fn release_workflow_triggers_on_tags_and_manual_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn release_workflow_builds_both_platforms_and_publishes_release() {
     let w = workflow();
     for key in [
@@ -51,6 +53,7 @@ fn release_workflow_builds_both_platforms_and_publishes_release() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn release_workflow_uploads_artifacts_and_pins_toolchain() {
     let w = workflow();
     for key in [
@@ -66,6 +69,7 @@ fn release_workflow_uploads_artifacts_and_pins_toolchain() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn release_workflow_is_tracked_by_audit_ledgers() {
     let root = repo_root();
     let index = fs::read_to_string(root.join("docs/审计报告/审计索引.md")).expect("读取审计索引失败");

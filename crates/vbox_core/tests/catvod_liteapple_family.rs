@@ -101,6 +101,7 @@ fn start_server() -> String {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_routes_liteapple_to_native_family() {
     let site = site("http://mock.invalid");
     assert!(vbox_core::spider::catvod::registry::is_native_ready(&site.api));
@@ -112,6 +113,7 @@ fn dispatch_routes_liteapple_to_native_family() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_come_from_androidtypes() {
     let base = start_server();
     let cats = list_categories(&cfg(), &site(&base)).expect("分类");
@@ -122,6 +124,7 @@ fn categories_come_from_androidtypes() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn list_videos_maps_rows() {
     let base = start_server();
     let items = list_videos(&cfg(), &site(&base), "1", 1).expect("列表");
@@ -134,6 +137,7 @@ fn list_videos_maps_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn list_videos_page_two_keeps_working() {
     let base = start_server();
     let items = list_videos(&cfg(), &site(&base), "1", 2).expect("第 2 页");
@@ -142,6 +146,7 @@ fn list_videos_page_two_keeps_working() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_collects_urls_into_liteapple_group() {
     let base = start_server();
     let detail = get_detail(&cfg(), &site(&base), "132221").expect("详情");
@@ -163,6 +168,7 @@ fn detail_collects_urls_into_liteapple_group() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_without_urls_reports_parse_error() {
     let base = start_server();
     let err = get_detail(&cfg(), &site(&base), "404").expect_err("应当报错");
@@ -171,6 +177,7 @@ fn detail_without_urls_reports_parse_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_filters_by_name_contains() {
     let base = start_server();
     let items = search(&cfg(), &site(&base), "三体", false).expect("搜索");
@@ -180,6 +187,7 @@ fn search_filters_by_name_contains() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_builds_cdn_url_and_header() {
     let base = start_server();
     let value = player_content(&cfg(), &site(&base), "LiteApple", "V1RjSllm", &[]).expect("播放");

@@ -84,6 +84,7 @@ fn encrypt_play_id(plain: &str) -> String {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_routes_appld_to_native_family() {
     assert!(appld::handles("csp_AppLd"));
     assert!(appld::handles("CSP_APPLD"));
@@ -98,6 +99,7 @@ fn dispatch_routes_appld_to_native_family() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_through_dispatch() {
     let base = start_server();
     let cats = list_categories(&cfg(), &site(&base)).expect("categories");
@@ -109,6 +111,7 @@ fn categories_through_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_through_dispatch() {
     let base = start_server();
     let items = list_videos(&cfg(), &site(&base), "1", 2).expect("videos");
@@ -121,6 +124,7 @@ fn videos_through_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn home_videos_flattens_vlist() {
     let base = start_server();
     let items = appld::home_videos(&cfg(), &site(&base)).expect("home");
@@ -130,6 +134,7 @@ fn home_videos_flattens_vlist() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_maps_play_lines_and_metadata() {
     let base = start_server();
     let detail = get_detail(&cfg(), &site(&base), "11").expect("detail");
@@ -149,6 +154,7 @@ fn detail_maps_play_lines_and_metadata() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_through_dispatch() {
     let base = start_server();
     let items = search(&cfg(), &site(&base), "海 边", false).expect("search");
@@ -159,6 +165,7 @@ fn search_through_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_decodes_encrypted_and_plain_ids() {
     let base = start_server();
     let s = site(&base);
@@ -174,6 +181,7 @@ fn player_decodes_encrypted_and_plain_ids() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn rejects_ext_without_server() {
     let s = Site {
         key: "appld".to_string(),

@@ -1,0 +1,13 @@
+[package]
+name = "vbox_jvm"
+version = "0.1.2"
+edition = "2021"
+description = "jar 蜘蛛的 JVM 宿主：定位/校验 JRE 17 运行时，按 P0 协议拉起 SpiderHost（阻塞 API）"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+sha2 = "0.10"
+flate2 = "1"
+tracing = "0.1"

@@ -85,12 +85,14 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn dispatch_routes_yingso_to_native_family() {
     assert!(vbox_core::spider::catvod::is_native_ready("csp_YingSo"));
     assert!(vbox_core::spider::catvod::blocked_reason("csp_YingSo").is_none());
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_are_empty_for_search_only_family() {
     let base = start_server(true);
     let cats = list_categories(&cfg(), &site(&base)).unwrap_or_default();
@@ -98,6 +100,7 @@ fn categories_are_empty_for_search_only_family() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_posts_expected_body_and_maps_three_providers() {
     let base = start_server(true);
     let hits = search(&cfg(), &site(&base), "关键字", false).expect("search");
@@ -111,6 +114,7 @@ fn search_posts_expected_body_and_maps_three_providers() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_remark_carries_keyword_date_and_category() {
     let base = start_server(true);
     let hits = search(&cfg(), &site(&base), "关键字", false).expect("search");
@@ -124,6 +128,7 @@ fn search_remark_carries_keyword_date_and_category() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_sends_keyword_in_body() {
     let base = start_server(true);
     // mock 服务端会校验 body 含 title 字段；换关键词再跑一遍，确保关键字真的进了 body。
@@ -132,6 +137,7 @@ fn search_sends_keyword_in_body() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_rejects_non_json_response() {
     let base = start_server(false);
     let err = search(&cfg(), &site(&base), "关键字", false).expect_err("not json");
@@ -140,6 +146,7 @@ fn search_rejects_non_json_response() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_reports_host_unsupported() {
     let err = get_detail(&cfg(), &site(""), "https://pan.quark.cn/s/ali123")
         .expect_err("push detail needs android parser");
@@ -149,6 +156,7 @@ fn detail_reports_host_unsupported() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_reports_host_unsupported() {
     let err = player_content(
         &cfg(),

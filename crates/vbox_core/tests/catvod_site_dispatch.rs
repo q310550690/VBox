@@ -102,6 +102,7 @@ fn report_lane_counts() -> BTreeMap<String, u64> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn lane_counts_match_coverage_report() {
     let sites = load_sites();
     assert_eq!(sites.len(), 612, "统一站点清单应为 612 条");
@@ -135,6 +136,7 @@ fn lane_counts_match_coverage_report() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn lane_matches_profile_strategy() {
     let sites = load_sites();
     let profiles = load_profiles();
@@ -173,6 +175,7 @@ fn lane_matches_profile_strategy() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn csp_and_non_csp_lanes_are_disjoint() {
     let sites = load_sites();
     let mut csp_sites = 0u64;

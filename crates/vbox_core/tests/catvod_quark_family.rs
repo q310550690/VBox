@@ -106,6 +106,7 @@ fn site(base: &str, cookie: bool) -> Site {
 const SHARE_URL: &str = "https://pan.quark.cn/s/24f565ff8b77";
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_lists_share_videos_recursively() {
     let (base, _state) = start_server();
     let cfg = TvConfig::default();
@@ -132,6 +133,7 @@ fn detail_lists_share_videos_recursively() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_returns_direct_download_url() {
     let (base, state) = start_server();
     let cfg = TvConfig::default();
@@ -152,6 +154,7 @@ fn player_returns_direct_download_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_routes_quark_family() {
     let (base, state) = start_server();
     let cfg = TvConfig::default();
@@ -168,6 +171,7 @@ fn dispatch_routes_quark_family() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn anonymous_detail_works_without_cookie() {
     let (base, _state) = start_server();
     let cfg = TvConfig::default();
@@ -177,6 +181,7 @@ fn anonymous_detail_works_without_cookie() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn bad_share_link_is_rejected() {
     let (base, _state) = start_server();
     let cfg = TvConfig::default();
@@ -185,6 +190,7 @@ fn bad_share_link_is_rejected() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_without_cookie_reports_config_error() {
     let (base, _state) = start_server();
     let cfg = TvConfig::default();

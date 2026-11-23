@@ -50,6 +50,7 @@ fn flags_in(text: &str) -> Vec<String> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn usage_flags_and_argv_flags_agree() {
     let mut tools = Vec::new();
     collect_tools(&root().join("_rea/tools"), &mut tools);

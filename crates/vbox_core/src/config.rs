@@ -409,10 +409,22 @@ fn deserialize_tv_config(value: Value) -> Result<TvConfig> {
     let mut cfg: TvConfig = serde_json::from_value(value)
         .map_err(|e| CoreError::Config(format!("配置字段解析失败: {e}")))?;
     cfg.http = Rules::default();
+    // 顶层 `spider` 是「默认 jar」：TVBox 里站点不写 `jar` 时用它（可能带 `;md5;`、可能 `img+` 伪装）。
+    let default_jar = cfg
+        .spider
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string);
     for site in &mut cfg.sites {
         site.key = site.key.trim().to_string();
         site.api = site.api.trim().to_string();
         site.jar = site.jar.trim().to_string();
+        if site.jar.is_empty() {
+            if let Some(default) = default_jar.as_ref() {
+                site.jar = default.clone();
+            }
+        }
         if site.key.is_empty() {
             site.key = format!("site_{}", site.api);
         }
@@ -527,6 +539,21 @@ mod tests {
         let cfg = load_config(json).unwrap();
         assert_eq!(cfg.sites.len(), 1);
         assert_eq!(cfg.sites[0].kind, 1);
+    }
+
+    #[test]
+    fn top_level_spider_is_inherited_as_default_jar() {
+        // 订阅只在顶层写 spider、站点不写 jar：TVBox 语义是站点继承它。
+        // 注意：内联配置没有 base URL，正文里的 "./"、"../" 会被 fix_relative_paths 改写，
+        // 所以这里用绝对地址，专测「继承」本身。
+        let json = r#"{"spider":"http://example.com/spider.jar;md5;deadbeef","sites":[
+            {"key":"a","name":"A","type":3,"api":"csp_A"},
+            {"key":"b","name":"B","type":3,"api":"csp_B","jar":"own.jar"}],
+            "lives":[],"parses":[]}"#;
+        let cfg = load_config(json).unwrap();
+        assert_eq!(cfg.sites[0].jar, "http://example.com/spider.jar;md5;deadbeef");
+        // 站点自己写了 jar 就不能被顶层覆盖。
+        assert_eq!(cfg.sites[1].jar, "own.jar");
     }
 
     #[test]

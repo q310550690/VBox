@@ -119,6 +119,7 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_come_from_nav() {
     let cfg = cfg();
     let base = start_server();
@@ -131,6 +132,7 @@ fn categories_come_from_nav() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn videos_first_page_parses_rows() {
     let cfg = cfg();
     let base = start_server();
@@ -145,6 +147,7 @@ fn videos_first_page_parses_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn videos_second_page_uses_show_route() {
     let cfg = cfg();
     let base = start_server();
@@ -155,6 +158,7 @@ fn videos_second_page_uses_show_route() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_parses_meta_and_two_line_groups() {
     let cfg = cfg();
     let base = start_server();
@@ -176,6 +180,7 @@ fn detail_parses_meta_and_two_line_groups() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_returns_m3u8_direct_link() {
     let cfg = cfg();
     let base = start_server();
@@ -201,6 +206,7 @@ fn player_returns_m3u8_direct_link() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_parses_rows() {
     let cfg = cfg();
     let base = start_server();
@@ -213,6 +219,7 @@ fn search_parses_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_missing_title_maps_to_parse_error() {
     let cfg = cfg();
     let base = start_server();
@@ -222,6 +229,7 @@ fn detail_missing_title_maps_to_parse_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_without_player_json_maps_to_parse_error() {
     let cfg = cfg();
     let base = start_server();

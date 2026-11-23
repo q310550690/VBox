@@ -54,6 +54,7 @@ fn now_secs() -> i64 {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn recent_full_live_audit_is_fresh() {
     let path = root().join(REPORT);
     assert!(path.exists(), "{REPORT} 不存在");
@@ -84,6 +85,7 @@ fn recent_full_live_audit_is_fresh() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn live_evidence_line_matches_status() {
     let text = fs::read_to_string(root().join(REPORT)).expect("读取审计报告");
     let section_start = text

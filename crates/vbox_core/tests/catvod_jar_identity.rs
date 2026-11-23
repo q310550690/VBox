@@ -31,6 +31,7 @@ fn is_hex(s: &str) -> bool {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn jar_names_encode_md5_prefix_and_file_basename() {
     let root = repo_root();
     let profiles = load(&root.join("crates/vbox_core/src/spider/catvod/profiles.json"))
@@ -87,6 +88,7 @@ fn jar_names_encode_md5_prefix_and_file_basename() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn jar_guard_flag_matches_guard_entries() {
     let root = repo_root();
     let profiles = load(&root.join("crates/vbox_core/src/spider/catvod/profiles.json"))

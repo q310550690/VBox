@@ -38,6 +38,9 @@ import type {
   PlayerState,
   PluginOverview,
   PythonStatus,
+  JvmConvertSnapshot,
+  JvmStatus,
+  TelemetryStatus,
   SearchHit,
   SearchPageResult,
   SearchPrefs,
@@ -660,6 +663,40 @@ export function setPythonPath(path?: string | null) {
 // 清空探测缓存并重新检测（不修改已保存路径）
 export function refreshPythonStatus() {
   return invoke<PythonStatus>('refresh_python_status')
+}
+
+/* ---------------- JVM（jar 蜘蛛）---------------- */
+
+// 运行时状态 + 宿主池 + 覆盖口径
+export function jvmStatus() {
+  return invoke<JvmStatus>('jvm_status')
+}
+// 清理 dex 转换缓存（不含加固壳载荷），返回释放字节数
+/** 正在进行的 dex→jar 转换进度（设置页轮询）。 */
+export function jvmConvertProgress() {
+  return invoke<JvmConvertSnapshot>('jvm_convert_progress')
+}
+
+export function jvmClearCache() {
+  return invoke<number>('jvm_clear_cache')
+}
+
+/* ---------------- 兼容性遥测（L1，本机 spool，默认不上传）---------------- */
+
+export function telemetryStatus() {
+  return invoke<TelemetryStatus>('telemetry_status')
+}
+// 导出诊断包（单 JSON），返回文件绝对路径
+export function telemetryExport() {
+  return invoke<string>('telemetry_export')
+}
+// 生成预填内容的 GitHub Issue 链接（浏览器打开即可反馈）
+export function telemetryIssueUrl() {
+  return invoke<string>('telemetry_issue_url')
+}
+// 清空本机 spool，返回释放字节数
+export function telemetryClear() {
+  return invoke<number>('telemetry_clear')
 }
 
 /* ---------------- Node / drpy 运行时 ---------------- */

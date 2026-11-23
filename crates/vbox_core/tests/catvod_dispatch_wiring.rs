@@ -19,6 +19,7 @@ fn count(hay: &str, needle: &str) -> usize {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn every_native_family_is_dispatched_from_all_five_entries() {
     let src_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
     let families_mod = std::fs::read_to_string(src_dir.join("spider/catvod/families/mod.rs"))

@@ -51,6 +51,7 @@ const REPORTS: [&str; 5] = [
 ];
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn every_report_names_an_existing_generator() {
     for report in REPORTS {
         let text = read(report);
@@ -68,6 +69,7 @@ fn every_report_names_an_existing_generator() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn every_report_generator_is_indexed() {
     let index = read("docs/审计报告/审计索引.md");
     for report in REPORTS {

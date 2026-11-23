@@ -1204,6 +1204,16 @@ export const pythonStatus = core.pythonStatus
 export const setPythonPath = core.setPythonPath
 export const refreshPythonStatus = core.refreshPythonStatus
 
+/* ---------------- JVM（jar 蜘蛛）---------------- */
+
+export const jvmStatus = core.jvmStatus
+export const jvmClearCache = core.jvmClearCache
+export const jvmConvertProgress = core.jvmConvertProgress
+export const telemetryStatus = core.telemetryStatus
+export const telemetryExport = core.telemetryExport
+export const telemetryIssueUrl = core.telemetryIssueUrl
+export const telemetryClear = core.telemetryClear
+
 /* ---------------- Node / drpy 运行时 ---------------- */
 
 export const nodeStatus = core.nodeStatus

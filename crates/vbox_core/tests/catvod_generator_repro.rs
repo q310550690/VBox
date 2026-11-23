@@ -67,6 +67,7 @@ fn run_offline_check(tool: &str) {
 
 /// 4 个离线可复现生成器：报告 ↔ 工具 必须一一对应，且 `--check` 当场通过。
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn offline_generators_reproduce_their_reports() {
     let pairs = [
         ("docs/审计报告/站点覆盖报告.md", "site-coverage.mjs"),
@@ -90,6 +91,7 @@ fn offline_generators_reproduce_their_reports() {
 /// 6 份自动生成文档必须全部被本判据显式覆盖：
 /// 4 份有离线 `--check`，2 份（网络/汇总型）登记「为何不能纳入」的理由。
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn every_auto_doc_generator_is_accounted_for() {
     // 不可离线复现的 2 份：登记理由，禁止静默纳入或静默排除。
     let excluded = [

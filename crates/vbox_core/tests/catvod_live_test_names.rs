@@ -78,6 +78,7 @@ fn matrix_rows() -> (BTreeMap<String, (usize, String)>, usize) {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn per_family_ignored_counts_match_matrix() {
     let (rows, declared) = matrix_rows();
     assert!(!rows.is_empty(), "矩阵中没有解析到家族行");

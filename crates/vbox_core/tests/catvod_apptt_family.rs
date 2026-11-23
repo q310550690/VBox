@@ -119,6 +119,7 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_are_four_static_entries() {
     let (_server, base) = start_server();
     let cfg = TvConfig::default();
@@ -130,6 +131,7 @@ fn categories_are_four_static_entries() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn list_videos_via_dispatch() {
     let (_server, base) = start_server();
     let cfg = TvConfig::default();
@@ -142,6 +144,7 @@ fn list_videos_via_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_via_dispatch() {
     let (_server, base) = start_server();
     let cfg = TvConfig::default();
@@ -152,6 +155,7 @@ fn search_via_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_maps_meta_and_groups() {
     let (_server, base) = start_server();
     let cfg = TvConfig::default();
@@ -173,6 +177,7 @@ fn detail_maps_meta_and_groups() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_returns_direct_url_unchanged() {
     let (_server, base) = start_server();
     let cfg = TvConfig::default();
@@ -189,6 +194,7 @@ fn player_returns_direct_url_unchanged() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_decrypts_aes_ctr_response() {
     let (_server, base) = start_server();
     let cfg = TvConfig::default();
@@ -199,6 +205,7 @@ fn player_decrypts_aes_ctr_response() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_reports_host_api_when_url_missing() {
     let (_server, base) = start_server();
     let cfg = TvConfig::default();
@@ -209,6 +216,7 @@ fn player_reports_host_api_when_url_missing() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_reports_parse_error_on_bad_ciphertext() {
     let (_server, base) = start_server();
     let cfg = TvConfig::default();

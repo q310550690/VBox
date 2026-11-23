@@ -131,6 +131,7 @@ fn jar_files(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn md5_pinned_jar_is_cached_and_served_without_second_request() {
     let body = payload("cache-a");
     let mock = Mock::new(body.clone());
@@ -153,6 +154,7 @@ fn md5_pinned_jar_is_cached_and_served_without_second_request() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn md5_mismatch_never_persists_bad_bytes_and_retry_succeeds() {
     let good = payload("good");
     let bad = payload("bad");
@@ -178,6 +180,7 @@ fn md5_mismatch_never_persists_bad_bytes_and_retry_succeeds() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn expired_cache_falls_back_when_download_fails() {
     let body = payload("fallback");
     let mock = Mock::new(body.clone());
@@ -203,6 +206,7 @@ fn expired_cache_falls_back_when_download_fails() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn img_plus_remote_strips_prefix_and_caches_zip_bytes() {
     let zip = payload("disguised");
     let mut disguised = vec![0xFF, 0xD8, 0xFF, 0xE0];
@@ -226,6 +230,7 @@ fn img_plus_remote_strips_prefix_and_caches_zip_bytes() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn concurrent_loads_use_unique_temp_and_never_corrupt_cache() {
     // 同一 jar 可能被多个站点同时加载。旧实现所有下载都写同一个
     // `<md5>.jar.part`，并发 write 交错后 rename 会落盘损坏字节，
@@ -274,6 +279,7 @@ fn concurrent_loads_use_unique_temp_and_never_corrupt_cache() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn oversized_jar_is_rejected_instead_of_truncated_and_cached() {
     // 旧实现用 `resp.take(64 MiB)` 读取：超过上限的响应会被**静默截断**。
     // 对有 md5 的 jar 只是 md5 不符（安全但报错含糊）；对无 md5 的 jar，
@@ -300,6 +306,7 @@ fn oversized_jar_is_rejected_instead_of_truncated_and_cached() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn local_jar_over_limit_is_rejected() {
     // `file://` 本地 jar 走的是另一条读取路径，之前完全绕过了 max_bytes：
     // 一个超大本地文件会被无界读入内存，和远程上限的语义不一致。
@@ -319,6 +326,7 @@ fn local_jar_over_limit_is_rejected() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn oversized_cache_is_ignored_and_redownloaded() {
     // 缓存文件可能被外部替换/损坏为超大文件；读缓存也必须受 max_bytes 约束，
     // 超过上限时视为无效并重新下载，而不是无界读入内存后继续使用。
@@ -347,6 +355,7 @@ fn oversized_cache_is_ignored_and_redownloaded() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn oversized_cache_is_not_used_as_download_failure_fallback() {
     let body = payload("cache-fallback-small");
     let mock = Mock::new(body.clone());
@@ -375,6 +384,7 @@ fn oversized_cache_is_not_used_as_download_failure_fallback() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn cache_root_conflict_is_attributed_and_leaves_no_temp() {
     let body = payload("cache-root-conflict");
     let mock = Mock::new(body);
@@ -401,6 +411,7 @@ fn cache_root_conflict_is_attributed_and_leaves_no_temp() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn cache_rename_failure_cleans_temp_and_is_attributed() {
     let body = payload("cache-rename");
     let mock = Mock::new(body);
@@ -431,6 +442,7 @@ fn cache_rename_failure_cleans_temp_and_is_attributed() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn future_mtime_cache_is_treated_as_fresh_instead_of_missing() {
     let body = payload("future-mtime");
     let mock = Mock::new(body);
@@ -457,6 +469,7 @@ fn future_mtime_cache_is_treated_as_fresh_instead_of_missing() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn clan_url_is_fetched_and_cached_like_http() {
     // clan:// 是 TVBox 的局域网文件服务约定：实现退化为 http://<rest>，
     // 但 md5 校验、缓存与二次命中的行为必须和普通 http jar 完全一致。
@@ -482,6 +495,7 @@ fn clan_url_is_fetched_and_cached_like_http() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn clan_url_respects_max_bytes_and_reports_original_spec() {
     let mut body = ZIP.to_vec();
     body.resize(2048, 0x5a);

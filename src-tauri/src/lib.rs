@@ -239,6 +239,13 @@ pub fn run() {
             commands::list_parses,
             commands::set_default_parse,
             commands::cancel_parse,
+            commands::jvm_status,
+            commands::jvm_clear_cache,
+            commands::jvm_convert_progress,
+            commands::telemetry_status,
+            commands::telemetry_export,
+            commands::telemetry_issue_url,
+            commands::telemetry_clear,
             commands::python_status,
             commands::set_python_path,
             commands::refresh_python_status,
@@ -372,6 +379,8 @@ pub fn run() {
             // 关闭播放页时 player_close 已经写回一次，这里覆盖「播放中直接退出应用」的情况。
             if matches!(event, tauri::RunEvent::Exit) {
                 player::remember_volume(app);
+                // 退出前把 JVM 宿主池全部关掉，否则池里被 Arc 持有的 java 子进程会残留。
+                vbox_core::spider::catvod::jvm::shutdown_all();
             }
         });
 }

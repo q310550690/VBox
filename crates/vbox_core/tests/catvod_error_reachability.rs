@@ -108,6 +108,7 @@ fn count_constructions(text: &str, variant: &str) -> usize {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn every_error_class_has_production_construction() {
     let root = repo_root();
     let contract_path = root.join("crates/vbox_core/src/spider/catvod/contract.rs");
@@ -153,6 +154,7 @@ fn every_error_class_has_production_construction() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn error_codes_survive_detect_roundtrip() {
     let mut codes = BTreeMap::new();
     for class in ErrorClass::ALL.iter().copied() {

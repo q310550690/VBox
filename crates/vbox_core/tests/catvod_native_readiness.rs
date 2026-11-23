@@ -54,6 +54,7 @@ fn strategy_counts() -> (BTreeMap<&'static str, u32>, u32) {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn strategy_counts_and_site_totals_match_totals_block() {
     let p = registry::profiles();
     let (counts, sites_sum) = strategy_counts();
@@ -87,6 +88,7 @@ fn strategy_counts_and_site_totals_match_totals_block() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn native_readiness_is_locked_to_rulepack_strategy() {
     let p = registry::profiles();
     let mut rulepack_apis = 0usize;

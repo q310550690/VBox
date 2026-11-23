@@ -63,6 +63,7 @@ fn upstream_report_rows() -> Vec<(String, String)> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn mock_only_sets_match_between_matrix_and_upstream_report() {
     let matrix = matrix_mock_only_families();
     let rows = upstream_report_rows();
@@ -89,6 +90,7 @@ fn manual_override_statuses(text: &str) -> std::collections::BTreeMap<String, St
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn no_alive_or_unknown_gap_in_upstream_report() {
     let text = fs::read_to_string(repo_docs().join("上游复核.md")).unwrap();
     let rows = upstream_report_rows();

@@ -49,6 +49,7 @@ fn family_apis() -> BTreeMap<String, BTreeSet<String>> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn every_family_api_is_traceable_to_jar_test_and_rea() {
     let p = registry::profiles();
     let rea = read("docs/type3兼容/type3-路线-REA原生重写.md");
@@ -91,6 +92,7 @@ fn every_family_api_is_traceable_to_jar_test_and_rea() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn legacy_rule_engines_are_disjoint_from_families_and_documented() {
     let p = registry::profiles();
     let rea = read("docs/type3兼容/type3-路线-REA原生重写.md");

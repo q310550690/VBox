@@ -133,6 +133,7 @@ fn parse_live_last_full(text: &str) -> (String, u64, u64, u64) {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn report_live_section_matches_audit_log() {
     let Some(log) = read_opt("_rea/tmp/live-audit-latest.log") else {
         return;
@@ -150,6 +151,7 @@ fn report_live_section_matches_audit_log() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn live_last_full_manifest_matches_report() {
     let Some(log) = read_opt("_rea/tmp/live-audit-latest.log") else {
         return;

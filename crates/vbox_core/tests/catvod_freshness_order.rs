@@ -97,6 +97,7 @@ const REPORTS: [&str; 5] = [
 ];
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn every_report_declares_generated_at() {
     for path in REPORTS {
         let text = read(path);
@@ -108,6 +109,7 @@ fn every_report_declares_generated_at() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn reports_are_not_older_than_their_data_sources() {
     let sites = read("_rea/samples/inventory/sites.json");
     let sites_epoch = generated_at(&sites)

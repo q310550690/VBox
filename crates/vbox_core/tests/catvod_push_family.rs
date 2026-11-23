@@ -26,6 +26,7 @@ fn site() -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_routes_push_to_native_family() {
     assert!(registry::is_native_ready("csp_Push"));
     assert!(registry::blocked_reason("csp_Push").is_none());
@@ -36,12 +37,14 @@ fn dispatch_routes_push_to_native_family() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_are_empty_through_dispatch() {
     let cats = list_categories(&cfg(), &site()).expect("categories");
     assert!(cats.is_empty());
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn official_detail_keeps_official_line() {
     let detail = get_detail(&cfg(), &site(), "https://www.iqiyi.com/v_19r.html").expect("detail");
     assert_eq!(detail.episodes.len(), 1);
@@ -52,18 +55,21 @@ fn official_detail_keeps_official_line() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn direct_media_detail_uses_direct_line() {
     let detail = get_detail(&cfg(), &site(), "https://cdn.example.org/a.m3u8").expect("detail");
     assert_eq!(detail.episodes[0].group, "直连");
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn unknown_url_detail_falls_back_to_web_line() {
     let detail = get_detail(&cfg(), &site(), "https://example.org/watch/1.html").expect("detail");
     assert_eq!(detail.episodes[0].group, "网页");
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn blank_id_is_a_parse_error() {
     let err = get_detail(&cfg(), &site(), "   ").expect_err("blank");
     let text = format!("{err}");
@@ -71,6 +77,7 @@ fn blank_id_is_a_parse_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_official_requires_parse_one() {
     let value = player_content(
         &cfg(),
@@ -84,6 +91,7 @@ fn player_official_requires_parse_one() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_direct_passes_url_through() {
     let value = player_content(&cfg(), &site(), "直连", "https://cdn.example.org/a.m3u8", &[]).expect("player");
     assert_eq!(value["parse"], json!(0));
@@ -91,6 +99,7 @@ fn player_direct_passes_url_through() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_are_not_supported() {
     let err = list_videos(&cfg(), &site(), "1", 1).expect_err("no category");
     let text = format!("{err}");
@@ -98,6 +107,7 @@ fn videos_are_not_supported() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_is_empty_by_design() {
     let hits = search(&cfg(), &site(), "任意关键词", false).expect("search");
     assert!(hits.is_empty());

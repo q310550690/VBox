@@ -152,6 +152,7 @@ fn read_log() -> Option<(PathBuf, String)> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn every_ignored_test_ran_ok_in_latest_audit() {
     let Some((_path, text)) = read_log() else {
         return;
@@ -182,6 +183,7 @@ fn every_ignored_test_ran_ok_in_latest_audit() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn audit_log_has_no_unknown_tests() {
     let Some((_path, text)) = read_log() else {
         return;

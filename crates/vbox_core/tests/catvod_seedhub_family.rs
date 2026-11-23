@@ -112,6 +112,7 @@ fn start_server() -> String {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_routes_seedhub_to_native_family() {
     let site = site("https://mock.invalid");
     assert!(vbox_core::spider::catvod::registry::is_native_ready(&site.api));
@@ -123,6 +124,7 @@ fn dispatch_routes_seedhub_to_native_family() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_are_hardcoded_three() {
     let cats = list_categories(&cfg(), &site("https://mock.invalid")).expect("分类");
     let ids: Vec<&str> = cats.iter().map(|c| c.type_id.as_str()).collect();
@@ -132,6 +134,7 @@ fn categories_are_hardcoded_three() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn folder_category_list_through_dispatch() {
     let base = start_server();
     let items = list_videos(&cfg(), &site(&base), "1", 1).expect("分类页");
@@ -146,6 +149,7 @@ fn folder_category_list_through_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn folder_category_page_two_uses_page_query() {
     let base = start_server();
     let items = list_videos(&cfg(), &site(&base), "1", 2).expect("第 2 页");
@@ -155,6 +159,7 @@ fn folder_category_page_two_uses_page_query() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn movies_category_returns_reversed_seed_rows() {
     let base = start_server();
     let items = list_videos(&cfg(), &site(&base), "movies/777", 1).expect("详情当分类");
@@ -166,6 +171,7 @@ fn movies_category_returns_reversed_seed_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_magnet_becomes_magnet_episode() {
     let base = start_server();
     let id = format!("沙丘2$$$https://img.example.com/c.jpg$$$/movies/magnet");
@@ -181,6 +187,7 @@ fn detail_magnet_becomes_magnet_episode() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_non_magnet_falls_back_to_page_url() {
     let base = start_server();
     let id = format!("某片$$$https://img.example.com/x.jpg$$$/movies/link");
@@ -190,6 +197,7 @@ fn detail_non_magnet_falls_back_to_page_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_plan_matches_original_prefix_rules() {
     let base = start_server();
     let ed2k = player_content(&cfg(), &site(&base), "magnet", "ed2k://|file|a.mkv|1|H|/", &[])

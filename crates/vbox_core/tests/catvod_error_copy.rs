@@ -1,7 +1,7 @@
 //! 宿主侧（前端）错误文案与契约层 `ErrorClass` 的一致性回归。
 //!
 //! 目标：`catvod.*` 稳定码的 UI 文案不允许悄悄漂移。前端映射表
-//! `src/utils/catvodErrors.ts` 必须覆盖契约层的全部 20 个分类，且
+//! `src/utils/catvodErrors.ts` 必须覆盖契约层的全部 30 个分类，且
 //! 标题 / 建议动作 / 可重试标记与 Rust 侧一致。
 
 use vbox_core::spider::catvod::contract::ErrorClass;
@@ -49,7 +49,7 @@ fn frontend_table_has_exactly_all_classes() {
             occurrences
         );
     }
-    assert_eq!(ErrorClass::ALL.len(), 20);
+    assert_eq!(ErrorClass::ALL.len(), 30);
 }
 
 #[test]

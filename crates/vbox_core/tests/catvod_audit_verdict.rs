@@ -19,6 +19,7 @@ fn read(rel: &str) -> String {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn audit_verdict_table_all_pass() {
     let audit = read("docs/审计报告/兼容性审计.md");
     let section = audit
@@ -49,6 +50,7 @@ fn audit_verdict_table_all_pass() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn live_regression_numbers_match_log() {
     let audit = read("docs/审计报告/兼容性审计.md");
     let re = Regex::new(

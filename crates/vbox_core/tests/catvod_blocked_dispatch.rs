@@ -46,6 +46,7 @@ fn site_of(api: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn unported_sites_return_not_ported_before_any_io() {
     let profiles = load_profiles();
     let apis = profiles["apis"].as_object().expect("apis 必须是对象");
@@ -107,6 +108,7 @@ fn unported_sites_return_not_ported_before_any_io() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn unported_dispatch_set_matches_profile() {
     let profiles = load_profiles();
     let apis = profiles["apis"].as_object().unwrap();

@@ -4,6 +4,7 @@
 //! - `.js`：交给 `spider::js`（rquickjs 子集）
 //! - `.py`：交给 `python`（系统 CPython sidecar，见 `python/mod.rs`）
 //! - `csp_XYQHiker*` / `csp_XBPQ`：原生规则引擎（xyq / xbpq）
+//! - **已冻结（2026-11-23，REA 退役）** 已移植的原生家族：仅作回退，不再维护。
 //! - 已移植的原生家族（`csp_PanSearch`、`csp_SixV`…，见 `spider::catvod::families`）：
 //!   必须排在 js/py 启发式**之前**——jar spider 的 `ext` 常常就是一个站点 URL，
 //!   而 `python::is_python_site` 会把「ext 是 http 地址」误判成 py 脚本源。
@@ -180,6 +181,27 @@ pub fn dispatch_lane(site: &Site) -> DispatchLane {
     }
 }
 fn list_categories_dispatch(cfg: &TvConfig, site: &Site) -> Result<Vec<Category>> {
+    // JVM 主力车道：站点带 jar 时先跑真 JRE 的原始字节码；失败才回退已移植家族/脚本/分类。
+    let mut jvm_lead_err: Option<crate::error::CoreError> = None;
+    // JVM 跑通但分类为空：不是硬失败，但通常意味着蜘蛛要 ext/配置才吐分类（如 Auete）。
+    // 此时继续走原生家族；原生也没有结果再返回这个空表——比直接给用户空目录好。
+    let mut jvm_lead_empty: Option<Vec<Category>> = None;
+    if crate::spider::catvod::jvm::should_lead(site) {
+        match crate::spider::catvod::jvm::list_categories(cfg, site) {
+            Ok(v) if !v.is_empty() => {
+                tracing::debug!(site = site.key.as_str(), method = "list_categories", "JVM 主力车道命中");
+                return Ok(v);
+            }
+            Ok(v) => {
+                tracing::debug!(site = site.key.as_str(), "JVM 主力返回空分类，回退原生再看");
+                jvm_lead_empty = Some(v);
+            }
+            Err(e) => {
+                tracing::debug!(site = site.key.as_str(), error = ?e, "JVM 主力车道失败，回退");
+                jvm_lead_err = Some(e.into_core());
+            }
+        }
+    }
     if let Some(result) = crate::spider::catvod::descriptor::try_categories(cfg, site) {
         return result;
     }
@@ -348,11 +370,34 @@ fn list_categories_dispatch(cfg: &TvConfig, site: &Site) -> Result<Vec<Category>
     } else if api_is_py(site) {
         crate::python::categories(cfg, site)
     } else {
+        if let Some(err) = jvm_lead_err {
+            return Err(err);
+        }
+        if let Some(v) = jvm_lead_empty {
+            return Ok(v);
+        }
+        if crate::spider::catvod::jvm::can_handle(site) {
+            return crate::spider::catvod::jvm::list_categories(cfg, site).map_err(|e| e.into_core());
+        }
         Err(crate::spider::catvod::site_error(site))
     }
 }
 
 fn list_videos_dispatch(cfg: &TvConfig, site: &Site, cat: &str, page: u32) -> Result<Vec<VideoItem>> {
+    // JVM 主力车道：站点带 jar 时先跑真 JRE 的原始字节码；失败才回退已移植家族/脚本/分类。
+    let mut jvm_lead_err: Option<crate::error::CoreError> = None;
+    if crate::spider::catvod::jvm::should_lead(site) {
+        match crate::spider::catvod::jvm::list_videos(cfg, site, cat, page) {
+            Ok(v) => {
+                tracing::debug!(site = site.key.as_str(), method = "list_videos", "JVM 主力车道命中");
+                return Ok(v);
+            }
+            Err(e) => {
+                tracing::debug!(site = site.key.as_str(), error = ?e, "JVM 主力车道失败，回退");
+                jvm_lead_err = Some(e.into_core());
+            }
+        }
+    }
     if let Some(result) = crate::spider::catvod::descriptor::try_videos(cfg, site, cat, page) {
         return result;
     }
@@ -521,11 +566,31 @@ fn list_videos_dispatch(cfg: &TvConfig, site: &Site, cat: &str, page: u32) -> Re
     } else if api_is_py(site) {
         crate::python::list_videos(cfg, site, cat, page)
     } else {
+        if let Some(err) = jvm_lead_err {
+            return Err(err);
+        }
+        if crate::spider::catvod::jvm::can_handle(site) {
+            return crate::spider::catvod::jvm::list_videos(cfg, site, cat, page).map_err(|e| e.into_core());
+        }
         Err(crate::spider::catvod::site_error(site))
     }
 }
 
 fn get_detail_dispatch(cfg: &TvConfig, site: &Site, id: &str) -> Result<VideoDetail> {
+    // JVM 主力车道：站点带 jar 时先跑真 JRE 的原始字节码；失败才回退已移植家族/脚本/分类。
+    let mut jvm_lead_err: Option<crate::error::CoreError> = None;
+    if crate::spider::catvod::jvm::should_lead(site) {
+        match crate::spider::catvod::jvm::get_detail(cfg, site, id) {
+            Ok(v) => {
+                tracing::debug!(site = site.key.as_str(), method = "get_detail", "JVM 主力车道命中");
+                return Ok(v);
+            }
+            Err(e) => {
+                tracing::debug!(site = site.key.as_str(), error = ?e, "JVM 主力车道失败，回退");
+                jvm_lead_err = Some(e.into_core());
+            }
+        }
+    }
     if let Some(result) = crate::spider::catvod::descriptor::try_detail(cfg, site, id) {
         return result;
     }
@@ -694,11 +759,31 @@ fn get_detail_dispatch(cfg: &TvConfig, site: &Site, id: &str) -> Result<VideoDet
     } else if api_is_py(site) {
         crate::python::get_detail(cfg, site, id)
     } else {
+        if let Some(err) = jvm_lead_err {
+            return Err(err);
+        }
+        if crate::spider::catvod::jvm::can_handle(site) {
+            return crate::spider::catvod::jvm::get_detail(cfg, site, id).map_err(|e| e.into_core());
+        }
         Err(crate::spider::catvod::site_error(site))
     }
 }
 
 fn search_dispatch(cfg: &TvConfig, site: &Site, keyword: &str, quick: bool) -> Result<Vec<VideoItem>> {
+    // JVM 主力车道：站点带 jar 时先跑真 JRE 的原始字节码；失败才回退已移植家族/脚本/分类。
+    let mut jvm_lead_err: Option<crate::error::CoreError> = None;
+    if crate::spider::catvod::jvm::should_lead(site) {
+        match crate::spider::catvod::jvm::search(cfg, site, keyword, quick) {
+            Ok(v) => {
+                tracing::debug!(site = site.key.as_str(), method = "search", "JVM 主力车道命中");
+                return Ok(v);
+            }
+            Err(e) => {
+                tracing::debug!(site = site.key.as_str(), error = ?e, "JVM 主力车道失败，回退");
+                jvm_lead_err = Some(e.into_core());
+            }
+        }
+    }
     if let Some(result) = crate::spider::catvod::descriptor::try_search(cfg, site, keyword) {
         return result;
     }
@@ -867,6 +952,12 @@ fn search_dispatch(cfg: &TvConfig, site: &Site, keyword: &str, quick: bool) -> R
     } else if api_is_py(site) {
         crate::python::search(cfg, site, keyword, quick)
     } else {
+        if let Some(err) = jvm_lead_err {
+            return Err(err);
+        }
+        if crate::spider::catvod::jvm::can_handle(site) {
+            return crate::spider::catvod::jvm::search(cfg, site, keyword, quick).map_err(|e| e.into_core());
+        }
         Err(crate::spider::catvod::site_error(site))
     }
 }
@@ -879,6 +970,20 @@ fn player_content_dispatch(
     id: &str,
     vip_flags: &[String],
 ) -> Result<serde_json::Value> {
+    // JVM 主力车道：站点带 jar 时先跑真 JRE 的原始字节码；失败才回退已移植家族/脚本/分类。
+    let mut jvm_lead_err: Option<crate::error::CoreError> = None;
+    if crate::spider::catvod::jvm::should_lead(site) {
+        match crate::spider::catvod::jvm::player_content(cfg, site, flag, id, vip_flags) {
+            Ok(v) => {
+                tracing::debug!(site = site.key.as_str(), method = "player_content", "JVM 主力车道命中");
+                return Ok(v);
+            }
+            Err(e) => {
+                tracing::debug!(site = site.key.as_str(), error = ?e, "JVM 主力车道失败，回退");
+                jvm_lead_err = Some(e.into_core());
+            }
+        }
+    }
     if let Some(result) =
         crate::spider::catvod::descriptor::try_player_content(cfg, site, flag, id)
     {
@@ -1050,6 +1155,12 @@ fn player_content_dispatch(
     } else if api_is_py(site) {
         crate::python::player_content(cfg, site, flag, id, vip_flags)
     } else {
+        if let Some(err) = jvm_lead_err {
+            return Err(err);
+        }
+        if crate::spider::catvod::jvm::can_handle(site) {
+            return crate::spider::catvod::jvm::player_content(cfg, site, flag, id, vip_flags).map_err(|e| e.into_core());
+        }
         Err(crate::spider::catvod::site_error(site))
     }
 }

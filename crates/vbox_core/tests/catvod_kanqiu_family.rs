@@ -87,6 +87,7 @@ fn site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_are_fixed_four_via_dispatch() {
     let cfg = TvConfig::default();
     let site = site("http://127.0.0.1:1");
@@ -97,6 +98,7 @@ fn categories_are_fixed_four_via_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn videos_parse_live_rows_from_mock() {
     let server = start_server();
     let base = base_of(&server);
@@ -112,6 +114,7 @@ fn videos_parse_live_rows_from_mock() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_builds_qile_group_via_dispatch() {
     let server = start_server();
     let base = base_of(&server);
@@ -127,6 +130,7 @@ fn detail_builds_qile_group_via_dispatch() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_without_links_reports_parse_error() {
     let server = start_server();
     let base = base_of(&server);
@@ -139,6 +143,7 @@ fn detail_without_links_reports_parse_error() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_returns_direct_live_url() {
     let cfg = TvConfig::default();
     let site = site("http://127.0.0.1:1");
@@ -156,6 +161,7 @@ fn player_returns_direct_live_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_is_empty_like_original() {
     let cfg = TvConfig::default();
     let site = site("http://127.0.0.1:1");

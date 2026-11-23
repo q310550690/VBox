@@ -75,6 +75,7 @@ fn site() -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn dispatch_and_registry_recognise_youtube() {
     assert!(registry::is_native_ready("csp_Youtube"));
     assert!(registry::blocked_reason("csp_Youtube").is_none());
@@ -83,6 +84,7 @@ fn dispatch_and_registry_recognise_youtube() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn categories_include_search_entry() {
     let mut s = site();
     s.ext = Some(Value::String(
@@ -96,6 +98,7 @@ fn categories_include_search_entry() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_returns_flat_entries() {
     let items = spider::search(&config(), &site(), "测试关键词", false).expect("search");
     assert_eq!(items.len(), 2, "{items:?}");
@@ -107,6 +110,7 @@ fn search_returns_flat_entries() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn search_empty_keyword_returns_empty_without_running() {
     let s = site_with_runner("definitely-not-a-real-binary-xyz");
     let items = spider::search(&config(), &s, "   ", false).expect("search");
@@ -114,6 +118,7 @@ fn search_empty_keyword_returns_empty_without_running() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn videos_playlist_pages_entries() {
     let s = site();
     let page1 = spider::list_videos(&config(), &s, "https://www.youtube.com/playlist?list=PL1", 1)
@@ -129,6 +134,7 @@ fn videos_playlist_pages_entries() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn detail_maps_single_video() {
     let d = spider::get_detail(&config(), &site(), "v1").expect("detail");
     assert_eq!(d.name, "视频一");
@@ -142,6 +148,7 @@ fn detail_maps_single_video() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn player_returns_picked_format_with_headers() {
     let v = spider::player_content(&config(), &site(), "", "v1", &[]).expect("player");
     assert_eq!(v.get("parse").and_then(Value::as_i64), Some(0));
@@ -158,6 +165,7 @@ fn player_returns_picked_format_with_headers() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn missing_runner_reports_host_error() {
     let s = site_with_runner("definitely-not-a-real-binary-xyz");
     let err = spider::get_detail(&config(), &s, "v1").expect_err("should fail");

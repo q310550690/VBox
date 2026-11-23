@@ -102,6 +102,7 @@ fn doudou_site(base: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_are_fixed_seven() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -113,6 +114,7 @@ fn categories_are_fixed_seven() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn hot_gaia_lists_items_with_msearch_and_rating() {
     let cfg = cfg();
     let (base, seen) = start_server();
@@ -128,6 +130,7 @@ fn hot_gaia_lists_items_with_msearch_and_rating() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn tv_hot_uses_subject_collection_items() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -138,6 +141,7 @@ fn tv_hot_uses_subject_collection_items() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn second_page_uses_start_offset() {
     let cfg = cfg();
     let (base, seen) = start_server();
@@ -147,6 +151,7 @@ fn second_page_uses_start_offset() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_reports_unsupported_contract() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -157,6 +162,7 @@ fn detail_reports_unsupported_contract() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_is_empty() {
     let cfg = cfg();
     let (base, _) = start_server();
@@ -165,6 +171,7 @@ fn search_is_empty() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn doudou_is_native_and_uses_triplet_msearch_id() {
     let site = doudou_site("http://127.0.0.1:9");
     assert!(vbox_core::spider::catvod::registry::is_native_ready(&site.api));

@@ -23,6 +23,7 @@ fn site(key: &str, api: &str, jar: &str) -> Site {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn profile_table_is_embedded_and_plausible() {
     let totals = catvod::profile_totals();
     assert!(totals.sites >= 200, "样本站点数 {}", totals.sites);
@@ -41,6 +42,7 @@ fn profile_table_is_embedded_and_plausible() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn native_ready_only_for_rulepack_families() {
     assert!(registry::is_native_ready("csp_XBPQ"));
     assert!(registry::is_native_ready("csp_XYQHikerV2"));
@@ -50,6 +52,7 @@ fn native_ready_only_for_rulepack_families() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn unported_site_returns_classified_error_instead_of_android_host() {
     let cfg = TvConfig::default();
     let s = site("pushagent", "csp_PushAgent", "");
@@ -64,6 +67,7 @@ fn unported_site_returns_classified_error_instead_of_android_host() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn unknown_api_error_mentions_unknown_api_code() {
     let cfg = TvConfig::default();
     let s = site("mystery", "csp_NotInAnyJar", "https://x/y.jar");
@@ -74,6 +78,7 @@ fn unknown_api_error_mentions_unknown_api_code() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn guarded_family_is_reported_as_protected() {
     let cfg = TvConfig::default();
     let s = site("guarded", "csp_BiliGuard", "");
@@ -83,6 +88,7 @@ fn guarded_family_is_reported_as_protected() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn script_family_is_never_routed_to_jar_layer() {
     // .js 站点走脚本路径；这里只验证分类器不把它当成 jar 家族
     match registry::classify(&site("js", "https://a/b.js", "")) {
@@ -92,6 +98,7 @@ fn script_family_is_never_routed_to_jar_layer() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn jar_spec_parses_md5_and_disguise() {
     let spec = JarSpec::parse("img+http://a/b.jpg;md5;DDAF13D7923EA1E333EA06ED930778A2")
         .unwrap()
@@ -107,6 +114,7 @@ fn jar_spec_parses_md5_and_disguise() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn jar_store_classifies_assets_and_remote_layout() {
     let dir = std::env::temp_dir().join(format!("vbox-catvod-it-{}", std::process::id()));
     let store = JarStore::new(&dir).with_ttl(Duration::from_secs(60));
@@ -120,6 +128,7 @@ fn jar_store_classifies_assets_and_remote_layout() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn normalize_roundtrip_from_catvod_json() {
     use vbox_core::spider::catvod::normalize;
     let home: serde_json::Value = serde_json::from_str(
@@ -152,6 +161,7 @@ fn normalize_roundtrip_from_catvod_json() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn difficulty_ordering_is_stable() {
     assert!(Difficulty::L1.rank() < Difficulty::L4.rank());
     assert_eq!(Difficulty::parse("L3"), Some(Difficulty::L3));
@@ -160,6 +170,7 @@ fn difficulty_ordering_is_stable() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn blocked_unported_apis_carry_explicit_reasons() {
     // 反编译缺口 / 需登录态的家族仍记 unported，但必须给出可解释的 blockedReason，
     // 满足「降级原因 100% 可见」的验收标准。
@@ -206,6 +217,7 @@ fn blocked_unported_apis_carry_explicit_reasons() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn jar_spec_rejects_malformed_md5_instead_of_requesting_bad_url() {
     let err = JarSpec::parse("http://a/b.jar;md5;not-a-md5")
         .expect_err("非法 md5 段必须直接报配置错误");
@@ -221,6 +233,7 @@ fn jar_spec_rejects_malformed_md5_instead_of_requesting_bad_url() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn jar_errors_carry_site_and_spec_identity() {
     use std::time::{SystemTime, UNIX_EPOCH};
     let base = std::env::temp_dir().join(format!(

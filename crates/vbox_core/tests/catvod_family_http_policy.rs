@@ -46,6 +46,7 @@ fn family_files() -> Vec<(String, PathBuf)> {
 const NO_NETWORK_FAMILIES: &[&str] = &["huban", "youtube"];
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn network_families_use_shared_client_helper() {
     let mut missing = Vec::new();
     for (name, path) in family_files() {
@@ -69,6 +70,7 @@ fn network_families_use_shared_client_helper() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn families_never_build_raw_reqwest_clients() {
     let mut offenders = Vec::new();
     for (name, path) in family_files() {
@@ -90,6 +92,7 @@ fn families_never_build_raw_reqwest_clients() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn insecure_tls_is_scoped_to_yinyuetai_only() {
     let mut users = BTreeSet::new();
     for (name, path) in family_files() {

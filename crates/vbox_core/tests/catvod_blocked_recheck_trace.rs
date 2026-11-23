@@ -122,6 +122,7 @@ fn site_strings(api: &str) -> String {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn site_dead_set_matches_recheck_report() {
     if !root().join("_rea").exists() {
         eprintln!("_rea 不存在，跳过历史证据判据");
@@ -179,6 +180,7 @@ fn site_dead_set_matches_recheck_report() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn recheck_hosts_are_traceable_to_config_or_source() {
     if !root().join("_rea").exists() {
         eprintln!("_rea 不存在，跳过历史证据判据");

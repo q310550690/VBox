@@ -38,6 +38,7 @@ fn payload(doc: &str) -> Value {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn supply_chain_payload_matches_inventory_and_ledger() {
     if !root().join("_rea").exists() {
         eprintln!("_rea 不存在，跳过历史证据判据");
@@ -138,6 +139,7 @@ fn supply_chain_payload_matches_inventory_and_ledger() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn supply_chain_documents_absent_recovery() {
     if !root().join("_rea").exists() {
         eprintln!("_rea 不存在，跳过历史证据判据");

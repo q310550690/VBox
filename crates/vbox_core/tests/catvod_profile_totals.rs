@@ -20,6 +20,7 @@ fn repo_root() -> std::path::PathBuf {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn totals_sites_equal_sum_and_inventory_rows() {
     let p = registry::profiles();
     let mut sum = 0u32;
@@ -52,6 +53,7 @@ fn totals_sites_equal_sum_and_inventory_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn profile_envelope_is_coherent() {
     let raw_path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("src/spider/catvod/profiles.json");

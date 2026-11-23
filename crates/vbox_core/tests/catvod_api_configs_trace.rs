@@ -71,6 +71,7 @@ fn string_set(value: Option<&serde_json::Value>, what: &str) -> BTreeSet<String>
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn api_configs_match_site_repo_labels() {
     let root = repo_root();
     let profiles_path = root.join("crates/vbox_core/src/spider/catvod/profiles.json");
@@ -141,6 +142,7 @@ fn api_configs_match_site_repo_labels() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn every_site_repo_label_is_covered_by_its_api() {
     let root = repo_root();
     let profiles_path = root.join("crates/vbox_core/src/spider/catvod/profiles.json");

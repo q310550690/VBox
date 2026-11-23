@@ -63,6 +63,7 @@ fn assert_surfaced(api: &str, reason: &str, message: &str) {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn unported_errors_surface_blocked_reason_and_hint() {
     let p = profiles();
     let mut seen = BTreeSet::new();
@@ -98,6 +99,7 @@ fn unported_errors_surface_blocked_reason_and_hint() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn unsupported_errors_surface_profile_reason_and_hint() {
     let p = profiles();
     let mut checked = 0usize;

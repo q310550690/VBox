@@ -32,6 +32,7 @@ fn assert_ok(label: &str, out: std::process::Output) {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn audit_index_and_manifest_verify_from_rust() {
     assert_ok(
         "audit-index --check",
@@ -44,6 +45,7 @@ fn audit_index_and_manifest_verify_from_rust() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn audit_snapshot_shape_is_sane() {
     let path = root().join("docs/审计报告/审计快照.json");
     let text = std::fs::read_to_string(&path)

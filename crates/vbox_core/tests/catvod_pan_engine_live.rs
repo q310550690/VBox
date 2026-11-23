@@ -25,6 +25,7 @@ fn rules() -> Rules {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn share_link_domains_are_stable() {
     let cases = [
         ("https://pan.quark.cn/s/24f565ff8b77", PanProvider::Quark),
@@ -48,6 +49,7 @@ fn share_link_domains_are_stable() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn cookie_required_errors_are_distinct_and_actionable() {
     let mut seen = std::collections::BTreeSet::new();
     for p in [PanProvider::Quark, PanProvider::Ali, PanProvider::Uc, PanProvider::P115] {

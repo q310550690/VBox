@@ -76,6 +76,7 @@ fn dex_by_sha(dexinfo: &Value) -> BTreeMap<String, DexMetrics> {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn jar_metrics_match_dex_analysis() {
     let Some(dexinfo) = load_json(&dexinfo_path()) else {
         eprintln!("skip: {} 不存在（CI 无 _rea 快照）", dexinfo_path().display());
@@ -110,6 +111,7 @@ fn jar_metrics_match_dex_analysis() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：依赖 _rea 判据数据/原生家族，不再维护"]
 fn every_analyzed_spider_jar_is_registered() {
     let Some(dexinfo) = load_json(&dexinfo_path()) else {
         eprintln!("skip: {} 不存在（CI 无 _rea 快照）", dexinfo_path().display());

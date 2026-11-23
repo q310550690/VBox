@@ -140,6 +140,7 @@ fn cfg() -> TvConfig {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn categories_filter_skipped_names() {
     let (base, _recorded) = start_server();
     let cats = spider::list_categories(&cfg(), &site(&base)).expect("分类可解析");
@@ -150,6 +151,7 @@ fn categories_filter_skipped_names() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn videos_use_filtered_endpoint_and_page() {
     let (base, recorded) = start_server();
     let items = spider::list_videos(&cfg(), &site(&base), "1", 2).expect("列表可解析");
@@ -170,6 +172,7 @@ fn videos_use_filtered_endpoint_and_page() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn detail_builds_groups_and_play_entries() {
     let (base, _recorded) = start_server();
     let detail = spider::get_detail(&cfg(), &site(&base), "11").expect("详情可解析");
@@ -189,6 +192,7 @@ fn detail_builds_groups_and_play_entries() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn search_returns_rows() {
     let (base, _recorded) = start_server();
     let items = spider::search(&cfg(), &site(&base), "搜索词", false).expect("搜索可解析");
@@ -198,6 +202,7 @@ fn search_returns_rows() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_returns_direct_link_for_hls() {
     let (base, _recorded) = start_server();
     let value = spider::player_content(
@@ -213,6 +218,7 @@ fn player_returns_direct_link_for_hls() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn player_calls_vod_parse_with_signature() {
     let (base, recorded) = start_server();
     let encrypted = encrypt("http://cdn.example/ep9.m3u8");
@@ -241,6 +247,7 @@ fn player_calls_vod_parse_with_signature() {
 }
 
 #[test]
+#[ignore = "REA 已退役（2026-11-23 冻结）：判据/家族/审计矩阵测试，不再维护"]
 fn missing_url_reports_parse_error() {
     let mut site = site("http://127.0.0.1:1");
     site.ext = Some(Value::String("{}".to_string()));
