@@ -34,9 +34,6 @@ export interface ParseStep {
 const MAX_STEPS = 80
 /** 本地计时刷新间隔 */
 const TICK_MS = 200
-/** 成功后自动淡出延时 */
-const SUCCESS_HIDE_MS = 1500
-
 /** 生成 requestId：优先 crypto.randomUUID，不可用时用时间戳 + 随机串兜底 */
 function createRequestId(): string {
   const c = globalThis.crypto as Crypto | undefined
@@ -141,15 +138,6 @@ export function useParseProgress() {
     }
   }
 
-  function scheduleAutoHide() {
-    clearAutoHide()
-    autoHideTimer = window.setTimeout(() => {
-      autoHideTimer = null
-      // 只收起仍然处于成功态的面板（避免覆盖后续新解析）
-      if (state.value === 'success') dismissed.value = true
-    }, SUCCESS_HIDE_MS)
-  }
-
   function clearTimers() {
     stopTicker()
     clearAutoHide()
@@ -213,13 +201,13 @@ export function useParseProgress() {
     return requestId.value
   }
 
-  /** 收尾：页面拿到结果 / 抛错后调用（成功会自动淡出，失败保留日志） */
+  /** 收尾：页面拿到结果 / 抛错后调用（成功后保持展开，由用户手动关闭；失败保留日志） */
   function finish(result: 'success' | 'error', message?: string): void {
     stopTicker()
     if (result === 'success') {
       state.value = 'success'
       errorMessage.value = ''
-      scheduleAutoHide()
+      // 需求：解析完成后默认不关闭，保持面板可查看（用户可手动关闭）
       return
     }
     state.value = 'error'

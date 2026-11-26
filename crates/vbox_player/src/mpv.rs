@@ -81,6 +81,12 @@ pub struct PlayerSnapshot {
     pub frame_drops: i64,
     /// 解码器丢帧数（`decoder-frame-drop-count`，仅排障参考）
     pub decoder_frame_drops: i64,
+    /// 视频色彩原色（`video-params/primaries`，如 `bt.709` / `bt.2020`；空串 = 未知）
+    pub video_primaries: String,
+    /// 视频传输函数（`video-params/gamma`，如 `bt.1886` / `pq` / `hlg`；空串 = 未知）
+    pub video_gamma: String,
+    /// HDR 信号峰值（`video-params/sig-peak`，SDR 通常为 1.0；未知/负值归一为 0）
+    pub video_sig_peak: f64,
     /// 可选音轨（来自 mpv `track-list`；无媒体时为空）
     pub audio_tracks: Vec<PlayerTrack>,
     /// 可选字幕轨（来自 mpv `track-list`；无媒体时为空）
@@ -115,6 +121,9 @@ impl Default for PlayerSnapshot {
             display_fps: 0.0,
             frame_drops: 0,
             decoder_frame_drops: 0,
+            video_primaries: String::new(),
+            video_gamma: String::new(),
+            video_sig_peak: 0.0,
             audio_tracks: Vec::new(),
             subtitle_tracks: Vec::new(),
             // 前端契约：没有选中轨道时统一用 "no"（表示关闭），而不是空串。
@@ -224,7 +233,7 @@ impl Player {
         }
 
         // 选项：无内置 OSD/OSC（控制条由前端绘制）、idle 常驻
-        let defaults: [(&str, &str); 11] = [
+        let defaults: [(&str, &str); 15] = [
             ("idle", "yes"),
             ("keep-open", "no"),
             ("osc", "no"),
@@ -234,6 +243,13 @@ impl Player {
             ("input-vo-keyboard", "no"),
             ("terminal", "no"),
             ("config", "no"),
+            // HDR / 杜比视界输出：libplacebo 的 gpu-next 才能解析 HDR10/HLG 元数据与
+            // 杜比视界 RPU；target-colorspace-hint 让 Windows 11 HDR 显示器直接按 HDR 输出。
+            // 老版本 mpv 不认识某个选项时 set_option 会失败，这里统一忽略、退回默认 vo。
+            ("vo", "gpu-next"),
+            ("gpu-api", "d3d11"),
+            ("target-colorspace-hint", "yes"),
+            ("hdr-compute-peak", "yes"),
             ("audio-client-name", "VBox"),
             ("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"),
         ];
@@ -744,6 +760,14 @@ fn build_snapshot(api: &MpvApi, handle: *mut c_void, inner: &Arc<Mutex<Inner>>) 
         .get_i64(handle, "decoder-frame-drop-count")
         .unwrap_or(0)
         .max(0);
+    // HDR / 杜比视界诊断：primaries/gamma 说明实际解码出的色彩空间，sig-peak 是信号峰值。
+    let video_primaries = api
+        .get_string(handle, "video-params/primaries")
+        .unwrap_or_default();
+    let video_gamma = api
+        .get_string(handle, "video-params/gamma")
+        .unwrap_or_default();
+    let video_sig_peak = non_negative(api.get_double(handle, "video-params/sig-peak"));
     // 轨道枚举：每次快照刷新都读一次 track-list（属性读取失败一律跳过，不 panic）
     let (audio_tracks, subtitle_tracks, active_audio_id, active_subtitle_id) =
         enumerate_tracks(api, handle);
@@ -769,6 +793,9 @@ fn build_snapshot(api: &MpvApi, handle: *mut c_void, inner: &Arc<Mutex<Inner>>) 
         display_fps,
         frame_drops,
         decoder_frame_drops,
+        video_primaries,
+        video_gamma,
+        video_sig_peak,
         audio_tracks,
         subtitle_tracks,
         active_audio_id,

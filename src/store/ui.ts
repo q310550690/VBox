@@ -99,6 +99,13 @@ let seq = 0
 let lastNotice: { text: string; at: number; id: number } | null = null
 let inited = false
 
+/** 全局提示默认自动关闭时间（ms）：2s；悬停暂停、点击后常显 */
+const NOTICE_AUTO_DISMISS_MS = 2000
+/** 每条提示的自动关闭定时器（不放进 Pinia state，避免被序列化） */
+const noticeTimers = new Map<number, number>()
+/** 当前鼠标悬停中的提示 id（悬停期间不自动关闭） */
+const hoveredNotices = new Set<number>()
+
 export const useUiStore = defineStore('ui', {
   state: () => ({
     /** 主题模式：跟随系统 / 亮色 / 暗色 */
@@ -107,10 +114,8 @@ export const useUiStore = defineStore('ui', {
     hue: DEFAULT_HUE,
     /** 侧栏是否折叠为图标模式 */
     sidebarCollapsed: false,
-    /** 侧边与标题栏亚克力：Windows 桌面端默认开启（见 defaultAcrylic） */
+    /** 亚克力效果（侧边、标题栏与全局背景统一开关）：Windows 桌面端默认开启（见 defaultAcrylic） */
     acrylic: defaultAcrylic(),
-    /** 全局背景亚克力：依赖 acrylic，默认关闭 */
-    acrylicContent: false,
     /** 全局提示（最多同时 3 条，4s 自动消失） */
     notices: [] as ToastMessage[],
   }),
@@ -158,10 +163,8 @@ export const useUiStore = defineStore('ui', {
         typeof saved.sidebarCollapsed === 'boolean'
           ? saved.sidebarCollapsed
           : window.innerWidth < SIDEBAR_COLLAPSE_WIDTH
-      // 亚克力：默认开启「侧边与标题栏」，全局背景默认关闭；
-      // 老版本持久化数据没有这两个字段时按默认值迁移。
+      // 亚克力：默认开启；老版本持久化数据没有该字段时按默认值迁移。
       this.acrylic = typeof saved.acrylic === 'boolean' ? saved.acrylic : defaultAcrylic()
-      this.acrylicContent = this.acrylic && saved.acrylicContent === true
       this.applyTheme()
 
       // 跟随系统：仅在 mode === 'system' 时生效
@@ -200,39 +203,23 @@ export const useUiStore = defineStore('ui', {
       this.persist()
     },
 
-    /** 把亚克力开关同步到 <html>（acrylic-on / acrylic-on-content） */
+    /** 把亚克力开关同步到 <html>（acrylic-on 同时决定外壳与卡片半透明背景） */
     applyAcrylic() {
-      const root = document.documentElement
-      if (this.acrylic) {
-        root.classList.add('acrylic-on')
-        root.classList.toggle('acrylic-on-content', this.acrylicContent)
-      } else {
-        root.classList.remove('acrylic-on')
-        root.classList.remove('acrylic-on-content')
-      }
+      document.documentElement.classList.toggle('acrylic-on', this.acrylic)
     },
 
-    /** 侧边与标题栏亚克力开关；关闭时联动关闭全局背景 */
+    /** 亚克力效果总开关 */
     setAcrylic(on: boolean) {
       this.acrylic = on
-      if (!on) this.acrylicContent = false
       this.applyAcrylic()
       this.persist()
     },
 
-    /** 全局背景亚克力开关（依赖侧边与标题栏） */
-    setAcrylicContent(on: boolean) {
-      this.acrylicContent = this.acrylic && on
-      this.applyAcrylic()
-      this.persist()
-    },
-
-    /** 恢复默认外观：跟随系统 + 默认配色 + 亚克力默认（侧边开、全局背景关） */
+    /** 恢复默认外观：跟随系统 + 默认配色 + 亚克力默认开启 */
     resetAppearance() {
       this.mode = 'system'
       this.hue = DEFAULT_HUE
       this.acrylic = defaultAcrylic()
-      this.acrylicContent = false
       this.applyTheme()
     },
 
@@ -243,7 +230,6 @@ export const useUiStore = defineStore('ui', {
           hue: this.hue,
           sidebarCollapsed: this.sidebarCollapsed,
           acrylic: this.acrylic,
-          acrylicContent: this.acrylicContent,
         }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
       } catch {
@@ -278,7 +264,7 @@ export const useUiStore = defineStore('ui', {
       this.setSidebarCollapsed(!this.sidebarCollapsed)
     },
 
-    /** 弹出全局提示（默认 4s 自动消失，最多同时 3 条） */
+    /** 弹出全局提示（默认 2s 自动消失，最多同时 3 条；悬停暂停，点击后常显） */
     notify(text: string, level: ToastLevel = 'info') {
       if (!text) return -1
       const now = Date.now()
@@ -289,15 +275,66 @@ export const useUiStore = defineStore('ui', {
       this.notices.push({ id, text, level })
       if (this.notices.length > 3) this.notices.shift()
       lastNotice = { text, at: now, id }
-      window.setTimeout(() => this.dismissNotice(id), 4000)
+      this.armNoticeTimer(id)
       return id
     },
 
+    /** 启动（或重启）某条提示的自动关闭计时器 */
+    armNoticeTimer(id: number) {
+      const existing = noticeTimers.get(id)
+      if (existing !== undefined) window.clearTimeout(existing)
+      noticeTimers.set(
+        id,
+        window.setTimeout(() => {
+          noticeTimers.delete(id)
+          if (hoveredNotices.has(id)) return
+          this.dismissNotice(id)
+        }, NOTICE_AUTO_DISMISS_MS),
+      )
+    },
+
+    /** 鼠标移入：暂停自动关闭（移开后恢复计时） */
+    hoverNotice(id: number) {
+      hoveredNotices.add(id)
+      const t = noticeTimers.get(id)
+      if (t !== undefined) {
+        window.clearTimeout(t)
+        noticeTimers.delete(id)
+      }
+    },
+
+    /** 鼠标移开：恢复自动关闭计时 */
+    leaveNotice(id: number) {
+      hoveredNotices.delete(id)
+      this.armNoticeTimer(id)
+    },
+
+    /** 点击提示：常显，等待用户手动关闭 */
+    pinNotice(id: number) {
+      const t = noticeTimers.get(id)
+      if (t !== undefined) {
+        window.clearTimeout(t)
+        noticeTimers.delete(id)
+      }
+      hoveredNotices.delete(id)
+      const notice = this.notices.find((n) => n.id === id)
+      if (notice) notice.pinned = true
+    },
+
     dismissNotice(id: number) {
+      const t = noticeTimers.get(id)
+      if (t !== undefined) {
+        window.clearTimeout(t)
+        noticeTimers.delete(id)
+      }
+      hoveredNotices.delete(id)
       this.notices = this.notices.filter((n) => n.id !== id)
     },
 
     clearNotices() {
+      for (const t of noticeTimers.values()) window.clearTimeout(t)
+      noticeTimers.clear()
+      hoveredNotices.clear()
       this.notices = []
       lastNotice = null
     },

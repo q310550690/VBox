@@ -100,7 +100,8 @@ enum Cmd {
         /// 指定运行时目录（默认按 exe 旁/workspace/VBOX_JVM_ROOT 自动定位）
         #[arg(long)]
         root: Option<String>,
-    },    /// 查看 JVM 宿主池与会话统计（P2 诊断）
+    },
+    /// 查看 JVM 宿主池与会话统计（P2 诊断）
     #[command(name = "jvm-pool")]
     JvmPool {
         /// 以 JSON 输出
@@ -746,7 +747,9 @@ fn jvm_call(a: JvmCallArgs) -> Result<(), Box<dyn std::error::Error>> {
     }
     println!("宿主启动: {} ms（pp={:?}）", startup_ms, host.pp());
     println!("调用: {} {} → {} ms, ok={}", a.class, a.method, reply.elapsed.as_millis(), reply.ok);
-    if reply.data.chars().count() > 4000 {
+    if std::env::var("VBOX_RAW").is_ok() {
+        println!("{}", reply.data);
+    } else if reply.data.chars().count() > 4000 {
         let head: String = reply.data.chars().take(4000).collect();
         println!("{}…（共 {} 字符，已截断）", head, reply.data.chars().count());
     } else {

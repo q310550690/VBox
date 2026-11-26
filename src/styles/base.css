@@ -392,16 +392,10 @@ html.acrylic-on .sidebar {
 }
 /* 内容区亚克力：这里只叠一层很淡的主题色，真正透出的是下层外壳玻璃 + 窗口毛玻璃。
    早期直接把 --glass-bg2（94%）铺在内容区，它与外壳那层 76% 玻璃叠加后接近不透明，
-   视觉上就是「内容区没有亚克力」。改成淡色叠层后合成透明度约 66%，模糊背景可见。 */
-html.acrylic-on.acrylic-on-content .app-content {
+   视觉上就是「内容区没有亚克力」。改成淡色叠层后合成透明度约 66%，模糊背景可见。
+   单开关后不再区分「全局背景」子项：只要 acrylic-on，内容区与卡片一起半透明。 */
+html.acrylic-on .app-content {
   background: color-mix(in srgb, var(--el-bg-color) 66%, transparent);
-}
-html.acrylic-on.acrylic-on-content .status-tabs {
-  /* background: var(--glass-bg2); */
-}
-html.acrylic-on.acrylic-on-content .vod-topbar
-{
-  /* background: linear-gradient(180deg, var(--glass-bg2) 75%, transparent); */
 }
 
 /* ============================================================

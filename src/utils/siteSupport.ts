@@ -1,12 +1,11 @@
-// 源能力判定（本机支持 / 后续支持）统一收口
+// 源能力判定（本机支持 / 未适配）统一收口
 // - 本机支持：type0(XML) / type1(苹果CMS) / type4(HTTP 远程接口)
 //            type3 `.js` / 原生规则引擎 `csp_XYQHiker*`、`csp_XBPQ*`
 //            type3 Python `.py`/`py_`（CPython sidecar，需系统 Python）
-// - 后续支持：type3 jar（需 Android Host）
+//            type3 jar（JVM 兼容层，真 JRE 执行原始字节码，需 JRE）
 // 页面（源 tab / 站点弹窗 / 设置页线路统计 / 搜索空态 / 错误态）都从这里取结论，
 // 避免再出现“暂不支持”这类绝对措辞。
-import { shallowRef } from 'vue'
-import type { Site, SiteApiSupport, SiteStats, SiteSupportLevel } from '@/types'
+import type { Site, SiteStats, SiteSupportLevel } from '@/types'
 
 /**
  * Python spider 能力开关。
@@ -27,11 +26,11 @@ export interface SiteCapability {
   level: SiteSupportLevel
   /** 本机是否可加载 */
   local: boolean
-  /** 排序权重：越小越靠前（本机 0 / Python 未就绪 1 / jar 2 / 其它 3） */
+  /** 排序权重：越小越靠前（纯本机 0 / 运行时依赖 1 / jar 车道 2 / 其它 3） */
   rank: number
   /** 本机可用时的能力说明 */
   note?: string
-  /** 本机不可用时的原因（统一“后续支持 / 暂未适配”措辞） */
+  /** 本机不可用时的原因（统一“暂未适配”措辞） */
   reason?: string
 }
 
@@ -121,35 +120,6 @@ export function isJarSpider(site: Site): boolean {
   )
 }
 
-/**
- * REA 画像缓存（api → 支持画像）。
- *
- * 站点选择器/统计用到的 `classifySite` 是纯函数，这里用 shallowRef 保存画像：
- * 在 computed/模板中调用时会自动建立响应式依赖，画像异步加载完成后自动重算。
- */
-const apiSupport = shallowRef<Record<string, SiteApiSupport>>({})
-
-/** 写入 REA 画像（`site_api_support` 命令结果）；重复调用整体替换。 */
-export function setSiteApiSupport(rows: SiteApiSupport[]): void {
-  const map: Record<string, SiteApiSupport> = {}
-  for (const row of rows) {
-    if (row.api) map[row.api] = row
-  }
-  apiSupport.value = map
-}
-
-/** 当前 api 的画像（无画像返回 undefined）。 */
-function supportOf(site: Site): SiteApiSupport | undefined {
-  const api = apiOf(site)
-  return api ? apiSupport.value[api] : undefined
-}
-
-/** 待移植/不支持原因：优先 REA 阻塞原因解释，其次画像 reason。 */
-function blockedText(profile: SiteApiSupport | undefined, fallback: string): string {
-  if (!profile) return fallback
-  return profile.blockedHint || profile.reason || fallback
-}
-
 /** 判定单个源的本机支持能力与展示文案 */
 export function classifySite(site: Site): SiteCapability {
   switch (site.type) {
@@ -201,40 +171,12 @@ export function classifySite(site: Site): SiteCapability {
               reason: '后续支持（需系统 Python 运行时）',
             }
       }
-      const profile = supportOf(site)
-      // REA 画像已判定为原生实现（规则引擎 / 原生解析家族）：不再误标「待移植」。
-      if (profile?.native || profile?.strategy === 'rulepack') {
-        return { level: 'local', local: true, rank: 0, note: '原生实现（REA 画像）' }
-      }
-      if (profile?.strategy === 'unported') {
-        return {
-          level: 'jar',
-          local: false,
-          rank: 2,
-          reason: blockedText(profile, '待移植（需 Android Host）'),
-        }
-      }
-      if (profile?.strategy === 'unsupported') {
-        return {
-          level: 'unsupported',
-          local: false,
-          rank: 3,
-          reason: blockedText(profile, 'REA 画像判定为不支持'),
-        }
-      }
-      if (profile) {
-        return {
-          level: 'jar',
-          local: false,
-          rank: 2,
-          reason: blockedText(profile, '待移植（需 Android Host）'),
-        }
-      }
+      // 其余 jar 站点交给 JVM 兼容层（真 JRE 执行原始字节码）。
       return {
-        level: 'jar',
-        local: false,
+        level: 'local',
+        local: true,
         rank: 2,
-        reason: '待评估（未在 REA 画像中命中）',
+        note: 'JVM 兼容层（需 JRE）',
       }
     }
     default:
@@ -252,14 +194,12 @@ export function siteStats(sites: Site[]): SiteStats {
   const stats: SiteStats = {
     total: sites.length,
     local: 0,
-    jar: 0,
     python: 0,
     unsupported: 0,
   }
   for (const site of sites) {
     const { level } = classifySite(site)
     if (level === 'local') stats.local += 1
-    else if (level === 'jar') stats.jar += 1
     else if (level === 'python') stats.python += 1
     else stats.unsupported += 1
   }
@@ -269,7 +209,6 @@ export function siteStats(sites: Site[]): SiteStats {
 /** 线路统计短文案：`本机 8 · jar 3 · Python 1` */
 export function describeSiteStats(stats: SiteStats): string {
   const parts = [`本机 ${stats.local}`]
-  if (stats.jar) parts.push(`jar ${stats.jar}`)
   if (stats.python) parts.push(`Python ${stats.python}`)
   if (stats.unsupported) parts.push(`未适配 ${stats.unsupported}`)
   return parts.join(' · ')

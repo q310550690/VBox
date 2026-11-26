@@ -1,6 +1,6 @@
 //! 夸克网盘协议客户端（W9.1）。
 //!
-//! 协议来源：`_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/parser/merge/A/Y.java`
+//! 协议来源：`0f047745-FxzHm/deobf/com/github/catvod/parser/merge/A/Y.java`
 //! （1648 行，CanLit/Quark 引擎，含 UI 登录流程；此处只取其 HTTP 协议部分）与
 //! `com/github/catvod/parser/merge/I/b.java`（文件模型）。
 //!

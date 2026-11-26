@@ -86,6 +86,36 @@ pub fn resolve(cache_dir: &Path, jar_sha: &str, class: Option<&str>) -> Option<P
     Some(Payload { jar_sha: jar_sha.to_string(), paths })
 }
 
+/// 载荷是否携带 native 库（`.so` 等）：这类载荷必须走原生桥，纯 Java shim 绑定不了 native 方法。
+pub fn payload_needs_native(path: &Path) -> bool {
+    fn is_native(name: &str) -> bool {
+        let n = name.to_ascii_lowercase();
+        n.ends_with(".so") || n.ends_with(".bin")
+    }
+    fn walk(dir: &Path) -> bool {
+        let Ok(rd) = std::fs::read_dir(dir) else { return true };
+        for entry in rd.flatten() {
+            let p = entry.path();
+            if p.is_dir() {
+                if walk(&p) { return true; }
+            } else {
+                let name = p.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+                if is_native(&name) { return true; }
+            }
+        }
+        false
+    }
+    if path.is_file() {
+        return crate::dex::entry_names(path)
+            .map(|names| names.iter().any(|n| is_native(n)))
+            .unwrap_or(true);
+    }
+    if !path.exists() {
+        return true;
+    }
+    walk(path)
+}
+
 /// 把一个「已经解密并转好」的载荷 jar 安装到 `payloads/<jar_sha>/inner.jar`，并写索引。
 ///
 /// 典型用法：加固壳 jar 先用原生桥跑一次（`runtime-dex/<md5>.r2.jar` 就是解密 + 转好的

@@ -181,8 +181,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn registry_embeds_all_migrated_families() {
-        // T1 三家族 + T4 迁移批次；顺序即 `EMBEDDED` 声明顺序。
+    fn registry_embeds_all_migrated_apis() {
+        // T1 三个 api + T4 迁移批次；顺序即 `EMBEDDED` 声明顺序。
         assert_eq!(
             apis(),
             vec![

@@ -37,7 +37,6 @@ const statusText = computed(() => {
 
 const missing = computed(() => status.value?.missingClasses ?? [])
 const pool = computed(() => status.value?.pool)
-const coverage = computed(() => status.value?.coverage)
 
 const converting = computed(() => (convert.value?.items ?? []).filter((it) => !it.done))
 const recentDone = computed(() => (convert.value?.items ?? []).filter((it) => it.done).slice(0, 3))
@@ -228,15 +227,6 @@ onUnmounted(() => {
       </ul>
     </div>
 
-    <div v-if="coverage" class="jvm-coverage">
-      <p>
-        覆盖口径：带 jar 的 api <strong>{{ coverage.jarApis }}</strong> 个；
-        能交给我们跑 <strong>{{ coverage.capableSites }}</strong> 个站点，
-        加固壳 <strong>{{ coverage.guardedSites }}</strong> 个站点
-        （共 {{ coverage.totalSites }} 个站点，剩余为 script/rulepack）。
-      </p>
-    </div>
-
     <div v-if="missing.length" class="jvm-missing">
       <p class="jvm-missing-title">缺类诊断：<strong>{{ missing.length }}</strong> 个类还没补（按命中次数）</p>
       <ul class="jvm-missing-list">
@@ -361,13 +351,6 @@ onUnmounted(() => {
 .metric-sub {
   color: var(--el-text-color-secondary);
   font-size: 12px;
-}
-
-.jvm-coverage {
-  padding: 10px var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--surface-inset);
-  font-size: 13px;
 }
 
 .jvm-actions {

@@ -122,3 +122,23 @@ html.dark {
    --surface-card: color-mix(in srgb, var(--el-color-primary) 9%, var(--el-bg-color));
    --surface-inset: color-mix(in srgb, #000 26%, var(--surface-card));
 }
+
+/* 亚克力开启（设置 → 外观 → 亚克力效果）：卡片/面板底色统一降为 66% 主题底色，
+   让原生毛玻璃与页面模糊封面透进卡片；关闭时保持上面的纯白/暗色实底。
+   放在 html.dark 之后，保证亮暗两套主题都被覆盖（同优先级后置生效）。 */
+html.acrylic-on {
+   --surface-card: color-mix(in srgb, var(--el-bg-color) 66%, transparent);
+}
+
+/* 整页模糊封面背景（点播搜索页 / 播放详情页）
+   亮色主题需要更实的存在感；暗色主题压暗，避免整页发亮影响正文对比度。 */
+:root {
+  --blur-backdrop-opacity: 0.6;
+  --blur-backdrop-brightness: 1;
+}
+
+html.dark {
+  /* 暗色主题：保留封面色相，但压暗亮度，让整页保持“暗”的观感 */
+  --blur-backdrop-opacity: 0.5;
+  --blur-backdrop-brightness: 0.5;
+}

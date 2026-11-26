@@ -94,7 +94,10 @@ pub fn videos(value: &Value) -> Vec<VideoItem> {
     items
         .iter()
         .filter_map(|item| {
-            let id = as_id(item.get("vod_id"))?;
+            // 宽容口径：极少数站点列表用 `id`/`vod_url` 代替 `vod_id`。
+            let id = as_id(item.get("vod_id"))
+                .or_else(|| as_id(item.get("id")))
+                .or_else(|| as_id(item.get("vod_url")))?;
             let name = as_str(item.get("vod_name")).unwrap_or_else(|| id.clone());
             Some(VideoItem {
                 id,
@@ -107,16 +110,36 @@ pub fn videos(value: &Value) -> Vec<VideoItem> {
 }
 
 /// `detailContent` → 详情（取 `list[0]`）。
-pub fn detail(value: &Value) -> Result<VideoDetail> {
+///
+/// 宽容口径（对齐 TVBox）：很多站点详情返回的 `list[0]` 不带 `vod_id`
+/// （播放并不需要它），此时回落到调用方传入的 id；少数老接口把播放字段
+/// 直接放在顶层（`vod_play_url`/`vod_play_from`），也按单条详情处理。
+pub fn detail(value: &Value, fallback_id: &str) -> Result<VideoDetail> {
     let item = value
         .get("list")
         .and_then(|v| v.as_array())
         .and_then(|a| a.first())
+        .or_else(|| {
+            let obj = value.as_object()?;
+            if obj.contains_key("vod_play_url") || obj.contains_key("vod_play_from") {
+                Some(value)
+            } else {
+                None
+            }
+        })
         .ok_or_else(|| {
             CoreError::Config("catvod.result.parse：detailContent 缺少 list[0]".to_string())
         })?;
 
     let id = as_id(item.get("vod_id"))
+        .or_else(|| as_id(item.get("id")))
+        .or_else(|| {
+            if fallback_id.trim().is_empty() {
+                None
+            } else {
+                Some(fallback_id.to_string())
+            }
+        })
         .ok_or_else(|| CoreError::Config("catvod.result.parse：详情缺少 vod_id".to_string()))?;
     let name = as_str(item.get("vod_name")).unwrap_or_else(|| id.clone());
 
@@ -334,7 +357,7 @@ mod tests {
                 "vod_play_url":"1$http://a/1$$$1$http://b/1$$$1$http://c/1"}]}"#,
         )
         .unwrap();
-        let d = detail(&v).unwrap();
+        let d = detail(&v, "").unwrap();
         assert_eq!(d.episodes.len(), 3);
         assert_eq!(d.episodes[0].group, "L1");
         assert_eq!(d.episodes[1].group, "线路2");
@@ -349,7 +372,7 @@ mod tests {
                 "vod_play_from":"l1$$$l2","vod_play_url":"1$http://a/1#2$http://a/2$$$1$http://b/1"}]}"#,
         )
         .unwrap();
-        let d = detail(&v).unwrap();
+        let d = detail(&v, "").unwrap();
         assert_eq!(d.id, "42");
         assert_eq!(d.episodes.len(), 2);
         assert_eq!(d.episodes[0].group, "l1");

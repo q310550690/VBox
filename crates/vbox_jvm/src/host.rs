@@ -281,7 +281,14 @@ impl HostProcess {
             if !jar_sha.is_empty() {
                 if let Some(payload) = crate::shell::resolve(&dex_opts.cache_dir, &jar_sha, None) {
                     if let Some(first) = payload.paths.into_iter().next() {
-                        shim_classes = Some(first.to_string_lossy().into_owned());
+                        // 载荷自带 native 库时纯 Java shim 绑定不了 native 方法
+                        // （实测 aowu 内层 assets/awenc-*.so → UnsatisfiedLinkError: MyCrypto.extDe），
+                        // 继续走原生桥（P0.5 原生载荷桥接补齐后再启用快路径）。
+                        if crate::shell::payload_needs_native(&first) {
+                            tracing::info!(payload = %first.display(), "载荷含 native 库，跳过纯 Java shim，继续走原生桥");
+                        } else {
+                            shim_classes = Some(first.to_string_lossy().into_owned());
+                        }
                     }
                 }
             }
@@ -568,6 +575,10 @@ impl HostProcess {
         if self.shim_enabled || self.jar_sha.is_empty() {
             return None;
         }
+        // 同 jar 已有载荷时不再重复拷贝（载荷内容按 jar sha 命名，稳定复用）。
+        if crate::shell::resolve(&self.cache_dir, &self.jar_sha, None).is_some() {
+            return None;
+        }
         let src = self.work.join("inner-payload.jar");
         let meta = std::fs::metadata(&src).ok()?;
         if !meta.is_file() || meta.len() < 1024 {
@@ -575,11 +586,19 @@ impl HostProcess {
         }
         match crate::shell::install_payload(&self.cache_dir, &self.jar_sha, &src) {
             Ok(inner) => {
-                eprintln!(
-                    "[payload] 已自动安装内层载荷（{} B）→ {}；下次进源走纯 Java shim",
-                    meta.len(),
-                    inner.display()
-                );
+                if crate::shell::payload_needs_native(&inner) {
+                    eprintln!(
+                        "[payload] 已自动安装内层载荷（{} B）→ {}；载荷含 native 库，后续仍走原生桥",
+                        meta.len(),
+                        inner.display()
+                    );
+                } else {
+                    eprintln!(
+                        "[payload] 已自动安装内层载荷（{} B）→ {}；下次进源走纯 Java shim",
+                        meta.len(),
+                        inner.display()
+                    );
+                }
                 Some(inner)
             }
             Err(err) => {

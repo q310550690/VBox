@@ -252,7 +252,7 @@ function onOpenLocation(task: DownloadTask) {
 }
 
 .series-head:hover {
-  background: var(--surface-2);
+  background: var(--fill-1);
 }
 
 .series-head:focus-visible {
@@ -463,7 +463,7 @@ function onOpenLocation(task: DownloadTask) {
 }
 
 .series-expand:hover {
-  background: var(--surface-2);
+  background: var(--fill-1);
   color: var(--text);
 }
 
@@ -490,7 +490,7 @@ function onOpenLocation(task: DownloadTask) {
 }
 
 .series-body :deep(.download-row:hover) {
-  background: var(--surface-2);
+  background: var(--fill-1);
 }
 
 @media (prefers-reduced-motion: reduce) {

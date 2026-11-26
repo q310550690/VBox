@@ -73,6 +73,20 @@ pub struct PlayerHub {
     /// 手动「保存本集」已成功落盘的 HLS 会话 id：会话关闭时连同播放缓存一起清理，
     /// 避免成品文件与缓存各占一份磁盘（播放中立刻删缓存会让回拖重新拉流，所以延后到关闭时）。
     saved_hls_sessions: Mutex<std::collections::HashSet<String>>,
+    /// 当前渲染目标窗口："main"（主窗口挖洞）或 "player-window"（独立播放器窗口）
+    target: Mutex<String>,
+    /// 当前 mpv 实例创建时绑定的渲染目标窗口；切换窗口时需要重建实例
+    created_target: Mutex<Option<String>>,
+    /// 独立播放器窗口的待播请求（窗口前端加载后取走）
+    window_pending: Mutex<Option<PlayerWindowRequest>>,
+    /// 播放器窗口创建互斥：`get_webview_window` 检查与 OS 窗口创建完成之间存在竞态窗口
+    /// （tauri 的重复 label 检查也发生在创建之前），并发打开会绕过检查、建出多个同
+    /// label 的孤儿窗口——地图里只留最后一个，其余永远停在加载/出错态。
+    window_build_lock: Mutex<()>,
+    /// 挂起的 mpv 实例及其渲染目标：切换渲染目标时旧实例的目标窗口仍存活，
+    /// `terminate_destroy` 会一直等该窗口释放 VO（实测「切集命令永不返回」），
+    /// 只能停用挂起、切回该窗口时复用，绝不能同步销毁（会卡死调用方/事件循环）。
+    parked: Mutex<Option<(Arc<Player>, String)>>,
 }
 
 impl Default for PlayerHub {
@@ -85,6 +99,11 @@ impl Default for PlayerHub {
             hls_session: Mutex::new(None),
             autosave: Mutex::new(None),
             saved_hls_sessions: Mutex::new(std::collections::HashSet::new()),
+            target: Mutex::new("main".to_string()),
+            created_target: Mutex::new(None),
+            window_pending: Mutex::new(None),
+            window_build_lock: Mutex::new(()),
+            parked: Mutex::new(None),
         }
     }
 }
@@ -110,8 +129,73 @@ impl PlayerHub {
     }
 
     fn set_player(&self, player: Arc<Player>) {
-        if let Ok(mut guard) = self.player.lock() {
-            *guard = Some(player);
+        // 先取出旧值、锁外再释放：`Player::drop`（terminate_destroy）在目标窗口
+        // 仍存活时会一直阻塞，绝不能发生在 `player` 互斥锁内（会连累 CloseRequested
+        // 等锁，把整个事件循环冻住）。
+        let evicted = self
+            .player
+            .lock()
+            .ok()
+            .and_then(|mut guard| guard.replace(player));
+        if let Ok(mut guard) = self.created_target.lock() {
+            *guard = Some(self.target_label());
+        }
+        drop(evicted);
+    }
+
+    /// 当前渲染目标窗口标签。
+    fn target_label(&self) -> String {
+        self.target.lock().unwrap_or_else(|e| e.into_inner()).clone()
+    }
+
+    /// 切换渲染目标窗口标签（切换前应丢弃旧 mpv 实例）。
+    fn set_target_label(&self, label: &str) {
+        if let Ok(mut guard) = self.target.lock() {
+            *guard = label.to_string();
+        }
+    }
+
+    /// 当前 mpv 实例绑定的渲染目标（None = 尚未创建）。
+    fn created_target(&self) -> Option<String> {
+        self.created_target
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone()
+    }
+
+    /// 取出当前 mpv 实例（清槽但不销毁）：返回值由调用方决定去向
+    /// （挂起复用 / 后台线程销毁）。绝不在锁内触发 `Player::drop`——
+    /// `terminate_destroy` 在目标窗口仍存活时会一直阻塞，若发生在 `player`
+    /// 互斥锁内，CloseRequested 等锁会把整个事件循环冻住（应用整体卡死）。
+    fn take_player(&self) -> Option<Arc<Player>> {
+        let old = self.player.lock().ok().and_then(|mut guard| guard.take());
+        if let Ok(mut guard) = self.created_target.lock() {
+            *guard = None;
+        }
+        old
+    }
+
+    /// 挂起实例（停用不销毁）：其渲染目标窗口仍存活时 `terminate_destroy` 会卡死，
+    /// 只能等回到该窗口时复用。挂起位非空时返回 Err(该实例) 由调用方后台处置——
+    /// 不顶替已有挂起实例（它可能是下一个目标等待复用的唯一副本）。
+    fn park_player(&self, player: Arc<Player>, target: String) -> Result<(), Arc<Player>> {
+        let mut guard = self.parked.lock().unwrap_or_else(|e| e.into_inner());
+        if guard.is_some() {
+            Err(player)
+        } else {
+            *guard = Some((player, target));
+            Ok(())
+        }
+    }
+
+    /// 取出与指定渲染目标匹配的挂起实例（不匹配则保留原样）。
+    fn take_parked(&self, target: &str) -> Option<Arc<Player>> {
+        let mut guard = self.parked.lock().unwrap_or_else(|e| e.into_inner());
+        let matches = guard.as_ref().map_or(false, |(_, t)| t == target);
+        if matches {
+            guard.take().map(|(player, _)| player)
+        } else {
+            None
         }
     }
 
@@ -281,43 +365,45 @@ fn log_hwdec_fallback(app: &AppHandle) {
     );
 }
 
-/// 主窗口渲染句柄（作为 mpv 的 `wid`）。
+/// 播放渲染句柄（作为 mpv 的 `wid`）。
 ///
-/// - Windows：HWND（窗口本体 + DComp 之下，配合挖洞露出）
-/// - macOS：方案 2 创建的专用 CAMetalLayer 视图（setup 时挂到 contentView 底部）；
-///   视图没建好时退回 contentView，画面仍不可用，但音频/状态不受影响
+/// - Windows：HWND（`"main"` 为主窗口；`"player-window"` 为独立播放器窗口）
+/// - macOS：`"main"` 返回 setup 时挂到 contentView 底部的专用 CAMetalLayer 视图，
+///   播放器窗口返回该窗口的 NSView
+/// - 其它平台不支持内嵌/原生窗口播放
 #[cfg(windows)]
-fn main_window_render_handle(app: &AppHandle) -> Result<usize, String> {
+fn render_handle_for(app: &AppHandle, label: &str) -> Result<usize, String> {
     let window = app
-        .get_webview_window("main")
-        .ok_or_else(|| "主窗口不存在".to_string())?;
+        .get_webview_window(label)
+        .ok_or_else(|| format!("窗口不存在: {label}"))?;
     let hwnd = window
         .hwnd()
-        .map_err(|e| format!("读取主窗口句柄失败: {e}"))?;
+        .map_err(|e| format!("读取窗口句柄失败（{label}）: {e}"))?;
     Ok(hwnd.0 as usize)
 }
 
 #[cfg(target_os = "macos")]
-fn main_window_render_handle(app: &AppHandle) -> Result<usize, String> {
-    if let Some(ptr) = crate::macos_video::view_ptr() {
-        return Ok(ptr);
+fn render_handle_for(app: &AppHandle, label: &str) -> Result<usize, String> {
+    if label == "main" {
+        if let Some(ptr) = crate::macos_video::view_ptr() {
+            return Ok(ptr);
+        }
+        crate::logs::push(
+            "warn",
+            "macOS 视频视图未创建，回退到窗口 contentView（可能仍无画面）",
+        );
     }
-    // 兜底：视频视图创建失败时仍用 contentView，避免 macOS 上完全无法播放。
-    crate::logs::push(
-        "warn",
-        "macOS 视频视图未创建，回退到窗口 contentView（可能仍无画面）",
-    );
     let window = app
-        .get_webview_window("main")
-        .ok_or_else(|| "主窗口不存在".to_string())?;
+        .get_webview_window(label)
+        .ok_or_else(|| format!("窗口不存在: {label}"))?;
     let view = window
         .ns_view()
-        .map_err(|e| format!("读取主窗口 NSView 失败: {e}"))?;
+        .map_err(|e| format!("读取窗口 NSView 失败（{label}）: {e}"))?;
     Ok(view as usize)
 }
 
 #[cfg(not(any(windows, target_os = "macos")))]
-fn main_window_render_handle(_app: &AppHandle) -> Result<usize, String> {
+fn render_handle_for(_app: &AppHandle, _label: &str) -> Result<usize, String> {
     Err("当前平台暂不支持内嵌播放（仅 Windows / macOS）".to_string())
 }
 
@@ -326,6 +412,11 @@ fn apply_margins(app: &AppHandle, hub: &PlayerHub) {
     let Some(player) = hub.player() else {
         return;
     };
+    // 独立播放器窗口：视频铺满整个窗口，不需要挖洞留边。
+    if hub.target_label() != "main" {
+        player.set_video_margins(0.0, 0.0, 0.0, 0.0);
+        return;
+    }
     let Some(window) = app.get_webview_window("main") else {
         return;
     };
@@ -355,7 +446,9 @@ pub async fn player_open(
     if url.trim().is_empty() {
         return Err("播放地址为空".to_string());
     }
-    let hwnd = main_window_render_handle(&app)?;
+    let hub_state = app.state::<PlayerHub>();
+    let target_label = hub_state.target_label();
+    let hwnd = render_handle_for(&app, &target_label)?;
 
     // 播放设置（硬解 / 上次音量 / 默认倍速）：来自 <app_data_dir>/player.json。
     // 必须在**创建播放器之前**读取：hwdec/volume/rate 要作为 mpv 初始化选项写入，
@@ -366,8 +459,32 @@ pub async fn player_open(
         .unwrap_or_default();
 
     let player = match app.state::<PlayerHub>().player() {
-        Some(player) => player,
-        None => {
+        Some(player) if hub_state.created_target().as_deref() == Some(target_label.as_str()) => {
+            player
+        }
+        existing => {
+            // 换渲染目标：旧实例的目标窗口仍存活（如主窗内嵌 → 独立窗口），
+            // terminate_destroy 会一直等该窗口释放 VO——绝不能同步/锁内销毁
+            // （实测会把命令与事件循环一起卡死）。摘槽停用后按原目标挂起，
+            // 回到该目标时复用；挂起位被占才丢后台线程销毁。
+            if let Some(old) = existing {
+                let old_target = hub_state
+                    .created_target()
+                    .unwrap_or_else(|| target_label.clone());
+                let _taken = hub_state.take_player();
+                let _ = old.stop();
+                if let Err(doomed) = hub_state.park_player(old, old_target) {
+                    std::thread::spawn(move || {
+                        let _ = doomed.stop();
+                        // Arc 归零 → Player::drop → terminate_destroy（后台等窗口 VO 释放）
+                    });
+                }
+            }
+            // 该目标此前挂起的实例（如独立窗口关闭后回主窗内嵌）直接复用
+            if let Some(parked) = hub_state.take_parked(&target_label) {
+                hub_state.set_player(Arc::clone(&parked));
+                parked
+            } else {
             let callback = app.state::<PlayerHub>().state_callback(app.clone());
             let init_options = PlayerOptions {
                 hwdec: prefs.hwdec.clone(),
@@ -384,16 +501,22 @@ pub async fn player_open(
             .await
             .map_err(|e| format!("创建播放器任务失败: {e}"))?
             .map_err(|e| e.to_string())?;
+            let vo = created.property_string("vo").unwrap_or_default();
+            let gpu_api = created.property_string("gpu-api").unwrap_or_default();
+            let colorspace_hint = created
+                .property_string("target-colorspace-hint")
+                .unwrap_or_default();
             crate::logs::push(
                 "info",
                 format!(
-                    "播放器已初始化：hwdec={} volume={:.0} rate={:.2}",
-                    prefs.hwdec, prefs.volume, prefs.rate
+                    "播放器已初始化：hwdec={} volume={:.0} rate={:.2}；HDR 输出 vo={} gpu-api={} target-colorspace-hint={}",
+                    prefs.hwdec, prefs.volume, prefs.rate, vo, gpu_api, colorspace_hint
                 ),
             );
             let player = Arc::new(created);
             app.state::<PlayerHub>().set_player(Arc::clone(&player));
             player
+            }
         }
     };
 
@@ -502,6 +625,171 @@ pub async fn player_open(
             "warn",
             format!("应用默认倍速失败（rate={}）：{err}", prefs.rate),
         );
+    }
+    Ok(())
+}
+
+/* ---------------- 独立播放器窗口 ---------------- */
+
+/// 独立播放器窗口标签。
+const PLAYER_WINDOW_LABEL: &str = "player-window";
+
+/// 独立播放器窗口里的选集条目（窗口内「选集」面板直接使用，不再回主窗查询）。
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct PlayerWindowEpisode {
+    pub title: String,
+    pub url: String,
+}
+
+/// 独立播放器窗口的播放请求（由详情页发起，窗口前端取走并调用 player_open）。
+///
+/// 除播放地址外还带完整播放上下文：剧名 / 当前集 / 全部选集 / 封面 / 自动保存状态，
+/// 这样播放器窗口可以独享完整 UI（无需每次切集都回主窗查询）。
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct PlayerWindowRequest {
+    pub url: String,
+    pub headers: Option<HashMap<String, String>>,
+    pub start_sec: Option<f64>,
+    pub title: Option<String>,
+    /// 剧名（顶部信息条 + 选集面板标题）
+    pub series_name: Option<String>,
+    /// 当前集文案（「第 N 集」）
+    pub episode_label: Option<String>,
+    /// 当前线路全部选集
+    pub episodes: Option<Vec<PlayerWindowEpisode>>,
+    /// 当前集序号（与 episodes 对应，-1 = 未选中）
+    pub active_episode: Option<i64>,
+    /// 封面地址（idle 态背景）
+    pub cover: Option<String>,
+    /// 单片「播放时自动保存」开关当前状态
+    pub auto_save: Option<bool>,
+}
+
+/// 在独立窗口里打开视频：创建/复用播放器窗口，并把 mpv 渲染目标切到该窗口。
+#[tauri::command]
+pub async fn player_window_open(
+    app: AppHandle,
+    request: PlayerWindowRequest,
+) -> Result<(), String> {
+    if request.url.trim().is_empty() {
+        return Err("播放地址为空".to_string());
+    }
+    let hub = app.state::<PlayerHub>();
+    // 注意：这里不再无条件 stop + drop 旧 mpv 实例。
+    // 旧实现会在「窗口已存在（切集）」路径上销毁 Player，而 mpv 的 terminate_destroy 在
+    // 该窗口仍持有 VO 时可能阻塞，导致整个命令永远不返回（表现为切集没反应、IPC 卡死）。
+    // 现在把实例生命周期交给 player_open：它发现 created_target 与目标窗口一致时会复用实例，
+    // 只用 loadfile 换集；真正需要重建时才在那边销毁。
+    hub.set_target_label(PLAYER_WINDOW_LABEL);
+    // 串行化「检查窗口是否存在 → 创建 OS 窗口」整段：并发调用时前一个还在创建，
+    // 后一个的 get_webview_window 仍返回 None，会绕过重复 label 检查再建一个同
+    // label 窗口（成孤儿窗）。锁覆盖到本函数结束，后到者进入时窗口已存在。
+    let _build_guard = hub
+        .window_build_lock
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    if let Ok(mut guard) = hub.window_pending.lock() {
+        *guard = Some(request.clone());
+    }
+    if app.get_webview_window(PLAYER_WINDOW_LABEL).is_none() {
+        let window = tauri::WebviewWindowBuilder::new(
+            &app,
+            PLAYER_WINDOW_LABEL,
+            tauri::WebviewUrl::App("index.html#/player-window".into()),
+        )
+        .title("VBox 播放器")
+        .inner_size(1280.0, 720.0)
+        .min_inner_size(640.0, 360.0)
+        .transparent(true)
+        .center()
+        .build()
+        .map_err(|e| format!("创建播放器窗口失败: {e}"))?;
+        let _ = window.set_focus();
+        let handle = app.clone();
+        window.on_window_event(move |event| {
+            if matches!(event, tauri::WindowEvent::CloseRequested { .. }) {
+                // CloseRequested 同步跑在事件循环线程上，而窗口销毁要等本 handler 返回。
+                // mpv 的 stop / terminate_destroy 在窗口仍持有 VO 时会阻塞（见上方注释），
+                // 同步销毁会「窗口等 handler、mpv 等窗口」互锁：点关闭卡死整个应用、窗口关不掉。
+                // 因此这里只做不会阻塞的簿记（摘槽 / 复位标签 / 复位状态——都不触发 Player::drop），
+                // 把 stop 与销毁丢到后台线程：handler 立即返回 → 窗口先销毁 → VO 释放 → mpv 才退出。
+                let hub = handle.state::<PlayerHub>();
+                // take_player：锁内只摘引用、不触发 Player::drop（terminate_destroy
+                // 会等窗口 VO 释放）；stop + Arc 归零交给后台线程。
+                // 仅回收挂在本窗口上的实例：若窗口还没起播（槽里是主窗内嵌实例），
+                // 留着复用，避免在主窗仍存活时丢后台销毁（线程永久阻塞）。
+                let retiring = if hub.created_target().as_deref() == Some(PLAYER_WINDOW_LABEL) {
+                    hub.take_player()
+                } else {
+                    None
+                };
+                hub.set_target_label("main");
+                let _ = hub.take_autosave();
+                hub.apply_state(&handle, PlayerSnapshot::default());
+                if let Some(player) = retiring {
+                    std::thread::spawn(move || {
+                        let _ = player.stop();
+                        // Arc 在此归零 → Player::drop → join 事件线程 + terminate_destroy
+                        // （后台线程，不再挡事件循环）
+                    });
+                }
+                // 通知主窗：独立窗口已关，详情页复位「已弹出」标记，后续切集回到内嵌播放
+                let _ = handle.emit("player-window-closed", ());
+            }
+        });
+    } else {
+        // 窗口已存在（例如切集）：先把可能被最小化/遮挡的窗口拉回前台，
+        // 再把新请求广播给播放器窗口页面。
+        if let Some(window) = app.get_webview_window(PLAYER_WINDOW_LABEL) {
+            let _ = window.unminimize();
+            let _ = window.show();
+            let _ = window.set_focus();
+        }
+        let _ = app.emit("player-window-play", request);
+    }
+    Ok(())
+}
+
+/// 播放器窗口页面加载后取走待播请求（取一次即清空）。
+#[tauri::command]
+pub fn player_window_take(app: AppHandle) -> Option<PlayerWindowRequest> {
+    app.state::<PlayerHub>()
+        .window_pending
+        .lock()
+        .ok()
+        .and_then(|mut guard| guard.take())
+}
+
+/// 关闭独立播放器窗口并把渲染目标切回主窗口。
+#[tauri::command]
+pub async fn player_window_close(app: AppHandle) -> Result<(), String> {
+    // async 命令在运行时线程执行：player_close 内部的 stop / 导出不能占住主线程，
+    // 否则窗口事件与 IPC 会互相等待（实测同步版会卡死整个应用）。
+    let close_app = app.clone();
+    player_close(close_app)?;
+    let hub = app.state::<PlayerHub>();
+    // 同 CloseRequested：先摘槽（锁内不触发 Player::drop），销毁窗口，
+    // 再把 stop + 销毁丢到后台线程——否则旧实例抱着已销毁窗口的 wid 留在槽里，
+    // 下次打开会走复用分支，视频画到死 HWND 上（黑屏）。
+    // 仅回收挂在独立窗口上的实例：窗口没起播时槽里是主窗内嵌实例，留着复用。
+    let retiring = if hub.created_target().as_deref() == Some(PLAYER_WINDOW_LABEL) {
+        hub.take_player()
+    } else {
+        None
+    };
+    hub.set_target_label("main");
+    if let Some(window) = app.get_webview_window(PLAYER_WINDOW_LABEL) {
+        let _ = window.destroy();
+    }
+    // 通知主窗：独立窗口已关，详情页复位「已弹出」标记，后续切集回到内嵌播放
+    let _ = app.emit("player-window-closed", ());
+    if let Some(player) = retiring {
+        std::thread::spawn(move || {
+            let _ = player.stop();
+            // Arc 归零 → Player::drop → terminate_destroy（可能等窗口 VO 释放，后台等）
+        });
     }
     Ok(())
 }

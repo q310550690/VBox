@@ -667,7 +667,7 @@ watch(accountsOpen, (open) => {
 
 .cloud-hot-item:hover {
   color: var(--accent);
-  background: var(--surface-2);
+  background: var(--fill-1);
 }
 
 /* —— 豆瓣热榜：卡片依次排列 + 自动轮播选中 —— */

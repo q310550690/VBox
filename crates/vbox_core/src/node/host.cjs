@@ -37723,7 +37723,7 @@ var LocalStore = class {
     this.set(k, v);
   }
 };
-function syncRequest(url, obj = {}) {
+function syncRequest(url, obj = {}, full = false) {
   const headers = Object.assign({}, obj.headers || {});
   let body = obj.body;
   if (body === void 0 && obj.data !== void 0) {
@@ -37746,7 +37746,7 @@ function syncRequest(url, obj = {}) {
   }
   if (parsed.error) throw new Error(parsed.error);
   if (parsed.status >= 400) throw new Error("HTTP " + parsed.status + ": " + url);
-  return parsed.body;
+  return full ? parsed : parsed.body;
 }
 function joinUrl(parent2, child) {
   if (!parent2) return child;
@@ -37854,6 +37854,22 @@ async function main() {
   globalThis.base64Encode = (s) => Buffer.from(String(s)).toString("base64");
   globalThis.base64Decode = (s) => Buffer.from(String(s), "base64").toString("utf8");
   globalThis.getProxy = (url) => url;
+  globalThis.req = (url, obj = {}) => {
+    const r = syncRequest(url, obj, true);
+    return { content: r.body || "", status: r.status || 200, headers: r.headers || {} };
+  };
+  globalThis.http = (url, obj = {}) => {
+    if (obj && obj.async === false) {
+      const r = syncRequest(url, obj, true);
+      return { content: r.body || "", status: r.status || 200, headers: r.headers || {} };
+    }
+    try {
+      const r = syncRequest(url, obj, true);
+      return Promise.resolve({ content: r.body || "", status: r.status || 200, headers: r.headers || {} });
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  };
   globalThis.js2Proxy = () => "";
   globalThis.sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, Number(ms) || 0);
   globalThis.log = (...args) => console.error(...args);

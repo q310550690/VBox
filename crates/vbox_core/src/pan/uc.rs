@@ -1,6 +1,6 @@
 //! UC 网盘协议客户端（W9.4）。
 //!
-//! 协议来源：`_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/parser/merge/A/F0.java`
+//! 协议来源：`0f047745-FxzHm/deobf/com/github/catvod/parser/merge/A/F0.java`
 //! （UC 引擎，`s = "http://drive.uc.cn/"`、`t = "https://pc-api.uc.cn/"`）与
 //! `com/github/catvod/spider/UC.java`（282 行薄封装；分享链接正则
 //! `drive.uc.cn/s/([^#/]+)(#*/list/share/([^\-]+))?`，`detailContent` 直接委托 `F0`）。

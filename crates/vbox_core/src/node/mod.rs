@@ -30,6 +30,38 @@ const MAX_OUTPUT: usize = 32 * 1024 * 1024;
 /// engine / rule 及被 import 依赖的文本上限；超过即显式失败，防止无界读入内存。
 const MAX_SOURCE_BYTES: u64 = 8 * 1024 * 1024;
 
+/// drpy 运行根目录覆盖（桌面端设置成应用数据目录下的 `drpy/`）。
+static DRPY_ROOT: OnceLock<Mutex<Option<PathBuf>>> = OnceLock::new();
+
+/// 覆盖 drpy 运行缓存根目录；`None` 恢复默认（`VBOX_DRPY_TMP` → `<VBOX_DATA_DIR>/drpy`
+/// → 系统临时目录）。桌面端在沙箱/只读 HOME 环境下必须覆盖，否则临时目录不可写。
+pub fn set_drpy_root(path: Option<PathBuf>) {
+    if let Ok(mut slot) = DRPY_ROOT.get_or_init(|| Mutex::new(None)).lock() {
+        *slot = path;
+    }
+}
+
+fn drpy_root() -> PathBuf {
+    if let Ok(slot) = DRPY_ROOT.get_or_init(|| Mutex::new(None)).lock() {
+        if let Some(path) = slot.clone() {
+            return path;
+        }
+    }
+    if let Ok(custom) = std::env::var("VBOX_DRPY_TMP") {
+        let custom = custom.trim();
+        if !custom.is_empty() {
+            return PathBuf::from(custom);
+        }
+    }
+    if let Ok(data_dir) = std::env::var("VBOX_DATA_DIR") {
+        let data_dir = data_dir.trim();
+        if !data_dir.is_empty() {
+            return PathBuf::from(data_dir).join("drpy");
+        }
+    }
+    std::env::temp_dir().join("vbox-drpy")
+}
+
 #[derive(Debug, Clone)]
 struct NodeCmd {
     program: String,
@@ -532,7 +564,7 @@ fn prepare_dir(
     api: &str,
     ext: &str,
 ) -> Result<(PathBuf, Option<PathBuf>)> {
-    let base = std::env::temp_dir().join("vbox-drpy").join(format!(
+    let base = drpy_root().join(format!(
         "{:x}",
         md5::compute(format!("{api}|{ext}").as_bytes())
     ));
@@ -644,13 +676,27 @@ fn localize_module(
         let spec = caps[3].to_string();
         let is_url = spec.starts_with("http://") || spec.starts_with("https://");
         let is_relative = spec.starts_with("./") || spec.starts_with("../");
-        if !is_url && !is_relative {
-            continue; // 裸包名（cheerio 等）交给 Node 自身解析
+        // drpy2 引擎把同目录依赖写成裸文件名（如 `import cheerio from"cheerio.min.js"`），
+        // Node 的 ESM 解析器会把它当作 npm 包名而报 ERR_MODULE_NOT_FOUND。
+        // 这类「带 js/mjs/cjs 扩展名的裸说明符」应按引擎所在 URL 的同级文件解析。
+        let bare_module = !is_url
+            && !is_relative
+            && {
+                let clean = spec.split(['?', '#']).next().unwrap_or(&spec);
+                matches!(
+                    Path::new(clean).extension().and_then(|e| e.to_str()),
+                    Some(ext) if matches!(ext.to_ascii_lowercase().as_str(), "js" | "mjs" | "cjs")
+                )
+            };
+        if !is_url && !is_relative && !bare_module {
+            continue; // 真正的裸包名（如 cheerio、node:fs）交给 Node 自身解析
         }
         let target = if is_url {
             spec.clone()
-        } else {
+        } else if is_relative {
             resolve_sibling(base, &spec)
+        } else {
+            resolve_sibling(base, &format!("./{spec}"))
         };
         if target == base {
             continue;

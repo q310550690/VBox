@@ -16,11 +16,15 @@
 //!
 //! 返回值归一：JS 字符串优先按 JSON 解析；对象/数组经 `JSON.stringify` 后再解析。
 //!
+//! 兼容性说明：
+//! - `await req(...)` 这类「同步宿主可完成」的 Promise 已支持（驱动 QuickJS job 队列）；
+//! - `pdfh`/`pdfa`/`pd`/`pdfla` 由 `html_rule` 提供（Jsoup 规则子集）。
+//! - ES module 相对 `import` / CommonJS `require`：按脚本来源 URL 解析并加载（内置 lib 优先），
+//!   依赖文本在进程内缓存；入口脚本的 `module.exports` 也会映射到 `__JS_SPIDER__`。
 //! 明确不支持（会给出可读错误，不静默）：
-//! - ES module `import`、async/Promise
-//! - `pdfh`/`pdfa`/`pd` 等 cheerio DOM 规则（脚本调用会抛 ReferenceError）
+//! - 需要真实事件循环的异步 I/O（定时器回调不会在 await 后推进）
 //! - 站点级 `jar`（jsapi dex）、QuickJS 字节码（`//bb` / `//DRPY`）
-//! - `proxy://` 本地代理桥（`getProxy` / `js2Proxy`）
+//! - `proxy://` 本地代理桥（`js2Proxy` 返回空串，`getProxy` 原样返回）
 
 use std::collections::HashMap;
 use std::time::Duration;
@@ -217,7 +221,9 @@ fn sandbox_for(site: &Site, cfg: &TvConfig) -> Result<Sandbox> {
     }
     if is_quickjs_bytecode(&script) {
         return Err(CoreError::Config(format!(
-            "站点「{}」的 JS spider 是 QuickJS 字节码/DRPY 缓存（//bb、//DRPY），桌面端暂不支持；请改用 .js 源码脚本",
+            "站点「{}」的 JS spider 是 QuickJS 字节码/DRPY 缓存（//bb、//DRPY），桌面端暂不支持：\n\
+             字节码与编译它的 QuickJS 引擎版本强绑定，跨引擎加载会被 JS_ReadObject 拒绝；\n\
+             请改用同一站点的 .js 源码 spider（MisaTV / Win-box 同样不支持该格式）",
             site.name
         )));
     }
@@ -225,15 +231,35 @@ fn sandbox_for(site: &Site, cfg: &TvConfig) -> Result<Sandbox> {
     let is_cat = script.contains("__jsEvalReturn") || script.contains("__JS_SPIDER__");
     script = prepare_script(script);
 
+    let headers = site_headers(site);
+    let base_url = script_base(site);
+    // cat 风格脚本收到 cfg 对象 {stype,skey,ext}；普通脚本收到 ext 本身（对齐 JsSpider.init）
+    let init = if is_cat {
+        Some(cat_cfg(site))
+    } else {
+        site.ext.clone()
+    };
+
+    // 登记到本地代理桥：收到 /proxy?do=js&siteKey=... 时重建沙箱并调用 proxy(params)
+    crate::proxy::register_js_proxy(
+        &site.key,
+        script.clone(),
+        label.clone(),
+        cfg.http.clone(),
+        headers.clone(),
+        init.clone(),
+        base_url.clone(),
+    );
+
     let mut sandbox = Sandbox::new(script, label, cfg.http.clone())
         .with_timeout(SCRIPT_TIMEOUT)
-        .with_headers(site_headers(site));
-
-    // cat 风格脚本收到 cfg 对象 {stype,skey,ext}；普通脚本收到 ext 本身（对齐 JsSpider.init）
-    if is_cat {
-        sandbox = sandbox.with_init(cat_cfg(site));
-    } else if let Some(ext) = &site.ext {
-        sandbox = sandbox.with_init(ext.clone());
+        .with_headers(headers)
+        .with_site_key(site.key.clone());
+    if let Some(base) = base_url {
+        sandbox = sandbox.with_base_url(base);
+    }
+    if let Some(init) = init {
+        sandbox = sandbox.with_init(init);
     }
     Ok(sandbox)
 }
@@ -248,6 +274,16 @@ fn cat_cfg(site: &Site) -> Json {
         "skey": site.key,
         "ext": ext,
     })
+}
+
+/// 脚本来源 URL（ES module / require 的相对路径解析基准）；inline 脚本没有基准
+fn script_base(site: &Site) -> Option<String> {
+    let api = site.api.trim();
+    if api.starts_with("http://") || api.starts_with("https://") || api.starts_with("file://") {
+        Some(api.to_string())
+    } else {
+        None
+    }
 }
 
 /// 加载脚本文本；http(s) 走 `crate::http`，file:// 读本地，inline: 直接使用

@@ -391,6 +391,10 @@ export function playerSetSubtitleTrack(id: string) {
 export function playerAddSubtitle(path: string) {
   return invoke<void>('player_add_subtitle', { path })
 }
+// 拉取弹幕（B 站）并生成 ASS 字幕，返回本地字幕路径；当前视频没有弹幕时返回 null
+export function danmakuFetch(url: string, title?: string) {
+  return invoke<string | null>('danmaku_fetch', { url, title: title ?? null })
+}
 // 原生「选择字幕文件」对话框；取消返回 null
 export function playerPickSubtitle() {
   return invoke<string | null>('player_pick_subtitle')
@@ -605,10 +609,6 @@ export function sourceHealthResetAll() {
   return invoke<void>('source_health_reset_all')
 }
 
-// 站点 api 支持画像（REA 产物；站点选择器据此区分原生实现/待移植/不支持）
-export function siteApiSupport() {
-  return invoke<import('@/types').SiteApiSupport[]>('site_api_support')
-}
 // 源健康度：按 catvod 稳定码聚合失败（错误码分布）
 export function sourceHealthCodeStats() {
   return invoke<import('@/types').ErrorCodeStat[]>('source_health_code_stats')
@@ -726,4 +726,50 @@ export function windowBackdrop() {
 // 本地媒体 HTTP 地址（支持 Range，供 mpv 按需读取）
 export function localMediaUrl(path: string) {
   return invoke<string>('local_media_url', { path })
+}
+
+/* ---------------- 独立播放器窗口 ---------------- */
+
+/** 独立播放器窗口的播放请求（Rust 建窗后由窗口页面取走） */
+export interface PlayerWindowRequest {
+  url: string
+  headers?: Record<string, string>
+  startSec?: number
+  title?: string
+  /** 剧名（顶部信息条 + 选集面板标题） */
+  seriesName?: string
+  /** 当前集文案（如「第 3 集」） */
+  episodeLabel?: string
+  /** 当前线路全部选集（窗口内选集面板直接使用） */
+  episodes?: { title: string; url: string }[]
+  /** 当前集序号（与 episodes 对应，-1 = 未选中） */
+  activeEpisode?: number
+  /** 封面地址（idle 态背景） */
+  cover?: string
+  /** 单片「播放时自动保存」开关当前状态 */
+  autoSave?: boolean
+}
+
+/** 在独立窗口打开视频（窗口由 Rust 创建；窗口页面负责取请求并调用 player_open） */
+export function playerWindowOpen(request: PlayerWindowRequest) {
+  return invoke<void>('player_window_open', { request })
+}
+
+/** 取走待播请求（播放器窗口页面加载后调用；取一次即清空） */
+export function playerWindowTake() {
+  return invoke<PlayerWindowRequest | null>('player_window_take')
+}
+
+/** 关闭独立播放器窗口并把渲染目标切回主窗口 */
+export function playerWindowClose() {
+  return invoke<void>('player_window_close')
+}
+
+/* ---------------- 豆瓣条目扩展（主创 / 剧照 / 影视信息） ---------------- */
+
+export function doubanDetail(title: string, year?: string | null) {
+  return invoke<import('@/types').DoubanSubjectDetail>('douban_detail', {
+    title,
+    year: year ?? null,
+  })
 }

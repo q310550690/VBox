@@ -1,7 +1,7 @@
 //! 115 网盘协议客户端（W9.4 追加，第五个 provider）。
 //!
 //! 协议来源：
-//! - `_rea/decompiled/dffec63f-pg/deobf/com/github/catvod/spider/P115.java`（237 行，分享适配器：
+//! - `dffec63f-pg/deobf/com/github/catvod/spider/P115.java`（237 行，分享适配器：
 //!   正则 `115.com/s/([^\?#/]+)`，`password`/`cid` 查询参数）；
 //! - `parser/merge/A/C0030k0.java`（1164 行，115 引擎：本地代理 `127.0.0.1:10078` +
 //!   WebView 拦截 `115.com/.../share/list` 的 XHR 响应（含 `"files"` 字段），并从

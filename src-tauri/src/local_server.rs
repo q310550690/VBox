@@ -594,15 +594,20 @@ fn respond_image(request: Request, body: Vec<u8>, mime: &str) -> Result<(), Stri
 fn handle_proxy(request: Request, query: &str) -> Result<(), String> {
     let params = parse_query(query);
     let action = params.get("do").map(String::as_str).unwrap_or("");
-    if action != "live" {
-        return respond_text(
+    match action {
+        "live" => handle_proxy_live(request, &params),
+        "js" => handle_proxy_js(request, &params),
+        other => respond_text(
             request,
             400,
-            format!("unsupported do={action:?} (only do=live)"),
+            format!("unsupported do={other:?} (expect do=live|do=js)"),
             "text/plain; charset=utf-8",
-        );
+        ),
     }
+}
 
+/// `/proxy?do=live&type=txt&ext=...`：直播订阅代理。
+fn handle_proxy_live(request: Request, params: &HashMap<String, String>) -> Result<(), String> {
     let ext = params.get("ext").map(String::as_str).unwrap_or("").trim();
     if ext.is_empty() {
         return respond_text(request, 400, "missing ext", "text/plain; charset=utf-8");
@@ -663,6 +668,181 @@ fn handle_proxy(request: Request, query: &str) -> Result<(), String> {
             "text/plain; charset=utf-8",
         ),
     }
+}
+
+/// `/proxy?do=js&...`：JS spider 代理回环入口。
+///
+/// 调用顺序（对齐 TVBox `ApiConfig.proxyLocal` / `JsLoader.proxyInvoke`）：
+/// 1. `siteKey` 已注册且脚本实现了 `proxy(params)` → 用脚本返回的响应；
+/// 2. 否则按 `url` + `header` 直通上游（GET，透传 Range，上限 10MB）；
+/// 3. 返回 m3u8 时把分片/密钥/变体地址重写成同一代理入口。
+fn handle_proxy_js(request: Request, params: &HashMap<String, String>) -> Result<(), String> {
+    let site_key = params
+        .get("siteKey")
+        .or_else(|| params.get("site_key"))
+        .map(String::as_str)
+        .unwrap_or("")
+        .trim();
+    let mut call_params = serde_json::Map::new();
+    for (key, value) in params {
+        call_params.insert(key.clone(), serde_json::Value::String(value.clone()));
+    }
+    if !site_key.is_empty() {
+        if let Some(reply) = vbox_core::proxy::call_js_proxy(site_key, &call_params) {
+            return respond_proxy_reply(request, reply, params);
+        }
+        // 未注册或脚本没有实现 proxy：继续走直通
+    }
+
+    let url = params.get("url").map(String::as_str).unwrap_or("").trim();
+    if !(url.starts_with("http://") || url.starts_with("https://")) {
+        return respond_text(
+            request,
+            400,
+            "missing url (expect http(s)://...)",
+            "text/plain; charset=utf-8",
+        );
+    }
+
+    let mut rules = vbox_core::model::Rules::default();
+    rules.timeout = 20_000;
+    rules.retry = 1;
+    let client = match vbox_core::http::client_for(&rules) {
+        Ok(client) => client,
+        Err(e) => {
+            return respond_text(
+                request,
+                502,
+                format!("create http client failed: {e}"),
+                "text/plain; charset=utf-8",
+            );
+        }
+    };
+    let mut request_builder = client.get(url);
+    let mut headers: HashMap<String, String> = HashMap::new();
+    headers.insert(
+        "User-Agent".to_string(),
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36".to_string(),
+    );
+    if let Some(raw) = params.get("header") {
+        if let Ok(serde_json::Value::Object(map)) = serde_json::from_str::<serde_json::Value>(raw) {
+            for (key, value) in map {
+                if let Some(value) = value.as_str() {
+                    headers.insert(key, value.to_string());
+                }
+            }
+        }
+    }
+    for (key, value) in &headers {
+        request_builder = request_builder.header(key, value);
+    }
+    if let Some(range) = params.get("range").or_else(|| params.get("Range")) {
+        request_builder = request_builder.header("Range", range);
+    }
+    let response = match request_builder.send() {
+        Ok(response) => response,
+        Err(e) => {
+            return respond_text(
+                request,
+                502,
+                format!("proxy fetch failed: {e}"),
+                "text/plain; charset=utf-8",
+            );
+        }
+    };
+    let status = response.status().as_u16();
+    let mime = response
+        .headers()
+        .get(reqwest::header::CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or("application/octet-stream")
+        .to_string();
+    let bytes = match response.bytes() {
+        Ok(bytes) => bytes.to_vec(),
+        Err(e) => {
+            return respond_text(
+                request,
+                502,
+                format!("read upstream body failed: {e}"),
+                "text/plain; charset=utf-8",
+            );
+        }
+    };
+    if bytes.len() > MAX_RESPONSE_BYTES {
+        return respond_text(
+            request,
+            502,
+            "upstream response too large",
+            "text/plain; charset=utf-8",
+        );
+    }
+    if vbox_core::proxy::looks_like_m3u8(&mime, &bytes) {
+        if let Ok(text) = std::str::from_utf8(&bytes) {
+            let base = vbox_core::proxy::local_base().unwrap_or_default();
+            let query_without_url = query_without_url(params);
+            let rewritten = vbox_core::proxy::rewrite_m3u8(url, text, &query_without_url, &base);
+            return respond_with_mime(
+                request,
+                status,
+                rewritten.into_bytes(),
+                "application/vnd.apple.mpegurl",
+            );
+        }
+    }
+    respond_with_mime(request, status, bytes, &mime)
+}
+
+/// 响应脚本返回的代理结果（302 重定向 / 原始字节 / m3u8 重写）。
+fn respond_proxy_reply(
+    request: Request,
+    reply: vbox_core::proxy::ProxyReply,
+    params: &HashMap<String, String>,
+) -> Result<(), String> {
+    if let Some(location) = reply.location {
+        return respond_redirect(request, 302, &location);
+    }
+    let mime = reply.mime;
+    if vbox_core::proxy::looks_like_m3u8(&mime, &reply.body) {
+        if let Ok(text) = std::str::from_utf8(&reply.body) {
+            let base = vbox_core::proxy::local_base().unwrap_or_default();
+            let query_without_url = query_without_url(params);
+            let playlist_url = params.get("url").map(String::as_str).unwrap_or("");
+            let rewritten = vbox_core::proxy::rewrite_m3u8(playlist_url, text, &query_without_url, &base);
+            return respond_with_mime(
+                request,
+                reply.status,
+                rewritten.into_bytes(),
+                "application/vnd.apple.mpegurl",
+            );
+        }
+    }
+    respond_with_mime(request, reply.status, reply.body, &mime)
+}
+
+fn respond_redirect(request: Request, status: u16, location: &str) -> Result<(), String> {
+    let header = Header::from_bytes(&b"Location"[..], location.as_bytes())
+        .map_err(|_| "invalid location header".to_string())?;
+    let response = Response::empty(StatusCode(status)).with_header(header);
+    request
+        .respond(response)
+        .map_err(|e| format!("write redirect failed: {e}"))
+}
+
+/// 从已解码的 query 参数重建代理查询串（去掉 `url`，避免嵌套重复）。
+fn query_without_url(params: &HashMap<String, String>) -> String {
+    let mut pairs: Vec<String> = params
+        .iter()
+        .filter(|(key, _)| key.as_str() != "url")
+        .map(|(key, value)| {
+            format!(
+                "{}={}",
+                vbox_core::proxy::encode_param(key),
+                vbox_core::proxy::encode_param(value)
+            )
+        })
+        .collect();
+    pairs.sort();
+    pairs.join("&")
 }
 
 /* ---------------- 工具 ---------------- */
@@ -1413,4 +1593,26 @@ mod tests {
         hls.close_session(&session.id);
         server.shutdown();
     }
+    #[test]
+    fn proxy_js_callback_route() {
+        let dir = TestDir::new("proxy-js");
+        vbox_core::proxy::register_js_proxy(
+            "local-server-js-site",
+            "function proxy(params) { return JSON.stringify({ code: 200, mime: 'text/plain', content: 'js:' + params.url }); }".to_string(),
+            "local-server-js".to_string(),
+            vbox_core::model::Rules::default(),
+            HashMap::new(),
+            None,
+            None,
+        );
+        let server = start(dir.path().to_path_buf(), hls_for(dir.path())).expect("start server");
+        let (status, body) = http_get(
+            server.port,
+            "/proxy?do=js&from=catvod&siteKey=local-server-js-site&url=https%3A%2F%2Fcdn.example.com%2Fa.m3u8",
+        );
+        vbox_core::proxy::clear_js_proxies();
+        assert_eq!(status, 200, "body: {body}");
+        assert!(body.contains("js:https://cdn.example.com/a.m3u8"), "body: {body}");
+    }
+
 }

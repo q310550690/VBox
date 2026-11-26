@@ -2,8 +2,8 @@
 //!
 //! 对应 Android 类 `com.github.catvod.spider.XBiu`（`extends Spider`）的
 //! 静态工具部分：`HtmlNodeHlper` / `Utils` 的 HTML 定位原语，以及规则文档
-//! 的加载与归一化（`rK()`）。家族实现（`families::xbiu`）在后续 W2/W3 轮次
-//! 复用本模块，保证「同一份 Java 语义、单一 Rust 实现」。
+//! 的加载与归一化（`rK()`）。规则引擎复用本模块，保证「同一份 Java 语义、
+//! 单一 Rust 实现」。
 //!
 //! 设计要点：
 //! - Java 用 `JSONObject` + 大量 `optXxx/getXxx`，这里统一用 `serde_json::Value`

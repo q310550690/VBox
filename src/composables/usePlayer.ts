@@ -83,6 +83,9 @@ function normalizeState(raw: unknown): PlayerState {
     displayFps: num(payload.displayFps),
     frameDrops: num(payload.frameDrops),
     decoderFrameDrops: num(payload.decoderFrameDrops),
+    videoPrimaries: typeof payload.videoPrimaries === 'string' ? payload.videoPrimaries : '',
+    videoGamma: typeof payload.videoGamma === 'string' ? payload.videoGamma : '',
+    videoSigPeak: num(payload.videoSigPeak),
     audioTracks: normalizeTracks(payload.audioTracks),
     subtitleTracks: normalizeTracks(payload.subtitleTracks),
     activeAudioId:
@@ -175,8 +178,9 @@ export function usePlayer() {
     headers?: Record<string, string>,
     startSec?: number,
   ): Promise<void> {
-    // 演示模式没有原生窗口：保留 idle，由 PlayerPane 展示占位说明
-    if (api.demoMode) {
+    // 浏览器预览没有原生窗口：保留 idle，由 PlayerPane 展示占位说明
+    // （Tauri mock 演示模式下 demoMode 同样为 true，但播放走真实 mpv，不能在这里拦）
+    if (!api.isTauri) {
       patch({ status: 'idle', url, positionSec: startSec ?? 0, error: '', paused: false })
       return
     }

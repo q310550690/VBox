@@ -3,6 +3,7 @@ mod capture;
 mod commands;
 mod commands_cloud;
 mod commands_pan;
+mod danmaku;
 mod download;
 mod embedded_tools;
 mod enhance;
@@ -81,6 +82,8 @@ pub fn run() {
                 .app_data_dir()
                 .unwrap_or_else(|_| std::path::PathBuf::from("."));
             let _ = std::fs::create_dir_all(&data_dir);
+            // drpy 运行缓存落在应用数据目录：沙箱 / 只读 HOME 下系统临时目录不可写。
+            vbox_core::node::set_drpy_root(Some(data_dir.join("drpy")));
 
             // macOS 视频输出（方案 2）：在 contentView 底部挂专用 CAMetalLayer 视图，
             // player_open 会把它作为 mpv 的 wid。失败只记日志：播放仍会退回旧的
@@ -115,6 +118,8 @@ pub fn run() {
                     if let Ok(mut slot) = state.local_base.lock() {
                         *slot = Some(server.base_url.clone());
                     }
+                    // 注入 core 侧：getProxy()/js2Proxy()/proxy:// 生成回环代理地址
+                    vbox_core::proxy::set_local_base(Some(server.base_url.clone()));
                     eprintln!(
                         "[vbox] local server: {} (clan root: {})",
                         server.base_url,
@@ -260,7 +265,7 @@ pub fn run() {
             logs::open_log_window,
             commands::douban_home,
             commands::douban_home_cached,
-            commands::site_api_support,
+            commands::douban_detail,
             commands::sniff,
             commands::live_sources,
             commands::live_groups,
@@ -294,6 +299,9 @@ pub fn run() {
             download::download_cleanup_parts,
             download::download_cleanup_completed,
             player::player_open,
+            player::player_window_open,
+            player::player_window_take,
+            player::player_window_close,
             player::player_close,
             player::player_save_current,
             player::player_save_pause,
@@ -319,6 +327,7 @@ pub fn run() {
             player::player_set_subtitle_track,
             player::player_add_subtitle,
             player::player_pick_subtitle,
+            danmaku::danmaku_fetch,
             subtitle_online::subtitle_sources,
             subtitle_online::subtitle_search,
             subtitle_online::subtitle_download,

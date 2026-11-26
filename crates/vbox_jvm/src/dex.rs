@@ -211,6 +211,10 @@ pub fn ensure_loadable(runtime: &Runtime, jar: &Path, opts: &DexOptions) -> Resu
         return Ok(jar.to_path_buf());
     }
     std::fs::create_dir_all(&opts.cache_dir)?;
+    // P1：Java 转换/修复进程的 java.io.tmpdir 必须落在可写缓存内——
+    // Windows 沙箱/安全软件常把系统 TEMP 判为拒绝访问，导致 DexJarRepair 静默失败。
+    let java_tmp = opts.cache_dir.join("tmpdir");
+    let _ = std::fs::create_dir_all(&java_tmp);
     let digest = sha256_file(jar)?;
     // 产物版本：v4 起把源 jar 的 assets/*.so 等资源一并补进产物（加固壳 native 桥需要）。
     // 改产物格式时递增它，旧缓存自然会重建。
@@ -267,6 +271,7 @@ pub fn ensure_loadable(runtime: &Runtime, jar: &Path, opts: &DexOptions) -> Resu
             plain_path(jar).to_string_lossy().into_owned(),
             plain_path(&tmp).to_string_lossy().into_owned(),
         ],
+        &java_tmp,
         opts.timeout,
         move |line| progress_line(progress, line),
     )?;
@@ -294,6 +299,7 @@ pub fn ensure_loadable(runtime: &Runtime, jar: &Path, opts: &DexOptions) -> Resu
                 plain_path(&tmp).to_string_lossy().into_owned(),
                 plain_path(jar).to_string_lossy().into_owned(),
             ],
+            &java_tmp,
             opts.timeout,
             |_line| {},
         )?;
@@ -348,10 +354,12 @@ fn run_java(
     runtime: &Runtime,
     cp: &str,
     extra: &[String],
+    tmpdir: &Path,
     timeout: Duration,
     mut on_stderr: impl FnMut(&str) + Send + 'static,
 ) -> Result<(bool, String)> {
     let mut child = Command::new(runtime.java_bin())
+        .arg(format!("-Djava.io.tmpdir={}", plain_path(tmpdir).display()))
         // 子进程把 stderr 写到管道：显式钉 UTF-8，否则 Windows 控制台代码页会把
         // 中文日志变成乱码（`.d2j.log` 里就没法看了）。
         .args(["-Dfile.encoding=UTF-8", "-Dsun.stdout.encoding=UTF-8", "-Dsun.stderr.encoding=UTF-8"])
@@ -432,7 +440,22 @@ fn repair_new_sites(
             return None;
         }
     }
-    let d2j_cp = format!("{}/*", plain_path(&dex2jar).display());
+    // 注意：**不要用 `dir/*` 通配符**。Windows 的 java 启动器会把恰好以 `*` 结尾的
+    // **程序参数**也按类路径通配展开（不止 -cp），于是 DexJarRepair 收到的 `d2jCp`
+    // 会变成一串独立 argv，args[3] 只剩第一个 jar → baksmali 子进程 CNFE。
+    // 这里显式枚举 jar 并用 `;` 连接，作为单个参数传入最稳。
+    let mut d2j_jars: Vec<String> = std::fs::read_dir(&dex2jar)
+        .ok()?
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .filter(|p| p.is_file() && p.extension().map(|x| x == "jar").unwrap_or(false))
+        .map(|p| plain_path(&p).display().to_string())
+        .collect();
+    d2j_jars.sort();
+    if d2j_jars.is_empty() {
+        return None;
+    }
+    let d2j_cp = d2j_jars.join(&cp_sep().to_string());
     let cp = format!(
         "{}{}{}",
         d2j_cp,
@@ -440,7 +463,14 @@ fn repair_new_sites(
         plain_path(&tools).display()
     );
     let java = runtime.java_bin();
+    if std::env::var("VBOX_DEBUG_DEX").is_ok() {
+        eprintln!("[dex] repair java={} d2jCp={}", java.display(), d2j_cp);
+    }
+    // 同 ensure_loadable：把 JDK 临时目录固定到可写缓存下（否则 DexJarRepair 创建临时目录被拒）。
+    let repair_tmp = opts.cache_dir.join("tmpdir");
+    let _ = std::fs::create_dir_all(&repair_tmp);
     let out = Command::new(&java)
+        .arg(format!("-Djava.io.tmpdir={}", plain_path(&repair_tmp).display()))
         .arg("-Xmx1g")
         .arg("-cp")
         .arg(&cp)
@@ -462,7 +492,10 @@ fn repair_new_sites(
             let start = lines.len().saturating_sub(20);
             let summary = lines[start..].join("\n");
             let _ = std::fs::write(opts.cache_dir.join(format!("{digest}.fix.log")), &summary);
-            if o.status.success() {
+            // DexJarRepair 的 main 即便修复失败（前置条件不满足/ baksmali 失败）也以 exit 0 返回
+            // 并打印 `fixed sites = -1`；必须按输出判断，否则会把「没修」误当成功写 .fix.ok。
+            let repaired = o.status.success() && !summary.contains("fixed sites = -1");
+            if repaired {
                 let _ = std::fs::write(
                     opts.cache_dir.join(format!("{digest}.fix.ok")),
                     format!("{}\n", summary),

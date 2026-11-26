@@ -425,7 +425,7 @@ onActivated(() => void loadDir())
   background: color-mix(in srgb, var(--el-text-color-primary) 3%, var(--surface));
 }
 .table-row:hover {
-  background: var(--surface-2);
+  background: var(--fill-1);
 }
 
 .entry-name {

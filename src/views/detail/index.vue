@@ -1,14 +1,17 @@
-<!-- 详情页（frontend-design.md §6.2 改版）：左上内嵌播放器窗格 + 右侧信息面板 + 下方整行选集
-     - 点击任意一集：本页解析（useParseProgress + ParseProgressPanel）→ 直接 playerPane.open 播放，
-       不再跳转 /player 路由；历史记录保留 upsert，离开页面时写回播放进度。
-     - 视频画面由 libmpv 原生子窗口渲染（WebView2 下层），PlayerPane 负责上报位置与浮层 UI。
+<!-- 详情页（frontend-design.md §6.2 改版）：上排封面 + 原版信息合并卡，下方整行选集
+     - 播放默认回到**页内左上内嵌播放器**（PlayerPane 窗格，libmpv 原生子窗口 WebView2 下层挖洞），
+       点击任意一集在窗格内直接播放；历史记录保留 upsert，离开页面时写回进度。
+     - 播放器控制条上的「弹窗播放」按钮才把当前播放切到独立播放器窗口（views/player-window）：
+       独立窗口用于解决 webview 挖洞定位不准 / HDR 无法播放的问题，保留不删。
      - 解析失败 / 取消 / 重试逻辑沿用原有进度面板；不伪造播放成功。 -->
 <script setup lang="ts">
 import { computed, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { emit, listen } from '@tauri-apps/api/event'
 import { ElMessageBox } from 'element-plus'
 import * as api from '@/api'
 import SolarIcon from '@/components/SolarIcon.vue'
+import BlurBackdrop from '@/components/BlurBackdrop.vue'
 import PlayerPane from '@/components/PlayerPane.vue'
 import DetailHero from './components/DetailHero.vue'
 import DownloadDialog from './components/DownloadDialog.vue'
@@ -30,7 +33,7 @@ import { clearResolveCache, getResolveCache, resolveCacheKey, setResolveCache } 
 import { detectCatvodErrorCode } from '@/utils/catvodErrors'
 import { lineLabelAt } from '@/utils/episodeLines'
 import { evictDetailView } from '@/layouts/vodDetailCache'
-import type { DownloadFileInfo, Episode, VideoDetail } from '@/types'
+import type { DownloadFileInfo, Episode, PlayerState, VideoDetail } from '@/types'
 
 defineOptions({ name: 'DetailView' })
 
@@ -74,21 +77,64 @@ const categoryName = ref('')
 
 /** 本片「边下边播」覆盖开关：本片覆盖优先，否则跟随设置页全局「播放时自动保存」 */
 const {
-  effective: autoSaveEffective,
   override: autoSaveOverride,
   toggle: toggleAutoSave,
+  effective: autoSaveEffective,
 } = usePerVideoAutoSave(() => `${siteKey.value}/${detail.value?.id || videoId.value}`)
 
-/* ---------------- 内嵌播放器 ---------------- */
+/* ---------------- 播放状态（独立播放器窗口） ---------------- */
 
-/** 播放器窗格组件（解析成功后直接调用 open，离开页面时 close） */
+/** 最近一次播放器状态快照（player-state 事件更新；离开页面写回历史进度用） */
+const playerSnapshot = ref<PlayerState | null>(null)
+/** player-state 监听解绑函数（onBeforeUnmount 调用） */
+let unlistenPlayerState: (() => void) | null = null
+
+/** 订阅播放器状态：进度写回、窗口播放错误回退都依赖它 */
+function startPlayerStateListener() {
+  if (unlistenPlayerState || !api.isTauri) return
+  void listen<PlayerState>('player-state', (event) => {
+    playerSnapshot.value = event.payload
+    if (event.payload.status === 'error' && playingUrl.value) onPlayerError()
+  }).then((unlisten) => {
+    unlistenPlayerState = unlisten
+  })
+}
+
+/** 播放器窗口 → 主窗口事件解绑函数（onBeforeUnmount 统一清理） */
+let unlistenPlayerWindow: (() => void)[] = []
+
+/** 订阅独立播放器窗口的反向事件：选集 / 重试 / 自动保存开关 */
+function startPlayerWindowListeners() {
+  if (unlistenPlayerWindow.length > 0 || !api.isTauri) return
+  void listen<{ index?: number }>('player-window-episode', (event) => {
+    const index = Number(event.payload?.index)
+    if (!Number.isFinite(index) || index < 0) return
+    const ep = episodes.value[index]
+    if (ep) void playEpisode(ep, index)
+  }).then((off) => unlistenPlayerWindow.push(off))
+  void listen('player-window-retry', () => {
+    onParseRetry()
+  }).then((off) => unlistenPlayerWindow.push(off))
+  void listen('player-window-autosave-toggle', () => {
+    const next = toggleAutoSave()
+    ui.notify(next ? '已开启本片自动保存' : '已关闭本片自动保存', 'success')
+  }).then((off) => unlistenPlayerWindow.push(off))
+  // 独立窗口被关闭（原生 X / 页面内关闭按钮）：复位弹出标记，后续切集回到内嵌播放
+  void listen('player-window-closed', () => {
+    poppedOut.value = false
+  }).then((off) => unlistenPlayerWindow.push(off))
+}
+
+/** 把解析失败原因同步给播放器窗口（窗口内展示错误态 + 重试按钮） */
+function notifyPlayerWindowParseError(message: string) {
+  if (!api.isTauri) return
+  void emit('player-window-parse-error', { message })
+}
+
+/* ---------------- 页内内嵌播放器窗格（默认播放路径） ---------------- */
+
+/** 内嵌播放器窗格组件实例（open/close/getState 由 defineExpose 暴露） */
 const playerPane = ref<InstanceType<typeof PlayerPane> | null>(null)
-/** 播放器列容器：用它的高度约束右侧信息面板，避免页面整体被撑高 */
-const playerCol = ref<HTMLElement | null>(null)
-/** 播放器窗格高度（px）：右侧信息区按它定高，内部简介再滚动 */
-const paneHeight = ref(0)
-let colObserver: ResizeObserver | null = null
-
 /** 当前播放地址 / 标题 / 请求头（hasMedia 由 playingUrl 决定） */
 const playingUrl = ref('')
 const playingTitle = ref('')
@@ -134,11 +180,8 @@ const playingFromCache = ref(false)
 const playingLocal = ref(false)
 /** 复用缓存时对应的 cache key（失败回退时精确清理） */
 const playingCacheKey = ref('')
-
-/** 右侧信息面板：与播放器窗格等高（内部简介滚动） */
-const infoPanelStyle = computed(() =>
-  paneHeight.value > 0 ? { height: `${paneHeight.value}px` } : undefined,
-)
+/** 独立播放器窗口是否已弹出（「弹窗播放」按钮切换；离开页面时按需关闭） */
+const poppedOut = ref(false)
 
 let reqSeq = 0
 /** 本地成品查询进行中（毫秒级；防止缓存查询窗口内的重复点击各发一次解析） */
@@ -151,16 +194,21 @@ const {
   title: parseTitle,
   steps: parseSteps,
   elapsedMs: parseElapsedMs,
-  stage: parseStage,
   errorMessage: parseError,
   visible: parseVisible,
-  currentStep: parseCurrentStep,
   begin: beginParse,
   finish: finishParse,
   cancel: cancelParseRun,
   close: closeParse,
   reopen: reopenParse,
 } = useParseProgress()
+
+/** 播放器窗格 opening 文案（解析中显示当前步骤；复用解析缓存时直接提示打开播放器） */
+const paneLoadingText = computed(() => {
+  if (!resolving.value) return ''
+  if (playingFromCache.value) return '复用上次解析结果，正在打开播放器…'
+  return `正在解析：${parseTitle.value || '等待后端返回'}`
+})
 
 /** 网盘未登录：解析失败后弹一次「去登录」引导（W13 错误联动；同一错误文案只弹一次） */
 let panPromptedFor = ''
@@ -190,13 +238,6 @@ function onToggleParseLog() {
 const lastAttempt = ref<{ ep: Episode; index: number } | null>(null)
 /** 用户是否点过「取消解析」：仅用于把收尾提示从「失败」改成「已取消」 */
 const cancelRequested = ref(false)
-
-/** 播放器窗格 opening 文案（解析中显示当前步骤；复用解析缓存时直接提示打开播放器） */
-const paneLoadingText = computed(() => {
-  if (!resolving.value) return ''
-  if (playingFromCache.value) return '复用上次解析结果，正在打开播放器…'
-  return `正在解析：${parseCurrentStep.value?.title || '等待后端返回'}`
-})
 
 /** 面板「取消解析」：尽力而为，最终结果仍以 resolve/sniff 返回为准 */
 function onParseCancel() {
@@ -258,6 +299,13 @@ function resumeQueryTarget(): { gIndex: number; startSec: number } | null {
   }
 }
 
+// 同一个 DetailView 会被点播/历史/收藏三个布局各自 KeepAlive 缓存；记录本实例
+// 创建时的详情路由名：只有当前路由仍属于本实例时才允许加载详情 / 自动起播，
+// 否则多个缓存实例会同时 loadDetail 并各自自动起播，并发开出多个播放器窗口。
+const DETAIL_ROUTE_NAMES = new Set(['vod-detail', 'history-detail', 'favorites-detail'])
+const detailRouteName = String(route.name ?? '')
+const isOwnDetailRoute = () => String(route.name) === detailRouteName
+
 /** 同一次进入（同一影片）只自动起播一次（query 清理 / 刷新详情 / 重渲染都不重复） */
 let autoStartedKey = ''
 
@@ -270,6 +318,8 @@ let autoStartedKey = ''
 watch(
   () => [detail.value?.id, loading.value, hasEpisodes.value] as const,
   async () => {
+    // 只有当前路由属于本实例时才自动起播（其它布局缓存的 DetailView 不响应）
+    if (!isOwnDetailRoute()) return
     const target = detail.value
     if (!target?.id || loading.value || !hasEpisodes.value) return
     const mediaKey = `${siteKey.value}/${target.id || videoId.value}`
@@ -301,12 +351,14 @@ watch(
 /** 上一次加载的影片 key：路由参数变化时先复位正在播放的媒体 */
 let lastMediaKey = ''
 
-/** 关掉内嵌播放器并复位播放相关状态 */
+/** 关掉独立播放器窗口并复位播放相关状态 */
 function resetPlayback() {
+  // 独立窗口若弹出过则关掉（未弹出时调用也安全：窗口不存在直接跳过）
+  void api.playerWindowClose()
+  poppedOut.value = false
+  // 页内窗格同步停播（pane.close = playerClose，幂等）
   const pane = playerPane.value
-  if (pane) {
-    void pane.close()
-  }
+  if (pane) void pane.close()
   playingUrl.value = ''
   playingTitle.value = ''
   playingHeaders.value = {}
@@ -361,6 +413,9 @@ watch(
     config.activeSiteKey('vod'),
   ] as const,
   () => {
+    // 同一个 DetailView 被三个布局各自缓存：非本实例所属的详情路由一律不响应，
+    // 否则缓存实例会各自 loadDetail → 自动起播 → 并发开出多个播放器窗口
+    if (!isOwnDetailRoute()) return
     // 离开详情页时 route.params 会先变空，不能把已有的详情清掉
     if (!config.initialized || !siteKey.value || !videoId.value) return
     // 从搜索/设置切回同一部影片时复用 KeepAlive 中的详情，避免重新加载
@@ -370,27 +425,6 @@ watch(
     void loadDetail()
   },
   { immediate: true },
-)
-
-/* ---------------- 右侧信息面板高度 = 播放器窗格高度 ---------------- */
-
-watch(
-  playerCol,
-  (el) => {
-    colObserver?.disconnect()
-    colObserver = null
-    paneHeight.value = 0
-    if (!el) return
-    paneHeight.value = Math.round(el.getBoundingClientRect().height)
-    if (typeof ResizeObserver === 'undefined') return
-    colObserver = new ResizeObserver((entries) => {
-      const height = entries[0]?.contentRect.height ?? 0
-      // 小窗态下列容器会塌陷为 0：保留上一次的有效高度，避免右侧信息面板跟着收起
-      if (height > 0) paneHeight.value = Math.round(height)
-    })
-    colObserver.observe(el)
-  },
-  { flush: 'post' },
 )
 
 /** 播放中定时写回进度的间隔：直接关窗 / 崩溃时 onBeforeUnmount 不一定触发，最多丢 15s */
@@ -422,16 +456,12 @@ onMounted(() => {
   if (!downloads.settingsLoaded) void downloads.loadSettings()
   // 播放中定时落一次进度：避免用户直接关窗口时历史进度丢失
   startProgressTimer()
+  startPlayerStateListener()
+  startPlayerWindowListeners()
   window.addEventListener('beforeunload', writebackProgress)
 })
 
 // 一级布局被 KeepAlive 缓存：切走时停掉播放/定时器，回来时不保留后台播放
-const DETAIL_ROUTE_NAMES = new Set(['vod-detail', 'history-detail', 'favorites-detail'])
-// 同一个 DetailView 会被点播/历史/收藏三个布局各自缓存；记录本实例创建时的
-// 详情路由名，避免历史详情在被缓存时因路由切到点播详情而误启动定时器。
-const detailRouteName = String(route.name ?? '')
-const isOwnDetailRoute = () => String(route.name) === detailRouteName
-
 onDeactivated(() => {
   writebackProgress()
   stopProgressTimer()
@@ -467,10 +497,15 @@ onBeforeUnmount(() => {
   stopProgressTimer()
   resetPlayback()
   window.removeEventListener('beforeunload', writebackProgress)
-  colObserver?.disconnect()
-  colObserver = null
-  writebackProgress()
-  void playerPane.value?.close()
+  unlistenPlayerState?.()
+  unlistenPlayerState = null
+  for (const off of unlistenPlayerWindow.splice(0)) {
+    try {
+      off()
+    } catch {
+      // 解绑失败不影响页面卸载
+    }
+  }
 })
 
 /* ---------------- 交互 ---------------- */
@@ -515,7 +550,7 @@ function resumeStartSec(gIndex: number): number {
  */
 function writebackProgress() {
   const played = playing.value
-  const paneState = playerPane.value?.getState()
+  const paneState = playerSnapshot.value
   if (!played || !paneState || !paneState.url) return
   const positionSec = Math.round(paneState.positionSec || 0)
   if (positionSec <= 0) return
@@ -562,6 +597,51 @@ async function findLocalPlaybackFile(
 }
 
 /**
+ * 独立播放器窗口需要的完整播放上下文：剧名 / 集名 / 全部选集 / 当前集 / 封面 / 自动保存开关。
+ * 窗口内不再回主窗查询；切集通过 player-window-episode 事件回到本页解析。
+ */
+function playerWindowContext(epTitle: string, index: number) {
+  return {
+    seriesName: detail.value?.name || videoId.value,
+    episodeLabel: epTitle,
+    episodes: episodes.value.map((it) => ({ title: it.title, url: it.url })),
+    activeEpisode: index,
+    cover: detail.value?.cover ?? undefined,
+    autoSave: autoSaveOverride.value ?? downloads.settings.autoSave,
+  }
+}
+
+/**
+ * 「弹窗播放」：把当前这一集从内嵌播放器切到独立播放器窗口。
+ * 独立窗口只为解决 WebView 挖洞的定位 / HDR 问题——默认仍走页内内嵌播放，
+ * 点了本按钮（或窗口内后续切集）才走 playerWindowOpen。
+ */
+async function onPopOutWindow() {
+  const url = playingUrl.value
+  if (!url) {
+    ui.notify('请先播放一集，再弹出独立窗口', 'info')
+    return
+  }
+  const played = playing.value
+  const startSec = Math.round(playerSnapshot.value?.positionSec || 0)
+  try {
+    // 先标记弹出：后续切集 / 重试走 playerWindowOpen，保持在独立窗口内
+    poppedOut.value = true
+    await api.playerWindowOpen({
+      url,
+      headers: playingHeaders.value,
+      startSec,
+      title: playingTitle.value,
+      ...(played ? playerWindowContext(played.epTitle, played.index) : {}),
+    })
+    ui.notify('已在独立播放器窗口播放', 'success')
+  } catch (e) {
+    poppedOut.value = false
+    ui.notify('打开独立播放器窗口失败：' + api.formatError(e), 'error')
+  }
+}
+
+/**
  * 点击集：解析直链（resolve + 需要时 sniff）→ 记录历史 → 直接在内嵌播放器窗格播放。
  * 解析/抓包全程通过 parse-progress 事件推进选集右侧（6:4）的内联进度面板；requestId 在 invoke 之前生成，
  * 保证后端第一批事件不丢。解析失败保留进度面板（含重试），不伪造播放成功。
@@ -597,9 +677,9 @@ async function playEpisode(
     lastAttempt.value = { ep, index }
     cancelRequested.value = false
     parseErrorText.value = ''
-    playingLocal.value = true
     playingFromCache.value = false
     playingCacheKey.value = ''
+    playingLocal.value = true
     playingUrl.value = localPath
     playingHeaders.value = {}
     playingTitle.value = epTitle
@@ -628,7 +708,18 @@ async function playEpisode(
     })
     await nextTick()
     try {
-      await playerPane.value?.open(localPath, {}, startSec)
+      if (poppedOut.value) {
+        // 已弹出独立窗口：继续在窗口里播
+        await api.playerWindowOpen({
+          url: localPath,
+          startSec,
+          title: target.name,
+          ...playerWindowContext(epTitle, index),
+        })
+      } else {
+        // 默认：页内左上内嵌窗格直接播放
+        await playerPane.value?.open(localPath, {}, startSec)
+      }
       ui.notify(`播放本地已下载文件：${epTitle}`, 'success')
       return
     } catch (openError) {
@@ -718,11 +809,15 @@ async function playEpisode(
       ]
         .filter(Boolean)
         .join(' · ')
-      ui.notify(`已解析到直链${meta ? `（${meta}）` : ''}，正在打开播放器`, 'success')
+      ui.notify(
+        !api.isTauri
+          ? `已解析到直链${meta ? `（${meta}）` : ''}（浏览器预览：独立播放器窗口需桌面端）`
+          : `已解析到直链${meta ? `（${meta}）` : ''}，正在打开播放器`,
+        'success',
+      )
     }
 
-    playingLocal.value = false
-    playingUrl.value = playUrl
+        playingUrl.value = playUrl
     playingHeaders.value = headers
     playingTitle.value = epTitle
     playing.value = {
@@ -754,7 +849,19 @@ async function playEpisode(
     // 详情页内直接播放（不再 router.push 到 /player）；后端会 replace 当前媒体
     await nextTick()
     try {
-      await playerPane.value?.open(playUrl, headers, startSec)
+      if (poppedOut.value) {
+        // 已弹出独立窗口：继续在窗口里播
+        await api.playerWindowOpen({
+          url: playUrl,
+          headers,
+          startSec,
+          title: target.name,
+          ...playerWindowContext(epTitle, index),
+        })
+      } else {
+        // 默认：页内左上内嵌窗格直接播放
+        await playerPane.value?.open(playUrl, headers, startSec)
+      }
     } catch (openError) {
       // 复用的缓存地址可能已过期 / 被防盗链拒绝：清掉该条，等 resolving 复位后再重新解析一次
       if (!usedCache) throw openError
@@ -790,6 +897,7 @@ async function playEpisode(
     const message = api.formatError(e)
     parseErrorText.value = message
     finishParse('error', message)
+    notifyPlayerWindowParseError(message)
     if (cancelRequested.value) {
       ui.notify('已取消解析', 'info')
     } else {
@@ -1156,35 +1264,48 @@ function goList() {
 </script>
 
 <template>
+  <!-- 整页模糊封面背景：铺满内容区，滚动内容浮在其上（无封面时露出页面底色） -->
+  <BlurBackdrop :cover="detail?.cover ?? null" />
   <PageScroll>
     <div class="page detail-page">
-    <!-- 顶部操作条：返回（圆形图标按钮）+ 影视名称 + 站点名（纯文字，不用 tag）+ 刷新 -->
-    <header class="page-header page-header--card">
-      <div class="heading">
-        <el-button circle aria-label="返回上一页" @click="goBack">
-          <template #icon><SolarIcon name="arrow-left" /></template>
-        </el-button>
-        <span v-if="detail?.name" class="heading-title ellipsis-1">{{ detail.name }}</span>
-        <span v-if="detail?.name && siteName" class="heading-sep" aria-hidden="true">·</span>
-        <span v-if="siteName" class="heading-site ellipsis-1">{{ siteName }}</span>
-      </div>
-      <div class="head-actions">
-        <el-button
-          circle
-          :disabled="loading"
-          aria-label="重新加载详情"
-          @click="loadDetail"
-        >
-          <template #icon><SolarIcon name="refresh" :size="15" /></template>
-        </el-button>
-      </div>
-    </header>
+    <!-- 顶部操作条：36px 面包屑式标题（不再用白卡，避免与右侧信息栏的剧名重复） -->
+    <header class="detail-head">
+      <el-button
+        class="back-btn"
+        circle
+        size="small"
+        aria-label="返回上一页"
+        @click="goBack"
+      >
+        <template #icon><SolarIcon name="arrow-left" :size="15" /></template>
+      </el-button>
+      <span v-if="detail?.name" class="head-title ellipsis-1">{{ detail.name }}</span>
+      <span v-if="detail?.name && siteName" class="head-sep" aria-hidden="true">·</span>
+      <span v-if="siteName" class="head-site ellipsis-1">{{ siteName }}</span>
+      <span class="head-spacer" />
 
-    <!-- 演示数据提示条 -->
-    <div v-if="config.demoMode" class="demo-hint">
-      <SolarIcon :size="12" name="info-circle" />
-      <span>演示数据：当前为浏览器预览模式，详情与选集来自 mock 适配层；本地播放器需桌面端</span>
-    </div>
+      <!-- 演示数据提示：收成 chip（原来独占一整条横幅），完整说明放 title -->
+      <span
+        v-if="config.demoMode"
+        class="demo-chip"
+        :title="config.demoInApp
+          ? '演示数据：当前为 Tauri mock 模式，详情与选集来自 mock 适配层；播放使用公开测试样片'
+          : '演示数据：当前为浏览器预览模式，详情与选集来自 mock 适配层；本地播放器需桌面端'"
+      >
+        <SolarIcon :size="12" name="info-circle" />
+        演示数据
+      </span>
+
+      <el-button
+        circle
+        size="small"
+        :disabled="loading"
+        aria-label="重新加载详情"
+        @click="loadDetail"
+      >
+        <template #icon><SolarIcon name="refresh" :size="15" /></template>
+      </el-button>
+    </header>
 
     <!-- ① 加载骨架：左侧 16:9 播放器 + 右侧信息面板 -->
     <div v-if="loading" class="watch-skeleton" aria-label="详情加载中">
@@ -1228,112 +1349,124 @@ function goList() {
       @action="goList"
     />
 
-    <!-- ④ 正常：上排（播放器 + 信息面板），下排（整行选集） -->
+    <!-- ④ 正常：双列工作台——左列播放器 + 选集（紧贴上下），右列信息常驻（列内滚动） -->
     <template v-else>
-      <section class="watch-layout">
-        <div ref="playerCol" class="player-col">
-          <PlayerPane
-            ref="playerPane"
-            :title="playingTitle"
-            :series-name="detail.name"
-            :episode-label="playing ? `第${playing.index + 1}集` : ''"
-            :episodes="episodes"
-            :active-episode="playing?.index ?? -1"
-            :marker-key="`${siteKey}/${videoId}`"
-            :cover="detail.cover"
-            :has-media="Boolean(playingUrl)"
-            :loading="resolving"
-            :loading-text="paneLoadingText"
-            :error-text="parseErrorText"
-            :auto-save="autoSaveEffective"
-            :save-info="playerSaveInfo"
-            @toggle-auto-save="onToggleAutoSave"
-            @retry="onPlayerRetry"
-            @error="onPlayerError"
-            @prev="playPrevEpisode"
-            @next="playNextEpisode"
-            @select-episode="playEpisodeAt"
-          />
-        </div>
+      <section class="detail-layout">
+        <div class="watch-col">
+          <div class="player-col">
+            <PlayerPane
+              ref="playerPane"
+              :title="playingTitle"
+              :series-name="detail.name"
+              :episode-label="playing ? `第${playing.index + 1}集` : ''"
+              :episodes="episodes"
+              :active-episode="playing?.index ?? -1"
+              :marker-key="`${siteKey}/${videoId}`"
+              :cover="detail.cover"
+              :has-media="Boolean(playingUrl)"
+              :loading="resolving"
+              :loading-text="paneLoadingText"
+              :error-text="parseErrorText"
+              :auto-save="autoSaveEffective"
+              :save-info="playerSaveInfo"
+              @toggle-auto-save="onToggleAutoSave"
+              @retry="onPlayerRetry"
+              @error="onPlayerError"
+              @prev="playPrevEpisode"
+              @next="playNextEpisode"
+              @select-episode="playEpisodeAt"
+            @pop-out="onPopOutWindow"
+            />
+          </div>
 
-        <aside class="info-panel panel" :style="infoPanelStyle">
-          <DetailHero
-            :detail="detail"
-            :site-name="siteName"
-            :category="categoryName"
-            :download-loading="downloading"
-            :download-all-loading="downloadingAll"
-            :download-disabled="!hasEpisodes"
-            :favorited="favorited"
-            :favorite-loading="favoriteLoading"
-            @play="playFirst"
-            @download="onDownload"
-            @download-all="onDownloadAll"
-            @toggle-favorite="onToggleFavorite"
-          />
-        </aside>
-      </section>
+          <!-- 选集：紧贴播放器下方，吃掉左列剩余高度（解析面板出现时同列并排） -->
+          <section class="episodes" :class="{ 'has-parse': parseVisible }">
+            <div class="episodes-main panel">
+              <div v-if="!hasEpisodes" class="no-episodes muted">该资源暂无可播放线路</div>
+              <template v-else>
+                <div class="episodes-head">
+                  <span class="episodes-title">选集</span>
+                  <span class="episodes-count muted">共 {{ episodes.length }} 集</span>
+                  <span class="episodes-spacer" />
+                  <!-- 解析器选择（数据来自 config.parses；选择后 set_default_parse，并用于本页 resolve） -->
+                  <div v-if="parsers.length" class="parse-row">
+                    <el-select
+                      v-model="selectedParse"
+                      class="parse-select"
+                      size="small"
+                      clearable
+                      placeholder="解析器（自动）"
+                      @change="onParseChange"
+                    >
+                      <el-option
+                        v-for="parser in parsers"
+                        :key="parser.name"
+                        :label="parser.type === 4 ? `${parser.name}（超解析）` : `${parser.name}（type ${parser.type}）`"
+                        :value="parser.name"
+                      />
+                    </el-select>
+                  </div>
+                  <el-button
+                    size="small"
+                    :disabled="parseState === 'idle'"
+                    :title="parseVisible ? '隐藏解析过程面板' : '显示解析过程面板'"
+                    @click="onToggleParseLog"
+                  >
+                    <template #icon>
+                      <SolarIcon :name="parseVisible ? 'close-circle' : 'info-circle'" :size="14" />
+                    </template>
+                    {{ parseVisible ? '隐藏解析' : '解析过程' }}
+                  </el-button>
+                </div>
 
-      <!-- 选集行：左列选集（6）+ 右列解析过程（4），窗口变窄也不换行 -->
-      <section class="episodes" :class="{ 'has-parse': parseVisible }">
-        <div class="episodes-main panel">
-          <div v-if="!hasEpisodes" class="no-episodes muted">该资源暂无可播放线路</div>
-          <template v-else>
-            <div class="episodes-head">
-              <span class="episodes-title">选集</span>
-              <span class="episodes-count muted">共 {{ episodes.length }} 集</span>
-              <span class="episodes-spacer" />
-              <!-- 解析器选择（数据来自 config.parses；选择后 set_default_parse，并用于本页 resolve） -->
-              <div v-if="parsers.length" class="parse-row">
-                <el-select
-                  v-model="selectedParse"
-                  class="parse-select"
-                  size="small"
-                  clearable
-                  placeholder="解析器（自动）"
-                  @change="onParseChange"
-                >
-                  <el-option
-                    v-for="parser in parsers"
-                    :key="parser.name"
-                    :label="parser.type === 4 ? `${parser.name}（超解析）` : `${parser.name}（type ${parser.type}）`"
-                    :value="parser.name"
+                <EpisodeLines :groups="lines" :active-line="activeLine" @select="onLineSelect" />
+                <!-- 只有集数网格滚动：线路 / 解析器 / 标题固定在面板头部 -->
+                <el-scrollbar class="episode-scroll">
+                  <EpisodeGrid
+                    class="episodes-grid"
+                    compact
+                    :items="episodes"
+                    :active-ep="activeEp"
+                    @play="onEpisodePlay"
                   />
-                </el-select>
-              </div>
-              <el-button
-                size="small"
-                :disabled="parseState === 'idle'"
-                :title="parseVisible ? '隐藏解析过程面板' : '显示解析过程面板'"
-                @click="onToggleParseLog"
-              >
-                <template #icon>
-                  <SolarIcon :name="parseVisible ? 'close-circle' : 'info-circle'" :size="14" />
-                </template>
-                {{ parseVisible ? '隐藏解析' : '解析过程' }}
-              </el-button>
+                </el-scrollbar>
+              </template>
             </div>
 
-            <EpisodeLines :groups="lines" :active-line="activeLine" @select="onLineSelect" />
-            <EpisodeGrid :items="episodes" :active-ep="activeEp" @play="onEpisodePlay" />
-          </template>
+            <!-- 解析进度面板（与选集并排；事件订阅与计时在 useParseProgress 内管理） -->
+            <ParseProgressPanel
+              class="episodes-parse"
+              inline
+              :visible="parseVisible"
+              :state="parseState"
+              :title="parseTitle"
+              :steps="parseSteps"
+              :elapsed-ms="parseElapsedMs"
+              :error-message="parseError"
+              @cancel="onParseCancel"
+              @retry="onParseRetry"
+              @close="closeParse"
+            />
+          </section>
         </div>
 
-        <!-- 解析进度面板（内联在和选集并排的右列；事件订阅与计时在 useParseProgress 内管理） -->
-        <ParseProgressPanel
-          class="episodes-parse"
-          inline
-          :visible="parseVisible"
-          :state="parseState"
-          :title="parseTitle"
-          :steps="parseSteps"
-          :elapsed-ms="parseElapsedMs"
-          :stage="parseStage"
-          :error-message="parseError"
-          @cancel="onParseCancel"
-          @retry="onParseRetry"
-          @close="closeParse"
-        />
+        <aside class="info-panel panel">
+          <el-scrollbar class="info-scroll">
+            <DetailHero
+              :detail="detail"
+              :category="categoryName"
+              :download-loading="downloading"
+              :download-all-loading="downloadingAll"
+              :download-disabled="!hasEpisodes"
+              :favorited="favorited"
+              :favorite-loading="favoriteLoading"
+              @play="playFirst"
+              @download="onDownload"
+              @download-all="onDownloadAll"
+              @toggle-favorite="onToggleFavorite"
+            />
+          </el-scrollbar>
+        </aside>
       </section>
     </template>
 
@@ -1352,23 +1485,39 @@ function goList() {
 </template>
 
 <style scoped>
-/* 详情页撑满内容区可用高度：页头 / 提示条 / 播放行按内容高度，选集行吃掉剩余空间。
-   高度 = 视口 - 标题栏（内容区滚动容器就是这么高），页面内容超出时仍正常滚动。 */
+/* 详情页：36px 页头 + 双列工作台（左列播放器/选集一体、右列信息常驻），1280×720 一屏闭环 */
 .detail-page {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - var(--titlebar-h));
+  /* 工作台锁定一屏：不出现页面级滚动；内容超出时由右栏 / 选集面板各自内部滚动 */
+  height: calc(100vh - var(--titlebar-h));
+  min-height: 0;
+  overflow: hidden;
 }
 
-.heading {
+/* 整页模糊背景之上：滚动层要压住背景层（BlurBackdrop 为 position:absolute; z-index:0） */
+.page-scroll {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------------- 顶部：36px 面包屑式页头（无卡片底） ---------------- */
+
+.detail-head {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: var(--space-2);
+  height: 32px;
   min-width: 0;
 }
 
+.back-btn {
+  flex-shrink: 0;
+}
+
 /* 顶部标题：纯文字（影视名称在前，站点名在后），不再使用 tag */
-.heading-title {
+.head-title {
   min-width: 0;
   font-size: 14px;
   font-weight: 600;
@@ -1376,105 +1525,146 @@ function goList() {
   letter-spacing: 0.2px;
 }
 
-.heading-sep {
+.head-sep {
   flex-shrink: 0;
   font-size: 12px;
   color: var(--text-faint);
 }
 
-.heading-site {
+.head-site {
   min-width: 0;
   font-size: 12.5px;
   color: var(--text-muted);
 }
 
-.demo-hint {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-3);
-  font-size: 12px;
-  color: var(--text-muted);
-  background: var(--info-weak);
-  border: 0;
-  border-left: 3px solid var(--info);
-  border-radius: var(--radius-md);
+.head-spacer {
+  flex: 1;
+  min-width: var(--space-2);
 }
 
-.demo-hint .solar-icon {
+/* 演示数据 chip：22px 胶囊，不再抢主内容视觉重量 */
+.demo-chip {
+  display: inline-flex;
   flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  background: var(--info-weak);
   color: var(--info);
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
 }
 
-/* ---------------- 上排：播放器（6）+ 信息面板（4），任何宽度都不换行 ---------------- */
+.demo-chip .solar-icon {
+  flex-shrink: 0;
+}
 
-.watch-layout {
+/* ---------------- 双列工作台：左播放器 + 选集 / 右信息常驻 ---------------- */
+
+.detail-layout {
   display: grid;
-  /* 固定 6:4：窗口变窄时两列一起收窄，不折成上下两行；
-     播放器保持 16:9（宽度决定高度），右列信息面板高度跟随播放器，
-     因此窗口变窄时被压缩的是右侧影视介绍的可视高度/宽度 */
-  grid-template-columns: minmax(0, 6fr) minmax(0, 4fr);
+  /* 左列自适应吃满剩余宽度，右列固定 356px 信息栏（放得下 2×2 操作 + 简介 + 横滑演职员） */
+  grid-template-columns: minmax(0, 1fr) 356px;
   gap: var(--space-4);
   align-items: stretch;
-  /* 播放行按内容高度，不参与剩余高度分配 */
-  flex: 0 0 auto;
+  flex: 1 1 0;
   min-width: 0;
+  min-height: 0;
 }
 
+.watch-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  min-height: 0;
+}
+
+/* 播放器列：宽度决定 16:9 高度（PlayerPane 内 .player-stage 自带 aspect-ratio） */
 .player-col {
-  /* 不要 stretch：否则列高会被右侧 info-panel 的定高反向撑大，
-     形成「info 高 → 行高 → 列高 → 观测到旧高度」的闭环，宽度变化时高度偶尔不更新 */
-  align-self: start;
+  align-self: stretch;
   width: 100%;
   min-width: 0;
 }
 
+/* 右列（封面 + 资料 + 演职员）：与左列等高，列内滚动，不再嵌套滚动条 */
 .info-panel {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: var(--space-3);
+  min-height: 0;
+  /* 内边距交给 .panel 默认的 --space-3：全局 `.panel .el-scrollbar` 用 -space-3 负 margin
+     把滚动条贴到面板右缘，这里改小内边距会把滚动条推出面板、被 overflow:hidden 裁掉 */
+  /* 整列内容超出面板高度时，由内部 el-scrollbar 兜底滚动；栏本身不再原生滚动 */
   overflow: hidden;
-  scrollbar-width: thin;
 }
 
-/* ---------------- 下排：选集行（选集 6 + 解析过程 4） ---------------- */
+.info-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.info-scroll :deep(.el-scrollbar__view) {
+  padding-right: 2px;
+  padding-bottom: 2px;
+}
+
+/* ---------------- 选集：紧贴播放器下方，吃掉左列剩余高度 ---------------- */
 
 .episodes {
   display: grid;
-  /* 默认只有选集一列；解析面板出现（parseVisible）时切成 6:4，始终不换行 */
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-4);
-  /* 两列卡片都撑满这一行的剩余高度（选集 / 解析过程） */
+  gap: var(--space-3);
   align-items: stretch;
-  /* 吃掉页面剩余高度：窗口越高，栏目越高 */
   flex: 1 1 auto;
   min-width: 0;
+  min-height: 0;
 }
 
+/* 解析面板出现时同列并排，始终不换行 */
 .episodes.has-parse {
-  grid-template-columns: minmax(0, 6fr) minmax(0, 4fr);
+  grid-template-columns: minmax(0, 1fr) 260px;
 }
 
 .episodes-main {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-3);
+  gap: var(--space-2);
   min-width: 0;
   min-height: 0;
+  padding: var(--space-3);
+  overflow: hidden;
 }
 
 .episodes-parse {
   min-width: 0;
 }
 
+/* 左列宽度有限：集数用 44px 数字格（EpisodeGrid compact），两行内排完 */
+.episodes-grid {
+  min-height: 0;
+}
+
+/* 只有集数网格滚动：顶部标题 / 线路 / 解析器固定不动 */
+.episode-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.episode-scroll :deep(.el-scrollbar__view) {
+  padding-right: 2px;
+}
+
 .episodes-head {
   display: flex;
+  flex-wrap: wrap;
+  flex-shrink: 0;
   align-items: center;
   gap: var(--space-2);
-  flex-wrap: wrap;
   row-gap: var(--space-2);
 }
 
@@ -1505,27 +1695,41 @@ function goList() {
 
 .parse-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  flex-wrap: wrap;
 }
 
 .parse-select {
-  width: 172px;
+  width: 150px;
+}
+
+/* 与右侧「隐藏解析」small 按钮同高（theme.scss .el-button--small = 26px，
+   全局 element-user.scss 把 .el-select__wrapper 固定成 32px，这里按需压到 26px） */
+.parse-select :deep(.el-select__wrapper) {
+  height: 26px;
+}
+
+.parse-select :deep(.el-select__input),
+.parse-select :deep(.el-select__selected-item),
+.parse-select :deep(.el-select__placeholder) {
+  height: 24px;
+  line-height: 24px;
+  font-size: 12px;
 }
 
 /* ---------------- 骨架 ---------------- */
 
 .watch-skeleton {
   padding: var(--space-3);
-  background: var(--surface);
+  background: var(--surface-card);
   border: 0;
   border-radius: var(--radius-lg);
 }
 
 .sk-layout {
   display: grid;
-  grid-template-columns: minmax(0, 6fr) minmax(0, 4fr);
+  grid-template-columns: minmax(0, 1fr) 332px;
   gap: var(--space-4);
 }
 

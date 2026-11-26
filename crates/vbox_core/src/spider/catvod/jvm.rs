@@ -15,7 +15,7 @@ use serde_json::Value;
 
 use super::contract::{CatvodError, ErrorClass};
 use super::loader::{JarStore, LoadedJar};
-use super::{normalize, registry};
+use super::normalize;
 use crate::model::TvConfig;
 use crate::model::{Category, Site, VideoDetail, VideoItem};
 use vbox_jvm::{
@@ -36,7 +36,7 @@ const SESSION_IDLE: Duration = Duration::from_secs(15 * 60);
 
 /// JVM 车道的执行优先级。
 ///
-/// - `Primary`（默认）：带 jar 的站点**先**走真 JRE；失败才回退已移植家族/脚本/分类。
+/// - `Primary`（默认）：带 jar 的站点**先**走真 JRE；失败后回退描述/规则/脚本车道。
 /// - `Fallback`：只在其它路径都失败后才走 JVM（旧行为，保留用于排查与回滚）。
 /// - `Off`：完全关闭（不加载 JRE，不做任何尝试）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -58,44 +58,26 @@ pub fn mode() -> Mode {
     }
 }
 
-/// 少数 api 需要「原生优先」时的逃生门：`VBOX_JVM_NATIVE_FIRST=csp_A,csp_B`。
-fn native_first(api: &str) -> bool {
-    std::env::var("VBOX_JVM_NATIVE_FIRST")
-        .map(|v| v.split(',').any(|item| item.trim() == api.trim()))
-        .unwrap_or(false)
-}
-
-/// 该站点是否应该由 JVM 车道**先**执行（主力模式 + 带 jar + 未被显式排除）。
+/// 该站点是否应该由 JVM 车道**先**执行（主力模式 + 带 jar + 能解析入口类）。
 pub fn should_lead(site: &Site) -> bool {
-    mode() == Mode::Primary && !native_first(site.api.trim()) && can_handle(site)
+    mode() == Mode::Primary && can_handle(site)
 }
 
 pub fn available() -> bool {
     Runtime::locate().is_some()
 }
 
-/// 该站点能否交给 JVM 车道：有 jar、能解析出入口类、且不是加固壳。
+/// 该站点能否交给 JVM 车道：有 jar 且能解析出入口类。
 pub fn can_handle(site: &Site) -> bool {
     !site.jar.trim().is_empty() && class_of(site).is_some()
 }
 
-/// 站点入口类：优先取画像里的 `class`；画像缺失时按 TVBox 约定
-/// `csp_Foo` → `com.github.catvod.spider.Foo` 兜底（只有 jar 已给出才会走到这里，
-/// 因此类名猜错只会得到一条 `catvod.host.class_not_found`，比笼统 site_error 更有用）。
+/// 站点入口类：按 TVBox 约定 `csp_Foo` → `com.github.catvod.spider.Foo`。
+///
+/// 只有 jar 已给出才会走到这里，因此类名猜错只会得到一条
+/// `catvod.host.class_not_found`，比笼统 site_error 更有用。
 fn class_of(site: &Site) -> Option<String> {
     let api = site.api.trim();
-    if let Some(profile) = registry::lookup(api) {
-        if profile.guarded {
-            // 加固壳默认不接管；启用 payload 供给（VBOX_JVM_SHELL=1）后才把 class 交出去，
-            // 由 host_for 决定有没有可用载荷。
-            if std::env::var("VBOX_JVM_SHELL").ok().as_deref() != Some("1") {
-                return None;
-            }
-        }
-        if let Some(class) = profile.class.as_deref().map(str::trim).filter(|c| !c.is_empty()) {
-            return Some(class.to_string());
-        }
-    }
     let suffix = api.strip_prefix("csp_")?;
     if suffix.is_empty() || !suffix.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
         return None;
@@ -210,9 +192,21 @@ fn browse_timeout(site: &Site) -> Duration {
 fn payload_shims(jar: &Path, class: &str) -> Vec<PathBuf> {
     let cache = vbox_jvm::DexOptions::default_cache();
     let Ok(sha) = vbox_jvm::sha256_file(jar) else { return Vec::new() };
-    vbox_jvm::resolve_payload(&cache, &sha, Some(class))
-        .map(|p| p.paths)
-        .unwrap_or_default()
+    let Some(payload) = vbox_jvm::resolve_payload(&cache, &sha, Some(class)) else {
+        return Vec::new();
+    };
+    // 载荷里带 native 库（.so/.bin）时必须走原生桥：壳会在进程内解密 dex 并交给
+    // DexClassLoader。此时若把载荷 jar 挂到 classpath 最前，MyCrypto 等类会绕过桥接
+    // 直接加载，native 方法没有实现 → UnsatisfiedLinkError。
+    if payload
+        .paths
+        .iter()
+        .any(|p| vbox_jvm::shell::payload_needs_native(p))
+    {
+        tracing::info!("载荷含 native 库，不挂载 classpath shim（改走原生桥）");
+        return Vec::new();
+    }
+    payload.paths
 }
 
 fn spawn_host(jar: &Path, class: &str, ext: &str) -> Result<HostProcess, JvmError> {
@@ -249,19 +243,6 @@ fn host_for(
     class: &str,
 ) -> Result<(Arc<Slot<HostProcess>>, Lease<HostProcess>, PoolKey), CatvodError> {
     let loaded = load_jar(cfg, site)?;
-    if registry::lookup(site.api.trim()).map(|p| p.guarded).unwrap_or(false)
-        && payload_shims(&loaded.path, class).is_empty()
-    {
-        return Err(CatvodError::new(
-            ErrorClass::JvmShellUnsupported,
-            site,
-            format!(
-                "加固壳载荷缺失：{}；{}",
-                loaded.path.display(),
-                vbox_jvm::unsupported_hint("<jar sha256>")
-            ),
-        ));
-    }
     let ext = site.ext_string();
     let key = PoolKey::new(loaded.path.display().to_string(), &ext);
     let pool = host_pool();
@@ -296,7 +277,7 @@ fn host_for(
 /// 一次调用（含崩溃重试一次）。
 fn invoke(cfg: &TvConfig, site: &Site, call: &Call, play: bool) -> Result<Value, CatvodError> {
     let class = class_of(site)
-        .ok_or_else(|| CatvodError::new(ErrorClass::JvmClassNotFound, site, "画像里没有 class"))?;
+        .ok_or_else(|| CatvodError::new(ErrorClass::JvmClassNotFound, site, "无法从 api 推断入口类"))?;
     let timeout = if play { PLAY_TIMEOUT } else { browse_timeout(site) };
 
     let mut last: Option<JvmError> = None;
@@ -437,7 +418,8 @@ pub fn get_detail(cfg: &TvConfig, site: &Site, id: &str) -> Result<VideoDetail, 
     let ids = vec![id.to_string()];
     let call = Call::detail_content(class, &ext, &ids);
     let value = invoke(cfg, site, &call, false)?;
-    normalize::detail(&value).map_err(|e| CatvodError::new(ErrorClass::Parse, site, e.to_string()))
+    normalize::detail(&value, id)
+        .map_err(|e| CatvodError::new(ErrorClass::Parse, site, e.to_string()))
 }
 
 pub fn search(cfg: &TvConfig, site: &Site, keyword: &str, quick: bool) -> Result<Vec<VideoItem>, CatvodError> {

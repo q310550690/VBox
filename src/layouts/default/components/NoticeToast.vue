@@ -1,6 +1,6 @@
 <!-- 全局提示 toast（frontend-design.md §7.1）
-     - 数据源：useUiStore().notices（notify() 入队，4s 自动消失，最多同时 3 条）
-     - 固定右上角，分级左侧 3px 边框 + 图标；点击卡片或关闭按钮可立即关闭
+     - 数据源：useUiStore().notices（notify() 入队，默认 2s 自动消失，最多同时 3 条）
+     - 悬停暂停自动关闭；点击卡片后常显（需点关闭按钮手动关闭）
      - 容器不拦截鼠标（pointer-events:none），单条卡片恢复可点击 -->
 <script setup lang="ts">
 import { computed } from 'vue'
@@ -29,8 +29,10 @@ const LEVEL_ICONS: Record<ToastLevel, SolarIconName> = {
       v-for="notice in notices"
       :key="notice.id"
       class="notice"
-      :class="`is-${notice.level}`"
-      @click="ui.dismissNotice(notice.id)"
+      :class="[`is-${notice.level}`, { 'is-pinned': notice.pinned }]"
+      @mouseenter="ui.hoverNotice(notice.id)"
+      @mouseleave="ui.leaveNotice(notice.id)"
+      @click="ui.pinNotice(notice.id)"
     >
       <SolarIcon class="notice-icon" :size="16" :name="LEVEL_ICONS[notice.level]" />
       <span class="notice-text">{{ notice.text }}</span>
@@ -148,7 +150,7 @@ const LEVEL_ICONS: Record<ToastLevel, SolarIconName> = {
 
 .notice-close:hover {
   color: var(--text);
-  background: var(--surface-2);
+  background: var(--fill-1);
 }
 
 /* 淡入淡出 + 高度变化时的平滑位移 */

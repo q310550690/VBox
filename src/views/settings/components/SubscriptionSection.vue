@@ -13,11 +13,7 @@ const store = useConfigStore()
 
 /** 当前线路的源能力统计（本机 / jar / Python / 未适配） */
 const activeStats = computed<SiteStats>(() => store.siteStats)
-/** 当前线路所有站点都是 jar（纯 jar 线路提示条件） */
-const activeLinePureJar = computed(
-  () => activeStats.value.total > 0 && activeStats.value.jar === activeStats.value.total,
-)
-/** 当前线路没有本机可用源（纯 jar / jar+Python 混合等） */
+/** 当前线路没有本机可用源（Python 未就绪等） */
 const activeLineNoLocal = computed(
   () => activeStats.value.total > 0 && activeStats.value.local === 0,
 )
@@ -388,11 +384,7 @@ onMounted(() => {
             v-if="activeLineNoLocal && isSubActive(sub)"
             class="line-warn"
           >
-            {{
-              activeLinePureJar
-                ? '该线路为 Android jar 源，桌面端后续支持，请切换线路'
-                : '该线路暂无本机可用源，请切换线路'
-            }}
+该线路暂无本机可用源，请切换线路
           </p>
           <p
             v-if="!addressesOf(sub).length"
@@ -516,11 +508,7 @@ onMounted(() => {
           v-if="store.enabled && activeLineNoLocal"
           class="enabled-warn"
         >
-          {{
-            activeLinePureJar
-              ? '当前线路为 Android jar 源，后续支持（需 Android Host），建议切换线路'
-              : '当前线路没有本机可用源，建议切换线路'
-          }}
+当前线路没有本机可用源，建议切换线路
         </span>
         <!-- 加载元信息：解包格式 / 是否命中本地配置缓存（排障用，小字） -->
         <span
@@ -715,7 +703,7 @@ onMounted(() => {
 }
 
 .sub-expand:hover {
-  background: var(--surface-2);
+  background: var(--fill-1);
   color: var(--text);
 }
 
@@ -792,7 +780,7 @@ onMounted(() => {
 }
 
 .address-item:hover {
-  background: var(--surface-2);
+  background: var(--fill-1);
 }
 
 /* 不画单选圆圈：选中态直接用行背景表达。

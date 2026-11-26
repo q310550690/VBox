@@ -261,6 +261,29 @@ fn play_result_from_spider_json(
     default_parse: Option<&str>,
     progress: &ProgressSink,
 ) -> Result<PlayResult> {
+    // 宽容口径：老式 spider 的 playerContent 直接返回地址字符串（或字符串数组），
+    // 不是 JSON 对象；TVBox 对这两种形态都按直链处理。
+    if let Some(raw) = json.as_str() {
+        let raw = raw.trim();
+        if !raw.is_empty() {
+            return Ok(PlayResult {
+                url: raw.to_string(),
+                ..Default::default()
+            });
+        }
+        return Err(CoreError::Config("spider playerContent 返回空字符串".into()));
+    }
+    if let Some(arr) = json.as_array() {
+        if let Some(raw) = arr.iter().find_map(|v| v.as_str()).map(str::trim) {
+            if !raw.is_empty() {
+                return Ok(PlayResult {
+                    url: raw.to_string(),
+                    ..Default::default()
+                });
+            }
+        }
+        return Err(CoreError::Config("spider playerContent 返回空数组".into()));
+    }
     let obj = json
         .as_object()
         .ok_or_else(|| CoreError::Config("spider playerContent 返回不是 JSON 对象".into()))?;

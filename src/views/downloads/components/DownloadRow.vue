@@ -273,7 +273,7 @@ const metaText = computed(() => {
 }
 
 .download-row:hover {
-  background: var(--surface-2);
+  background: var(--fill-1);
 }
 
 .download-row.is-completed {

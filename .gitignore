@@ -68,3 +68,8 @@ _rea/
 
 # 文档已迁移到私有仓库 VBox-docs（本地通过目录联接 docs -> ../VBox-docs 访问）
 /docs/
+
+# 本地开发/截图调试产物（不入库）
+.preview/
+.probe-out/
+nohup.out

@@ -2,79 +2,12 @@
 //!
 //! 这一层只描述「type3 `csp_*.jar` 站点在桌面端怎么被处理」，不做任何网络或
 //! 解析动作：
-//! - [`Strategy`]：实现载体（规则包 / 原生 Rust / 脚本 / 明确不支持）
-//! - [`Difficulty`]：移植难度（对应计划 §7.1 的 L1–L4）
-//! - [`ErrorClass`]：失败分类（计划 G3，所有未覆盖路径必须可读、可分类）
+//! - [`ErrorClass`]：失败分类（所有未覆盖路径必须可读、可分类）
 //! - [`JarSpec`]：站点 `jar` 字段的解析结果（`;md5;` 校验、`img+` 伪装）
 
-use serde::Deserialize;
 
 use crate::error::{CoreError, Result};
 use crate::model::Site;
-
-/// 实现载体。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Strategy {
-    /// 规则包：HTML/JSON 路径 + 简单加密，复用 `html_rule`
-    Rulepack,
-    /// 已画像、尚未移植
-    Unported,
-    /// js/py 脚本家族（走既有运行时，不属于 jar lane）
-    Script,
-    /// 明确不支持（受保护 jar / 需要 Android 能力）
-    Unsupported,
-}
-
-impl Strategy {
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Strategy::Rulepack => "rulepack",
-            Strategy::Unported => "unported",
-            Strategy::Script => "script",
-            Strategy::Unsupported => "unsupported",
-        }
-    }
-}
-
-/// 移植难度（计划 §7.1 L1–L4）。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-pub enum Difficulty {
-    L1,
-    L2,
-    L3,
-    L4,
-}
-
-impl Difficulty {
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Difficulty::L1 => "L1",
-            Difficulty::L2 => "L2",
-            Difficulty::L3 => "L3",
-            Difficulty::L4 => "L4",
-        }
-    }
-
-    pub fn rank(self) -> u8 {
-        match self {
-            Difficulty::L1 => 1,
-            Difficulty::L2 => 2,
-            Difficulty::L3 => 3,
-            Difficulty::L4 => 4,
-        }
-    }
-
-    pub fn parse(s: &str) -> Option<Self> {
-        match s.trim().to_ascii_uppercase().as_str() {
-            "L1" => Some(Difficulty::L1),
-            "L2" => Some(Difficulty::L2),
-            "L3" => Some(Difficulty::L3),
-            "L4" => Some(Difficulty::L4),
-            _ => None,
-        }
-    }
-}
 
 /// 失败分类。每个分类都有稳定的错误码，供前端/日志聚合使用。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -83,7 +16,7 @@ pub enum ErrorClass {
     MissingJar,
     /// 受保护 jar（`BaseSpiderGuard`/`ftyguard`/加密 dex）
     ProtectedGuard,
-    /// 类已画像，但尚未移植
+    /// 该类没有可用的桌面端实现
     NotPorted,
     /// 该站点其实是 js/py 脚本家族
     ScriptFamily,
@@ -179,9 +112,9 @@ impl ErrorClass {
 
     pub fn hint(self) -> &'static str {
         match self {
-            ErrorClass::MissingJar => "配置引用的 jar 不在已分析样本中；补下载后重新画像",
-            ErrorClass::ProtectedGuard => "jar 使用 ftyguard 加固，dex 仅剩壳，静态分析无法还原",
-            ErrorClass::NotPorted => "已有 spec/画像，等待按计划 P2 移植",
+            ErrorClass::MissingJar => "配置引用的 jar 还没下载成功；检查源站与网络后重试",
+            ErrorClass::ProtectedGuard => "jar 使用 ftyguard 加固，dex 仅剩壳，JVM 车道无法直接加载",
+            ErrorClass::NotPorted => "该站点尚无桌面端实现；带 jar 的站点可走 JVM 兼容层（需 JRE）",
             ErrorClass::ScriptFamily => "该站点属于 js/py 家族，应走脚本运行时",
             ErrorClass::UnknownApi => "api 既不是 csp_* 也不是脚本，无法分派",
             ErrorClass::JarFetch => "jar 源站不可达或超时，可稍后重试或换镜像",
@@ -198,7 +131,7 @@ impl ErrorClass {
             ErrorClass::JvmDex2Jar => "dex 转 jar 失败：转换器缺失或输出为空，可重试或换样本",
             ErrorClass::JvmCrashed => "JVM 宿主崩溃或超时退出：看日志里的 stderr 尾部与堆使用",
             ErrorClass::JvmShellUnsupported => {
-                "该 jar 是加固壳，init 阶段要 ARM native 解密；当前没有可用载荷。可改用原生家族，或把解密产物放到 payloads/<jar sha>/ 并建 index.json"
+                "该 jar 是加固壳，init 阶段要 ARM native 解密；当前没有可用载荷。可改用带普通 jar 的同站线路，或把解密产物放到 payloads/<jar sha>/ 并建 index.json"
             }
             ErrorClass::JvmUnavailable => "JVM 运行时未就位：先跑 npm run build:jvm 与 npm run fetch:jre",
             ErrorClass::Network => "网络层失败（DNS/连接/超时/TLS），可稍后重试、换镜像或检查代理",
@@ -402,7 +335,7 @@ impl ErrorClass {
             ErrorClass::JvmProxyBind => "稍后重试；持续失败则重启应用",
             ErrorClass::JvmDex2Jar => "重试一次；仍失败则在设置里重建组件缓存",
             ErrorClass::JvmCrashed => "重试；仍失败则查看日志并反馈",
-            ErrorClass::JvmShellUnsupported => "换用非加固 jar，或在设置里切换到原生家族",
+            ErrorClass::JvmShellUnsupported => "换用非加固 jar，或改用同站的其他线路",
             ErrorClass::JvmUnavailable => "运行 npm run build:jvm 与 npm run fetch:jre 后重启应用",
         }
     }

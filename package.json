@@ -16,7 +16,8 @@
     "build:jvm": "node scripts/build-jvm.mjs",
     "ensure:tools": "node scripts/ensure-tools.mjs",
     "tauri:build": "node scripts/build.mjs",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "tauri:mock": "node scripts/tauri-mock.mjs"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",

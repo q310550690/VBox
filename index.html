@@ -30,17 +30,15 @@
           var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
           var resolved = mode === 'system' ? (prefersDark ? 'dark' : 'light') : mode
           var theme = resolved === 'dark' ? DARK_THEME[hue] : hue
-          // 亚克力：Windows 桌面端默认开启「侧边与标题栏」，其余环境默认关闭（与 src/store/ui.ts 一致）
+          // 亚克力：Windows 桌面端默认开启，其余环境默认关闭（与 src/store/ui.ts 一致）
           var isTauri = typeof window.__TAURI_INTERNALS__ !== 'undefined'
           var isWindows = /Windows/i.test(navigator.userAgent || '')
           var defaultAcrylic = isTauri && isWindows
           var acrylic = typeof ui.acrylic === 'boolean' ? ui.acrylic : defaultAcrylic
-          var acrylicContent = acrylic && ui.acrylicContent === true
           document.documentElement.className =
             (resolved === 'dark' ? 'dark ' : '') +
             'theme-' + theme +
-            (acrylic ? ' acrylic-on' : '') +
-            (acrylicContent ? ' acrylic-on-content' : '')
+            (acrylic ? ' acrylic-on' : '')
           // 仅用于首屏底色兜底（随后由主题样式接管并清除）
           document.documentElement.style.backgroundColor = resolved === 'dark' ? '#161A24' : '#F4F6EF'
         } catch (e) {
@@ -48,8 +46,83 @@
         }
       })()
     </script>
+    <style>
+      /* 启动占位：窗口创建时即显示（visible: true），在 Vue 挂载首帧前提供轻量画面，避免白屏/空窗 */
+      #boot-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        background: #161a24;
+        color: #e6e8ee;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        opacity: 1;
+        transition: opacity 0.18s ease;
+      }
+      html:not(.dark) #boot-splash {
+        background: #f4f6ef;
+        color: #30343b;
+      }
+      #boot-splash.boot-splash--hide {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #boot-splash .boot-logo {
+        width: 76px;
+        height: 76px;
+        object-fit: contain;
+        filter: drop-shadow(0 6px 18px rgba(60, 92, 48, 0.28));
+        user-select: none;
+        -webkit-user-drag: none;
+      }
+      #boot-splash .boot-mark {
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        line-height: 1;
+      }
+      #boot-splash .boot-tagline {
+        font-size: 13px;
+        letter-spacing: 0.26em;
+        opacity: 0.62;
+        margin-top: -4px;
+      }
+      #boot-splash .boot-spinner {
+        width: 26px;
+        height: 26px;
+        border: 2px solid rgba(128, 128, 128, 0.28);
+        border-top-color: currentColor;
+        border-radius: 50%;
+        animation: boot-spin 0.9s linear infinite;
+      }
+      #boot-splash .boot-hint {
+        font-size: 13px;
+        opacity: 0.66;
+      }
+      @keyframes boot-spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
   </head>
   <body>
+    <div id="boot-splash" aria-live="polite">
+      <img class="boot-logo" src="/logo.png" alt="VBox" draggable="false" />
+      <div class="boot-mark">VBox</div>
+      <div class="boot-tagline">一匣藏山海，万象皆入画</div>
+      <div class="boot-spinner"></div>
+      <div class="boot-hint" id="boot-hint">正在加载界面…</div>
+    </div>
+    <script>
+      // 兜底提示：前端模块加载较慢时，占位页仍持续给出反馈（成功后由 main.ts 移除占位）
+      window.setTimeout(function () {
+        var el = document.getElementById('boot-hint')
+        if (el) el.textContent = '界面资源仍在加载，第一次启动可能稍慢…'
+      }, 15000)
+    </script>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

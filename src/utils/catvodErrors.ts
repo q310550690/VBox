@@ -109,7 +109,7 @@ export const CATVOD_ERROR_COPY: Record<string, CatvodErrorCopy> = {
   },
   'catvod.host.shell_unsupported': {
     title: '加固壳暂不支持',
-    action: '换用非加固 jar，或在设置里切换到原生家族',
+    action: '换用非加固 jar，或改用同站的其他线路',
     retryable: false,
   },
   'catvod.host.unavailable': {

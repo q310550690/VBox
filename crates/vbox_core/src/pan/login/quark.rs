@@ -1,6 +1,6 @@
 //! 夸克网盘扫码登录（W13 D3）。
 //!
-//! 协议来源（`_rea/decompiled/dffec63f-pg/deobf/com/github/catvod/spider/Config.java:1058-1160`、
+//! 协议来源（`dffec63f-pg/deobf/com/github/catvod/spider/Config.java:1058-1160`、
 //! `parser/merge/A/L0.java:339-471`，2026-11-17 真站复核）：
 //!
 //! 1. `GET https://uop.quark.cn/cas/ajax/getTokenForQrcodeLogin?client_id=532&v=1.2&request_id=`

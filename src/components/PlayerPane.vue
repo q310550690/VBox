@@ -15,7 +15,7 @@ import PlayerTopBar from './PlayerTopBar.vue'
 import SubtitleSearchDialog from './SubtitleSearchDialog.vue'
 import { usePlayer } from '@/composables/usePlayer'
 import {
-  demoMode,
+  danmakuFetch,
   formatError,
   isTauri,
   playerAddSubtitle,
@@ -74,6 +74,8 @@ const props = withDefaults(
     autoSave?: boolean
     /** 当前播放集的站点 / 线路 / 影片 / 集信息；用于「保存本集」计算下载目录 */
     saveInfo?: DownloadFileInfo | null
+    /** 独立播放器窗口模式：窗格铺满整个窗口（无 16:9 / 圆角），并显示关闭按钮与 HDR 标识 */
+    windowMode?: boolean
   }>(),
   {
     title: '',
@@ -93,6 +95,7 @@ const props = withDefaults(
     errorText: '',
     autoSave: false,
     saveInfo: null,
+    windowMode: false,
   },
 )
 
@@ -104,6 +107,10 @@ const emit = defineEmits<{
   (e: 'toggle-auto-save'): void
   /** 播放器进入 error 态（详情页据此做「复用缓存地址失效 → 重新解析」回退） */
   (e: 'error', message: string): void
+  /** 控制条「弹窗播放」：交给详情页切到独立播放器窗口 */
+  (e: 'pop-out'): void
+  /** 独立播放器窗口模式：用户点击右上角关闭按钮 */
+  (e: 'close-window'): void
 }>()
 
 const ui = useUiStore()
@@ -184,7 +191,7 @@ function applyFullscreenChrome(on: boolean) {
  * 重启应用后窗口表面重建，亚克力自然恢复。
  */
 function markSurfaceOwned() {
-  if (!isTauri || demoMode) return
+  if (!isTauri) return
   document.documentElement.classList.add('player-shell-solid')
 }
 
@@ -229,7 +236,7 @@ async function toggleFullscreen() {
 }
 
 async function toggleMini() {
-  if (fullscreen.value) return
+  if (fullscreen.value || props.windowMode) return
   mini.value = !mini.value
   await afterLayoutChange()
 }
@@ -566,8 +573,40 @@ async function toggleLoop() {
   ui.notify(loop.value ? '已开启循环播放' : '已关闭循环播放', 'info')
 }
 
+/* ---------------- 弹幕（B 站 → ASS 外挂字幕） ---------------- */
+
+/** 已加载弹幕对应的播放地址（切集 / 重开时用于避免重复加载） */
+let danmakuLoadedFor = ''
+
+/** 若弹幕开关为开，则为当前播放地址拉取弹幕并加载为外挂字幕 */
+async function loadDanmakuForCurrent() {
+  if (!danmaku.value || !isTauri) return
+  const url = playerState.value.url
+  if (!url || danmakuLoadedFor === url) return
+  try {
+    const path = await danmakuFetch(url, props.seriesName.trim() || props.title.trim())
+    if (!path) {
+      danmakuLoadedFor = url
+      ui.notify('当前视频未找到弹幕', 'info')
+      return
+    }
+    danmakuLoadedFor = url
+    await playerAddSubtitle(path)
+    ui.notify('弹幕已加载', 'success')
+  } catch (e) {
+    console.warn('[VBox] 弹幕加载失败：', e)
+    ui.notify(`弹幕加载失败：${formatError(e)}`, 'error')
+  }
+}
+
 function toggleDanmaku() {
   danmaku.value = !danmaku.value
+  if (danmaku.value) {
+    void loadDanmakuForCurrent()
+  } else {
+    danmakuLoadedFor = ''
+    void playerSetSubtitleTrack('no')
+  }
 }
 
 function onReplay() {
@@ -585,6 +624,8 @@ async function open(url: string, headers?: Record<string, string>, startSec?: nu
   const intro = introSec.value
   const start = startSec ?? 0
   await playerOpen(url, headers, intro !== null && start < intro ? intro : startSec)
+  // 起播后按开关补拉弹幕（player-state 稍后回填 url 时由下面的 watch 兜底）
+  void loadDanmakuForCurrent()
 }
 
 /* ---------------- 字幕 / 音轨（来自 mpv track-list 的播放器状态快照） ---------------- */
@@ -632,7 +673,7 @@ async function onSelectAudio(id: string) {
  * 新轨由 `player-state` 事件带回 `subtitleTracks`，这里不手工维护轨道列表。
  */
 async function onLoadSubtitle() {
-  if (demoMode) {
+  if (!isTauri) {
     ui.notify('浏览器预览无法加载本地字幕（需桌面端）', 'info')
     return
   }
@@ -680,6 +721,16 @@ watch(
   () => playerState.value.url,
   () => {
     if (saveState.value === 'done') saveState.value = 'idle'
+  },
+)
+
+// 切集后自动刷新弹幕（开关为开时才请求）
+watch(
+  () => playerState.value.url,
+  (url) => {
+    if (!url) return
+    danmakuLoadedFor = ''
+    void loadDanmakuForCurrent()
   },
 )
 
@@ -779,7 +830,7 @@ const mediaActive = computed(
 )
 
 /** 原生视频窗口真正应可见（演示模式无原生窗口） */
-const stageLive = computed(() => mediaActive.value && !demoMode)
+const stageLive = computed(() => mediaActive.value && isTauri)
 
 /** 视频洞已开启（有真实画面）：此时窗格被裁剪，交互浮层走 Teleport */
 const teleportActive = computed(() => videoRect.value !== null)
@@ -797,6 +848,16 @@ const overlayStyle = computed(() => {
 })
 
 const status = computed(() => playerState.value.status)
+
+/** HDR / 宽色域标识（来自 mpv video-params；SDR 片源为空，不显示徽标） */
+const hdrLabel = computed(() => {
+  const gamma = playerState.value.videoGamma
+  const primaries = playerState.value.videoPrimaries
+  if (gamma === 'pq') return 'HDR10'
+  if (gamma === 'hlg') return 'HLG'
+  if (primaries === 'bt.2020') return '宽色域'
+  return ''
+})
 
 /** 播放失败：只在「进入 error 的瞬间」抛一次，避免 5Hz 状态刷新反复触发页面回退逻辑 */
 watch(
@@ -831,7 +892,7 @@ const showIdleOverlay = computed(
 )
 
 /** 演示模式：没有原生视频，选中集后展示占位说明 */
-const showDemoOverlay = computed(() => demoMode && props.hasMedia && !props.loading)
+const showDemoOverlay = computed(() => !isTauri && props.hasMedia && !props.loading)
 
 const showOpeningOverlay = computed(
   () =>
@@ -1056,6 +1117,7 @@ defineExpose({
     :class="{
       'is-fullscreen': fullscreen,
       'is-mini': mini,
+      'is-window': windowMode,
       'is-live': stageLive,
       'hide-cursor': hideCursor,
     }"
@@ -1063,6 +1125,20 @@ defineExpose({
     @mousemove="onActivity"
     @mouseleave="onLeave"
   >
+    <!-- 独立播放器窗口：右上角 HDR 标识 + 关闭按钮（悬浮层，鼠标移开随控制条一起淡出） -->
+    <div v-if="windowMode" class="window-chrome" :class="{ 'is-hidden': !controlsVisible }">
+      <span v-if="hdrLabel" class="hdr-badge">{{ hdrLabel }}</span>
+      <button
+        class="window-close"
+        type="button"
+        title="关闭播放器窗口"
+        aria-label="关闭播放器窗口"
+        @click.stop="emit('close-window')"
+      >
+        <SolarIcon name="close" :size="18" />
+      </button>
+    </div>
+
     <div
       ref="stageRef"
       class="player-stage"
@@ -1173,6 +1249,8 @@ defineExpose({
           :visible="controlsVisible"
           :fullscreen="fullscreen"
           :mini="mini"
+          :allow-mini="!windowMode"
+          :allow-pop-out="!windowMode"
           :disabled="status === 'error'"
           :loop="loop"
           :danmaku="danmaku"
@@ -1209,6 +1287,7 @@ defineExpose({
           @rate="onRate"
           @toggle-mini="toggleMini"
           @fullscreen="toggleFullscreen"
+          @pop-out="emit('pop-out')"
           @set-intro="setIntro"
           @set-outro="setOutro"
           @clear-intro="clearIntro"
@@ -1291,6 +1370,8 @@ defineExpose({
         :visible="controlsVisible"
         :fullscreen="fullscreen"
         :mini="mini"
+          :allow-mini="!windowMode"
+          :allow-pop-out="!windowMode"
         :loop="loop"
         :danmaku="danmaku"
         :episodes="episodes"
@@ -1326,6 +1407,7 @@ defineExpose({
         @rate="onRate"
         @toggle-mini="toggleMini"
         @fullscreen="toggleFullscreen"
+        @pop-out="emit('pop-out')"
         @set-intro="setIntro"
         @set-outro="setOutro"
         @clear-intro="clearIntro"
@@ -1632,6 +1714,78 @@ defineExpose({
   .spin {
     animation: none;
   }
+}
+/* ---------------- 独立播放器窗口模式（player-window） ---------------- */
+
+.player-pane.is-window {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
+
+.player-pane.is-window .player-stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
+  background: linear-gradient(160deg, #000 0%, #0b0d12 100%);
+}
+
+.player-pane.is-window .player-stage.is-live {
+  background: transparent;
+}
+
+/* 窗口右上角的 chrome（关闭按钮 + HDR 标识），跟随控制条显隐 */
+.window-chrome {
+  position: fixed;
+  top: 12px;
+  right: 14px;
+  z-index: 2147483000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: opacity 0.25s ease;
+}
+
+.window-chrome.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.window-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.window-close:hover {
+  background: rgba(220, 38, 38, 0.85);
+}
+
+.hdr-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: #0b0d12;
+  background: linear-gradient(135deg, #f5d76e, #e8b84b);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
 }
 </style>
 

@@ -1,7 +1,7 @@
 <!-- 播放器控制条（受控组件）：悬浮在视频底部，跟随鼠标移入显隐（显隐逻辑由 PlayerPane 统一控制）
      - 第一行：可拖拽进度条（约占 90%）+ 右侧总时长；进度点上方浮动当前时间
      - 第二行：左「上一集 / 播放·暂停 / 下一集 / 重播 / 循环 / 选集 / 片头 / 片尾」
-              右「下载与保存（保存本集 + 本片边下边播） / 弹幕 / 字幕 / 音轨 / 画质（Anime4K 超分） / 倍速 / 音量 / 小窗 / 全屏」
+              右「下载与保存（保存本集 + 本片边下边播） / 弹幕 / 字幕 / 音轨 / 画质（Anime4K 超分） / 倍速 / 音量 / 小窗 / 弹窗 / 全屏」
      - 只负责展示与 emit；播放命令、状态、持久化都在 PlayerPane / usePlayer 内 -->
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -21,6 +21,10 @@ const props = withDefaults(
     fullscreen?: boolean
     /** 是否处于小窗态 */
     mini?: boolean
+  /** 独立播放器窗口内无「页内小窗」概念，隐藏小窗按钮 */
+  allowMini?: boolean
+  /** 独立播放器窗口内隐藏「弹窗播放」（本身已是独立窗口） */
+  allowPopOut?: boolean
     /** 禁用全部控件（error / opening 时） */
     disabled?: boolean
     /** 循环播放开关状态 */
@@ -58,6 +62,8 @@ const props = withDefaults(
     visible: true,
     fullscreen: false,
     mini: false,
+  allowMini: true,
+    allowPopOut: true,
     disabled: false,
     loop: false,
     danmaku: false,
@@ -98,6 +104,7 @@ const emit = defineEmits<{
   (e: 'toggle-plugin', id: string, enabled: boolean): void
   (e: 'rate', value: number): void
   (e: 'toggle-mini'): void
+  (e: 'pop-out'): void
   (e: 'set-intro'): void
   (e: 'set-outro'): void
   (e: 'clear-intro'): void
@@ -1308,9 +1315,9 @@ function episodeText(episode: Episode, index: number): string {
           </div>
         </el-popover>
 
-        <!-- 小窗 -->
+        <!-- 小窗（独立播放器窗口内隐藏） -->
         <el-tooltip
-          v-if="!isRightCollapsed('mini')"
+          v-if="allowMini && !isRightCollapsed('mini')"
           :content="mini ? '退出小窗' : '小窗播放'"
           placement="top"
           :show-after="400"
@@ -1326,6 +1333,27 @@ function episodeText(episode: Episode, index: number): string {
           >
             <SolarIcon
               :name="mini ? 'quit-pip' : 'pip'"
+              :size="18"
+            />
+          </button>
+        </el-tooltip>
+
+        <!-- 弹窗播放：切到独立播放器窗口（挖洞定位 / HDR 场景）；独立窗口内隐藏 -->
+        <el-tooltip
+          v-if="allowPopOut"
+          content="弹窗播放"
+          placement="top"
+          :show-after="400"
+        >
+          <button
+            type="button"
+            class="pc-btn"
+            :disabled="disabled"
+            aria-label="弹窗播放"
+            @click="emit('pop-out')"
+          >
+            <SolarIcon
+              name="square-arrow-right-up"
               :size="18"
             />
           </button>
@@ -1523,7 +1551,7 @@ function episodeText(episode: Episode, index: number): string {
               </div>
             </el-popover>
             <button
-              v-if="isRightCollapsed('mini')"
+              v-if="allowMini && isRightCollapsed('mini')"
               type="button"
               class="track-item"
               :class="{ 'is-current': mini }"
@@ -1914,7 +1942,7 @@ function episodeText(episode: Episode, index: number): string {
 
 .ep-item:hover,
 .track-item:hover {
-  background: var(--surface-2);
+  background: var(--fill-1);
 }
 
 .ep-item.is-current,
@@ -1974,7 +2002,7 @@ function episodeText(episode: Episode, index: number): string {
 
 .track-add:hover:not(:disabled) {
   color: var(--accent);
-  background: var(--surface-2);
+  background: var(--fill-1);
 }
 
 .track-add:disabled {

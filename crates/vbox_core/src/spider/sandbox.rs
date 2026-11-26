@@ -18,16 +18,20 @@
 //! - `local.get/set/delete`（进程内内存表，不落盘）
 //! - `setTimeout(fn, ms)`（同步立即执行，最多 3 层；`clearTimeout` 为空实现）
 //!
-//! 明确不支持：async/Promise、`//bb`/`//DRPY` QuickJS 字节码、`jsapi` dex、复杂 drpy2/cheerio；
-//! `pdfh/pdfa/pd/pdfla` 已由 `html_rule` 提供。
+//! async/Promise：驱动 QuickJS job 队列，支持 `await req(...)` 这类同步宿主可完成的 Promise；
+//! `pdfh/pdfa/pd/pdfla` 由 `html_rule` 提供。
+//! ES module：脚本来源为 http(s)/file 时按其 URL 解析相对 `import` / CommonJS `require`，
+//! 依赖模块会被拉取并缓存；`cat.js`/`cheerio`/`utils` 等内置 lib 优先使用随包资产。
+//! 明确不支持：`//bb`/`//DRPY` QuickJS 字节码、`jsapi` dex、
+//! 需要真实事件循环的异步 I/O（定时器回调不会在 await 后继续推进）。
 
 use std::cell::Cell;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::io::Read;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, RecvTimeoutError};
 use std::sync::{Arc, Mutex, OnceLock};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crate::error::CoreError;
 use crate::model::Rules;
@@ -50,6 +54,28 @@ const MEMORY_LIMIT: usize = 128 * 1024 * 1024;
 const STACK_SIZE: usize = 4 * 1024 * 1024;
 /// `setTimeout` 立即执行的最大嵌套层数（防脚本自递归爆栈）
 const MAX_TIMER_DEPTH: u32 = 3;
+/// ES module 加载：单次调用最多依赖的模块数
+const MAX_MODULES: usize = 64;
+/// ES module 加载：单次调用依赖模块总体积上限（8MB）
+const MAX_MODULE_BYTES: usize = 8 * 1024 * 1024;
+/// 模块文本缓存 TTL（跨调用复用，避免相同 lib 反复拉取）
+const MODULE_CACHE_TTL: Duration = Duration::from_secs(600);
+/// 模块文本缓存条目上限
+const MODULE_CACHE_LIMIT: usize = 256;
+
+/// 入口脚本执行后，把 `module.exports` 映射回旧入口约定（`__JS_SPIDER__`）
+const ENTRY_EXPORTS_GLUE: &str = r#"(function(){
+  try {
+    var e = globalThis.module && globalThis.module.exports;
+    if (!e) return;
+    var has = false;
+    for (var k in e) { has = true; break; }
+    if (!has) return;
+    if (!globalThis.__JS_SPIDER__ && typeof globalThis.__jsEvalReturn !== "function") {
+      globalThis.__JS_SPIDER__ = (e.default !== undefined) ? e.default : e;
+    }
+  } catch (_) {}
+})();"#;
 
 /// 把 `__pdfaRaw`/`__pdflaRaw` 的 JSON 文本包装成 JS 数组。
 /// 这样 Rust 侧不需要在闭包里构造带生命周期的 JSArray。
@@ -145,6 +171,10 @@ pub struct Sandbox {
     init: Option<Json>,
     timeout: Duration,
     max_body: usize,
+    /// 脚本来源 URL：用于解析 ES module 的相对 import / require
+    base_url: Option<String>,
+    /// 站点 key：`js2Proxy` 生成的代理 URL 会带上 `siteKey`，本地服务据此路由。
+    site_key: Option<String>,
 }
 
 impl Sandbox {
@@ -158,6 +188,8 @@ impl Sandbox {
             init: None,
             timeout: DEFAULT_TIMEOUT,
             max_body: MAX_BODY_BYTES,
+            base_url: None,
+            site_key: None,
         }
     }
 
@@ -182,6 +214,18 @@ impl Sandbox {
         self
     }
 
+    /// 设置脚本来源 URL（解析 ES module 的相对 `import` / `require` 时作为基准）
+    pub fn with_base_url(mut self, base_url: impl Into<String>) -> Self {
+        self.base_url = Some(base_url.into());
+        self
+    }
+
+    /// 设置站点 key：`js2Proxy` 生成的代理 URL 会带上 `siteKey`，本地服务据此路由。
+    pub fn with_site_key(mut self, site_key: impl Into<String>) -> Self {
+        self.site_key = Some(site_key.into());
+        self
+    }
+
     /// 调用脚本入口函数，返回值归一为 `serde_json::Value`。
     ///
     /// 归一规则（对齐 TVBox「字符串优先当 JSON 解析」）：
@@ -199,6 +243,8 @@ impl Sandbox {
             args: args.to_vec(),
             max_body: self.max_body,
             timeout: self.timeout,
+            base_url: self.base_url.clone(),
+            site_key: self.site_key.clone(),
             stop: Arc::new(AtomicBool::new(false)),
         };
 
@@ -258,6 +304,8 @@ struct Job {
     args: Vec<JsArg>,
     max_body: usize,
     timeout: Duration,
+    base_url: Option<String>,
+    site_key: Option<String>,
     stop: Arc<AtomicBool>,
 }
 
@@ -268,6 +316,10 @@ struct HostEnv {
     extra_headers: HashMap<String, String>,
     script_name: String,
     max_body: usize,
+    /// 本地代理桥根地址（`getProxy` / `js2Proxy` 生成回环 URL 用）
+    local_base: Option<String>,
+    /// 当前站点 key（`js2Proxy` 生成的代理 URL 会带 `siteKey`）
+    site_key: Option<String>,
 }
 
 fn run_worker(job: Job) -> SandboxResult<Json> {
@@ -320,22 +372,70 @@ fn invoke<'js>(ctx: &Ctx<'js>, job: &Job) -> SandboxResult<Json> {
         extra_headers: job.headers.clone(),
         script_name: job.name.clone(),
         max_body: job.max_body,
+        local_base: crate::proxy::local_base(),
+        site_key: job.site_key.clone(),
     });
-    install(ctx, env).map_err(|e| js_err(ctx, e))?;
+    install(ctx, env.clone()).map_err(|e| js_err(ctx, e))?;
     // 把 Rust 侧返回的 JSON 数组包装成真正的 JS Array（pdfa/pdfla）
     ctx.eval::<(), _>(PDF_ARRAY_PRELUDE)
         .catch(ctx)
         .map_err(|e| SandboxError::Host(err_text(ctx, e)))?;
 
-    // 1) 执行脚本（全局脚本模式；兼容 catvod 脚本里常见的 import/export 语法）
-    let code = sanitize_module_syntax(&job.code);
-    if let Err(e) = ctx.eval::<Value, _>(code.as_str()).catch(ctx) {
-        return Err(SandboxError::Script(format!(
-            "脚本加载失败（{}）: {}",
-            job.name,
-            err_text(ctx, e)
-        )));
+    // 1) 执行脚本：优先走 ES module / CommonJS 模块加载（相对 URL 依赖 + 内置 lib），
+    //    模块构建失败时回退到旧的「剥离 import/export」全局脚本模式
+    let bundle = if job.base_url.is_some() && has_module_syntax(&job.code) {
+        match build_module_bundle(&env, &job.code, job.base_url.as_deref(), &job.stop) {
+            Ok(v) => v,
+            Err(e) => {
+                tracing::warn!(
+                    target: "vbox_core::spider_js",
+                    "脚本 {} 的模块加载失败，回退到全局脚本模式: {}",
+                    job.name,
+                    e
+                );
+                None
+            }
+        }
+    } else {
+        None
+    };
+    match bundle {
+        Some((prelude, entry)) => {
+            if let Err(e) = ctx.eval::<Value, _>(prelude.as_str()).catch(ctx) {
+                return Err(SandboxError::Script(format!(
+                    "脚本模块预加载失败（{}）: {}",
+                    job.name,
+                    err_text(ctx, e)
+                )));
+            }
+            if let Err(e) = ctx.eval::<Value, _>(entry.as_str()).catch(ctx) {
+                return Err(SandboxError::Script(format!(
+                    "脚本加载失败（{}）: {}",
+                    job.name,
+                    err_text(ctx, e)
+                )));
+            }
+            if let Err(e) = ctx.eval::<Value, _>(ENTRY_EXPORTS_GLUE).catch(ctx) {
+                tracing::warn!(
+                    target: "vbox_core::spider_js",
+                    "脚本 {} 的入口导出映射失败: {}",
+                    job.name,
+                    err_text(ctx, e)
+                );
+            }
+        }
+        None => {
+            let code = sanitize_module_syntax(&job.code);
+            if let Err(e) = ctx.eval::<Value, _>(code.as_str()).catch(ctx) {
+                return Err(SandboxError::Script(format!(
+                    "脚本加载失败（{}）: {}",
+                    job.name,
+                    err_text(ctx, e)
+                )));
+            }
+        }
     }
+    drain_jobs(ctx);
 
     // 2) 解析入口对象：__jsEvalReturn() / __JS_SPIDER__ / 全局函数
     let globals = ctx.globals();
@@ -366,6 +466,7 @@ fn invoke<'js>(ctx: &Ctx<'js>, job: &Job) -> SandboxResult<Json> {
             }
         }
     }
+    drain_jobs(ctx);
 
     // 4) 找到目标函数（入口对象优先，其次全局）
     let func = find_function(ctx, entry.as_ref(), &globals, &job.func)?
@@ -387,7 +488,8 @@ fn invoke<'js>(ctx: &Ctx<'js>, job: &Job) -> SandboxResult<Json> {
         ))
     })?;
 
-    // 6) 归一为 JSON
+    // 6) Promise 解包 + 归一为 JSON
+    let ret = resolve_async(ctx, ret)?;
     js_to_json(ctx, &ret)
 }
 
@@ -408,6 +510,7 @@ fn resolve_entry<'js>(ctx: &Ctx<'js>, script_name: &str) -> SandboxResult<Option
                 err_text(ctx, e)
             ))
         })?;
+        let ret = resolve_async(ctx, ret)?;
         if let Some(obj) = ret.as_object() {
             return Ok(Some(obj.clone()));
         }
@@ -422,6 +525,7 @@ fn resolve_entry<'js>(ctx: &Ctx<'js>, script_name: &str) -> SandboxResult<Option
                 err_text(ctx, e)
             ))
         })?;
+        let ret = resolve_async(ctx, ret)?;
         if let Some(obj) = ret.as_object() {
             return Ok(Some(obj.clone()));
         }
@@ -464,6 +568,29 @@ fn js_arg_to_value<'js>(ctx: &Ctx<'js>, arg: &JsArg) -> SandboxResult<Value<'js>
     })
 }
 
+/// 驱动 QuickJS 微任务队列（Promise 的 then/await 续体）。
+fn drain_jobs(ctx: &Ctx<'_>) {
+    while ctx.execute_pending_job() {}
+}
+
+/// 若脚本返回 Promise，则驱动 job 队列直至完成并取出结果；否则原样返回。
+fn resolve_async<'js>(ctx: &Ctx<'js>, value: Value<'js>) -> SandboxResult<Value<'js>> {
+    if !value.is_promise() {
+        return Ok(value);
+    }
+    let promise = value
+        .into_promise()
+        .ok_or_else(|| SandboxError::Script("Promise 转换失败".into()))?;
+    match promise.finish::<Value>() {
+        Ok(v) => Ok(v),
+        Err(rquickjs::Error::WouldBlock) => Err(SandboxError::Script(
+            "脚本返回了一个未完成的 Promise（需要真实事件循环的异步任务在同步宿主下无法完成）"
+                .into(),
+        )),
+        Err(e) => Err(js_err(ctx, e)),
+    }
+}
+
 fn js_to_json<'js>(ctx: &Ctx<'js>, v: &Value<'js>) -> SandboxResult<Json> {
     if v.is_null() || v.is_undefined() {
         return Ok(Json::Null);
@@ -499,6 +626,554 @@ fn number_to_json(n: f64) -> Json {
     serde_json::Number::from_f64(n)
         .map(Json::Number)
         .unwrap_or(Json::Null)
+}
+
+
+/* ============================================================
+ * ES module / CommonJS 模块加载
+ * ============================================================ */
+
+fn module_cache() -> &'static Mutex<HashMap<String, (Instant, String)>> {
+    static CACHE: OnceLock<Mutex<HashMap<String, (Instant, String)>>> = OnceLock::new();
+    CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn js_string_literal(text: &str) -> String {
+    serde_json::to_string(text).unwrap_or_else(|_| "\"\"".to_string())
+}
+
+/// 说明符的文件名部分（MisaTV 策略：`.js` 名称命中内置 lib 时优先使用内置资产）
+fn module_basename(spec: &str) -> &str {
+    spec.rsplit('/').next().unwrap_or(spec)
+}
+
+/// 内置 lib（随二进制编译；来源见 `assets/js_lib/README.md`）
+fn builtin_module(name: &str) -> Option<&'static str> {
+    match name {
+        "cat.js" => Some(include_str!("../../assets/js_lib/cat.js")),
+        "cheerio.min.js" => Some(include_str!("../../assets/js_lib/cheerio.min.js")),
+        "crypto-js.js" => Some(include_str!("../../assets/js_lib/crypto-js.js")),
+        "gbk.js" => Some(include_str!("../../assets/js_lib/gbk.js")),
+        "net.js" => Some(include_str!("../../assets/js_lib/net.js")),
+        "similarity.js" => Some(include_str!("../../assets/js_lib/similarity.js")),
+        "utils.js" => Some(include_str!("../../assets/js_lib/utils.js")),
+        "模板.js" => Some(include_str!("../../assets/js_lib/模板.js")),
+        _ => None,
+    }
+}
+
+/// 把模块说明符解析成 `lib:<name>` 或绝对 URL；`None` 表示无法解析
+fn resolve_module_spec(base: Option<&str>, spec: &str) -> Option<String> {
+    let raw = spec.trim();
+    if raw.is_empty() {
+        return None;
+    }
+    let clean = raw.split(['?', '#']).next().unwrap_or(raw).trim();
+    if clean.is_empty() {
+        return None;
+    }
+    let name = module_basename(clean);
+    if clean.ends_with(".js") && builtin_module(name).is_some() {
+        return Some(format!("lib:{name}"));
+    }
+    if let Some(rest) = clean.strip_prefix("assets://js/lib/") {
+        return Some(match builtin_module(rest) {
+            Some(_) => format!("lib:{rest}"),
+            None => format!("https://raw.githubusercontent.com/hjdhnx/dr_py/main/libs/{rest}"),
+        });
+    }
+    if clean.starts_with("http://") || clean.starts_with("https://") {
+        return Some(clean.to_string());
+    }
+    if let Some(rest) = clean.strip_prefix("//") {
+        return Some(format!("https://{rest}"));
+    }
+    let base = base?;
+    let joined = url::Url::parse(base).ok()?.join(clean).ok()?;
+    Some(joined.to_string())
+}
+
+fn spec_key(base: Option<&str>, spec: &str, children: &mut Vec<String>) -> Option<String> {
+    let key = resolve_module_spec(base, spec)?;
+    if !children.iter().any(|k| k == &key) {
+        children.push(key.clone());
+    }
+    Some(key)
+}
+
+/// 取引号内的文本（支持单双引号）
+fn extract_quoted(text: &str) -> Option<String> {
+    let t = text.trim();
+    let first = t.chars().next()?;
+    if first != '\'' && first != '"' {
+        return None;
+    }
+    let rest = &t[first.len_utf8()..];
+    let end = rest.find(first)?;
+    Some(rest[..end].to_string())
+}
+
+fn split_from(text: &str) -> Option<(&str, String)> {
+    let idx = text.find(" from ")?;
+    let clause = text[..idx].trim();
+    let after = &text[idx + " from ".len()..];
+    let spec = extract_quoted(after)?;
+    Some((clause, spec))
+}
+
+fn is_js_ident(name: &str) -> bool {
+    let mut chars = name.chars();
+    match chars.next() {
+        Some(c) if c == '_' || c == '$' || c.is_ascii_alphabetic() => {}
+        _ => return false,
+    }
+    chars.all(|c| c == '_' || c == '$' || c.is_ascii_alphanumeric())
+}
+
+/// 重写单行 `import` 语句（`rest` 为 `import` 之后的部分）
+fn rewrite_import_line(
+    rest: &str,
+    base: Option<&str>,
+    children: &mut Vec<String>,
+) -> Option<String> {
+    let body = rest.trim();
+    if body.is_empty() {
+        return None;
+    }
+    if let Some((clause, spec)) = split_from(body) {
+        let key = spec_key(base, &spec, children)?;
+        let key_lit = js_string_literal(&key);
+        let clause = clause.trim();
+        if clause.is_empty() {
+            return Some(format!("__req({key_lit});"));
+        }
+        if clause.starts_with('{') && clause.ends_with('}') {
+            let names = &clause[1..clause.len() - 1];
+            let mut binds: Vec<String> = Vec::new();
+            for part in names.split(',') {
+                let part = part.trim();
+                if part.is_empty() {
+                    continue;
+                }
+                let mut it = part.split_whitespace();
+                let Some(imported) = it.next() else { continue };
+                let local = match it.next() {
+                    Some("as") => it.next().unwrap_or(imported),
+                    _ => imported,
+                };
+                if local == imported {
+                    binds.push(local.to_string());
+                } else {
+                    binds.push(format!("{imported}: {local}"));
+                }
+            }
+            return Some(format!("var {{ {} }} = __req({key_lit});", binds.join(", ")));
+        }
+        if let Some(ns) = clause.strip_prefix("* as ") {
+            let ns = ns.trim();
+            if is_js_ident(ns) {
+                return Some(format!("var {ns} = __req({key_lit});"));
+            }
+            return None;
+        }
+        if is_js_ident(clause) {
+            return Some(format!(
+                "var __def = __req({key_lit}); var {clause} = (__def && __def.default !== undefined) ? __def.default : __def;"
+            ));
+        }
+        return None;
+    }
+    let spec = extract_quoted(body)?;
+    let key = spec_key(base, &spec, children)?;
+    Some(format!("__req({});", js_string_literal(&key)))
+}
+
+fn export_decl_name(body: &str) -> Option<&'static str> {
+    for kw in ["async function", "function", "class", "const", "let", "var"] {
+        let Some(rest) = body.strip_prefix(kw) else { continue };
+        let rest = rest.trim_start();
+        let rest = rest.strip_prefix('*').unwrap_or(rest).trim_start();
+        let name: String = rest
+            .chars()
+            .take_while(|c| *c == '_' || *c == '$' || c.is_ascii_alphanumeric())
+            .collect();
+        if name.is_empty() {
+            continue;
+        }
+        return Some(match kw {
+            "class" => "class",
+            "const" => "const",
+            "let" => "let",
+            "var" => "var",
+            _ => "function",
+        });
+    }
+    None
+}
+
+/// 重写单行 `export` 语句（`rest` 为 `export` 之后的部分）
+fn rewrite_export_line(
+    rest: &str,
+    base: Option<&str>,
+    children: &mut Vec<String>,
+    exported_names: &mut Vec<String>,
+) -> Option<String> {
+    let body = rest.trim();
+    if body.is_empty() {
+        return None;
+    }
+    if let Some(after) = body.strip_prefix("default ") {
+        return Some(format!("module.exports.default = {};", after.trim()));
+    }
+    if body.starts_with('*') {
+        let spec = split_from(body).map(|(_, s)| s)?;
+        let key = spec_key(base, &spec, children)?;
+        return Some(format!(
+            "var __re = __req({}); for (var __rk in __re) {{ if (__rk !== \"default\") module.exports[__rk] = __re[__rk]; }}",
+            js_string_literal(&key)
+        ));
+    }
+    if body.starts_with('{') {
+        let close = body.find('}')?;
+        let names = &body[1..close];
+        let after = body[close + 1..].trim();
+        let mut entries: Vec<(String, String)> = Vec::new();
+        for part in names.split(',') {
+            let part = part.trim();
+            if part.is_empty() {
+                continue;
+            }
+            let mut it = part.split_whitespace();
+            let Some(orig) = it.next() else { continue };
+            let exported = match it.next() {
+                Some("as") => it.next().unwrap_or(orig).to_string(),
+                _ => orig.to_string(),
+            };
+            entries.push((orig.to_string(), exported));
+        }
+        if let Some(spec) = after.strip_prefix("from ") {
+            let spec = extract_quoted(spec)?;
+            let key = spec_key(base, &spec, children)?;
+            let mut code = format!("var __re = __req({});", js_string_literal(&key));
+            for (orig, exported) in entries {
+                code.push_str(&format!(" module.exports.{exported} = __re.{orig};"));
+            }
+            return Some(code);
+        }
+        if entries.is_empty() {
+            return Some(String::new());
+        }
+        let mut code = String::new();
+        for (orig, exported) in entries {
+            code.push_str(&format!("module.exports.{exported} = {orig}; "));
+        }
+        return Some(code);
+    }
+    let kw = export_decl_name(body)?;
+    let rest2 = body[kw.len()..].trim_start();
+    let rest2 = rest2.strip_prefix('*').unwrap_or(rest2).trim_start();
+    let name: String = rest2
+        .chars()
+        .take_while(|c| *c == '_' || *c == '$' || c.is_ascii_alphanumeric())
+        .collect();
+    if name.is_empty() {
+        return None;
+    }
+    exported_names.push(name);
+    let _ = kw;
+    Some(body.to_string())
+}
+
+/// 把行内 `require('spec')` / `require("spec")` 替换为 `__req("<key>")`
+fn rewrite_requires_in_line(
+    line: &str,
+    base: Option<&str>,
+    children: &mut Vec<String>,
+) -> Option<String> {
+    let mut out = String::with_capacity(line.len());
+    let mut rest = line;
+    let mut changed = false;
+    while let Some(idx) = rest.find("require") {
+        let prev_ok = match rest[..idx].chars().next_back() {
+            None => true,
+            Some(prev) => !(prev == '_' || prev == '$' || prev.is_ascii_alphanumeric()),
+        };
+        if !prev_ok {
+            out.push_str(&rest[..idx + "require".len()]);
+            rest = &rest[idx + "require".len()..];
+            continue;
+        }
+        out.push_str(&rest[..idx]);
+        let after = &rest[idx + "require".len()..];
+        let after_trim = after.trim_start();
+        if let Some(after_paren) = after_trim.strip_prefix('(') {
+            let inner = after_paren.trim_start();
+            if let Some(spec) = extract_quoted(inner) {
+                let consumed = (after.len() - after_trim.len())
+                    + 1
+                    + (after_paren.len() - inner.len())
+                    + 1;
+                let spec_len = spec.len() + 2;
+                if let Some(key) = spec_key(base, &spec, children) {
+                    out.push_str(&format!("__req({})", js_string_literal(&key)));
+                    rest = &after[consumed + spec_len..];
+                    changed = true;
+                    continue;
+                }
+                out.push_str(&rest[idx..idx + consumed + spec_len]);
+                rest = &after[consumed + spec_len..];
+                continue;
+            }
+        }
+        out.push_str(&rest[idx..idx + "require".len()]);
+        rest = after;
+    }
+    out.push_str(rest);
+    if changed {
+        Some(out)
+    } else {
+        None
+    }
+}
+
+/// 是否包含需要模块加载的语法（避免把普通全局脚本也走模块管线）
+fn has_module_syntax(code: &str) -> bool {
+    code.contains("import ")
+        || code.contains("import{")
+        || code.contains("import*")
+        || code.contains("export ")
+        || code.contains("export{")
+        || code.contains("require(")
+}
+
+/// 处理压缩/内联写法里的 `export{...}`（整行扫描无法覆盖 cat.js 这类单行 bundle）
+fn rewrite_inline_exports(code: &str) -> String {
+    let mut text = code.to_string();
+    let Ok(re) = regex::Regex::new(r"\bexport\s*\{([^{}]*)\}") else {
+        return text;
+    };
+    let mut replacements: Vec<(std::ops::Range<usize>, String)> = Vec::new();
+    for cap in re.captures_iter(&text) {
+        let Some(whole) = cap.get(0) else { continue };
+        let Some(names) = cap.get(1) else { continue };
+        let mut emitted = String::new();
+        for part in names.as_str().split(',') {
+            let part = part.trim();
+            if part.is_empty() {
+                continue;
+            }
+            let mut it = part.split_whitespace();
+            let Some(local) = it.next() else { continue };
+            let exported = match it.next() {
+                Some("as") => it.next().unwrap_or(local),
+                _ => local,
+            };
+            emitted.push_str(&format!("module.exports.{exported} = {local}; "));
+        }
+        if !emitted.is_empty() {
+            replacements.push((whole.range(), emitted));
+        }
+    }
+    for (range, replaced) in replacements.into_iter().rev() {
+        text.replace_range(range, &replaced);
+    }
+    if let Ok(re_default) = regex::Regex::new(r"\bexport\s+default\s+") {
+        text = re_default
+            .replace_all(&text, "module.exports.default = ")
+            .to_string();
+    }
+    text
+}
+
+/// 把模块源码重写为可执行的 CommonJS 函数体，并收集依赖（`children`）
+fn rewrite_module_code(code: &str, base: Option<&str>, children: &mut Vec<String>) -> String {
+    let mut out = String::with_capacity(code.len() + 512);
+    let mut exported_names: Vec<String> = Vec::new();
+    for line in code.lines() {
+        let trimmed = line.trim_start();
+        let indent = &line[..line.len() - trimmed.len()];
+        let mut handled = false;
+        let after_kw = |kw: &str| -> Option<&str> {
+            let rest = trimmed.strip_prefix(kw)?;
+            let head = rest.chars().next();
+            let stmt = match head {
+                None => true,
+                Some(c) => c.is_whitespace() || c == '{' || c == '*' || c == '\'' || c == '"',
+            };
+            if stmt { Some(rest) } else { None }
+        };
+        if let Some(rest) = after_kw("import") {
+            if let Some(rewritten) = rewrite_import_line(rest, base, children) {
+                out.push_str(indent);
+                out.push_str(&rewritten);
+                out.push('\n');
+                handled = true;
+            }
+        } else if let Some(rest) = after_kw("export") {
+            if let Some(rewritten) =
+                rewrite_export_line(rest, base, children, &mut exported_names)
+            {
+                if !rewritten.trim().is_empty() {
+                    out.push_str(indent);
+                    out.push_str(&rewritten);
+                    out.push('\n');
+                }
+                handled = true;
+            }
+        }
+        if handled {
+            continue;
+        }
+        if let Some(rewritten) = rewrite_requires_in_line(line, base, children) {
+            out.push_str(&rewritten);
+            out.push('\n');
+        } else {
+            out.push_str(line);
+            out.push('\n');
+        }
+    }
+    for name in exported_names {
+        out.push_str(&format!(" module.exports.{name} = {name};\n"));
+    }
+    if out.contains("export") {
+        rewrite_inline_exports(&out)
+    } else {
+        out
+    }
+}
+
+/// 加载一个模块的源码：内置 lib、file://、http(s)（带 10 分钟缓存）
+fn load_module_source(env: &HostEnv, key: &str, stop: &AtomicBool) -> SandboxResult<String> {
+    if let Some(name) = key.strip_prefix("lib:") {
+        return builtin_module(name)
+            .map(|s| s.to_string())
+            .ok_or_else(|| SandboxError::Host(format!("内置模块不存在: {name}")));
+    }
+    if stop.load(Ordering::SeqCst) {
+        return Err(SandboxError::Script("模块加载被中断（脚本超时）".into()));
+    }
+    if key.starts_with("file://") {
+        let path = url::Url::parse(key)
+            .ok()
+            .and_then(|u| u.to_file_path().ok())
+            .ok_or_else(|| SandboxError::Host(format!("非法模块地址: {key}")))?;
+        return std::fs::read_to_string(&path)
+            .map_err(|e| SandboxError::Host(format!("读取模块失败 {}: {e}", path.display())));
+    }
+    if !(key.starts_with("http://") || key.starts_with("https://")) {
+        return Err(SandboxError::Host(format!("不支持的模块地址: {key}")));
+    }
+    {
+        let cache = module_cache()
+            .lock()
+            .map_err(|e| SandboxError::Host(format!("模块缓存锁失败: {e}")))?;
+        if let Some((at, text)) = cache.get(key) {
+            if at.elapsed() < MODULE_CACHE_TTL {
+                return Ok(text.clone());
+            }
+        }
+    }
+    let client = env
+        .client
+        .as_ref()
+        .map_err(|e| SandboxError::Host(format!("HTTP 客户端不可用: {e}")))?;
+    let mut req = client.get(key).timeout(Duration::from_secs(15));
+    for (k, v) in &env.extra_headers {
+        req = req.header(k.as_str(), v.as_str());
+    }
+    let resp = req
+        .send()
+        .map_err(|e| SandboxError::Host(format!("加载模块失败 {key}: {e}")))?;
+    if !resp.status().is_success() {
+        return Err(SandboxError::Host(format!(
+            "加载模块失败 {key}: HTTP {}",
+            resp.status()
+        )));
+    }
+    let mut body = String::new();
+    let mut reader = resp.take(env.max_body as u64);
+    reader
+        .read_to_string(&mut body)
+        .map_err(|e| SandboxError::Host(format!("读取模块失败 {key}: {e}")))?;
+    if body.trim().is_empty() {
+        return Err(SandboxError::Host(format!("模块内容为空: {key}")));
+    }
+    if let Ok(mut cache) = module_cache().lock() {
+        if cache.len() >= MODULE_CACHE_LIMIT {
+            cache.clear();
+        }
+        cache.insert(key.to_string(), (Instant::now(), body.clone()));
+    }
+    Ok(body)
+}
+
+/// 收集入口脚本的全部 ESM/CJS 依赖并生成：
+/// 1) 模块定义 prelude（`__mods`/`__req` 两个全局）；2) 重写后的入口脚本
+fn build_module_bundle(
+    env: &HostEnv,
+    entry_code: &str,
+    base_url: Option<&str>,
+    stop: &AtomicBool,
+) -> SandboxResult<Option<(String, String)>> {
+    let Some(base) = base_url else {
+        return Ok(None);
+    };
+    let entry_key = base.to_string();
+    let mut visited: Vec<String> = vec![entry_key.clone()];
+    let mut queue: VecDeque<(String, String, bool)> = VecDeque::new();
+    queue.push_back((entry_key, entry_code.to_string(), true));
+    let mut modules: Vec<(String, String)> = Vec::new();
+    let mut entry_rewritten = String::new();
+    let mut total_bytes = entry_code.len();
+    while let Some((key, code, is_entry)) = queue.pop_front() {
+        if stop.load(Ordering::SeqCst) {
+            return Err(SandboxError::Script("模块加载被中断（脚本超时）".into()));
+        }
+        let module_base = if key.starts_with("lib:") {
+            None
+        } else {
+            Some(key.as_str())
+        };
+        let mut children: Vec<String> = Vec::new();
+        let rewritten = rewrite_module_code(&code, module_base, &mut children);
+        for child in children {
+            if visited.iter().any(|k| k == &child) {
+                continue;
+            }
+            if visited.len() > MAX_MODULES {
+                return Err(SandboxError::Host(format!(
+                    "ES 模块依赖过多（>{MAX_MODULES}），已放弃模块加载"
+                )));
+            }
+            let src = load_module_source(env, &child, stop)?;
+            total_bytes += src.len();
+            if total_bytes > MAX_MODULE_BYTES {
+                return Err(SandboxError::Host(format!(
+                    "ES 模块总体积超过上限（>{MAX_MODULE_BYTES} 字节）"
+                )));
+            }
+            visited.push(child.clone());
+            queue.push_back((child, src, false));
+        }
+        if is_entry {
+            entry_rewritten = rewritten;
+        } else {
+            modules.push((key, rewritten));
+        }
+    }
+    let mut prelude = String::with_capacity(1024 + total_bytes);
+    prelude.push_str("(function(){\nvar __mods = {};\nvar __cache = {};\n");
+    for (key, code) in &modules {
+        prelude.push_str("__mods[");
+        prelude.push_str(&js_string_literal(key));
+        prelude.push_str("] = function(module, exports, require){\n");
+        prelude.push_str(code);
+        prelude.push_str("\n};\n");
+    }
+    prelude.push_str(
+        "function __req(__k){\n  var __c = __cache[__k]; if (__c) return __c.exports;\n  var __f = __mods[__k]; if (!__f) throw new Error(\"ES 模块未加载: \" + __k);\n  var __m = { exports: {} }; __cache[__k] = __m; __f(__m, __m.exports, __req); return __m.exports;\n}\nglobalThis.__req = __req;\nglobalThis.module = globalThis.module || { exports: {} };\nglobalThis.exports = globalThis.module.exports;\n})();\n",
+    );
+    Ok(Some((prelude, entry_rewritten)))
 }
 
 /// 字符串优先当 JSON 解析；明显不是 JSON 的文本原样保留
@@ -831,15 +1506,60 @@ fn install<'js>(ctx: &Ctx<'js>, env: Arc<HostEnv>) -> rquickjs::Result<()> {
             },
         )?,
     )?;
+    let proxy_env = env.clone();
     globals.set(
         "getProxy",
-        Function::new(ctx.clone(), |url: String| -> String { url })?,
+        Function::new(ctx.clone(), move |url: Opt<String>| -> String {
+            let base = proxy_env.local_base.clone().unwrap_or_default();
+            if base.is_empty() {
+                return url.0.unwrap_or_default();
+            }
+            match url.0.as_deref().map(str::trim).filter(|u| !u.is_empty()) {
+                Some(target) => format!(
+                    "{base}/proxy?do=js&from=catvod&url={}",
+                    crate::proxy::encode_param(target)
+                ),
+                None => format!("{base}/proxy"),
+            }
+        })?,
     )?;
+    let proxy_env = env.clone();
     globals.set(
         "js2Proxy",
-        Function::new(ctx.clone(), |_args: Rest<Value<'js>>| -> String {
-            String::new()
-        })?,
+        Function::new(
+            ctx.clone(),
+            move |ctx: Ctx<'js>, args: Rest<Value<'js>>| -> String {
+                let base = match proxy_env.local_base.as_deref() {
+                    Some(base) if !base.is_empty() => base.to_string(),
+                    _ => return String::new(),
+                };
+                let text = |index: usize| -> String {
+                    args.0
+                        .get(index)
+                        .map(|value| js_value_text(&ctx, value))
+                        .unwrap_or_default()
+                };
+                let headers = args
+                    .0
+                    .get(2)
+                    .and_then(|value| match ctx.json_stringify(value) {
+                        Ok(Some(text)) => text.to_string().ok(),
+                        _ => None,
+                    })
+                    .unwrap_or_else(|| "{}".to_string());
+                let headers: Json = serde_json::from_str(&headers).unwrap_or(Json::Null);
+                crate::proxy::js2_proxy_url_with_base(
+                    &base,
+                    args.0.get(0).and_then(|v| v.as_bool()).unwrap_or(false),
+                    args.0.get(1).and_then(|v| v.as_bool()).unwrap_or(false),
+                    &headers,
+                    &text(3),
+                    &text(4),
+                    &text(5),
+                    proxy_env.site_key.as_deref(),
+                )
+            },
+        )?,
     )?;
     globals.set(
         "s2t",
@@ -1280,5 +2000,90 @@ mod tests {
         );
         let err = sandbox.call("home", &[]).expect_err("应抛错");
         assert!(err.to_string().contains("boom"), "实际: {err}");
+    }
+}
+
+    #[test]
+    fn proxy_globals_are_injected() {
+        let sandbox = Sandbox::new(
+            "function p(){ return { gp: typeof getProxy, j2: typeof js2Proxy, one: getProxy('https://a.example/b?c=1'), two: js2Proxy(false, false, {}, 'https://a.example/v.m3u8', '0', '') }; }",
+            "proxy-globals-test",
+            Rules::default(),
+        );
+        let value = sandbox.call("p", &[]).expect("proxy globals");
+        assert_eq!(value["gp"], Json::String("function".into()));
+        assert_eq!(value["j2"], Json::String("function".into()));
+        let one = value["one"].as_str().unwrap_or("");
+        assert!(one.contains("a.example"), "unexpected getProxy: {one}");
+        assert!(value["two"].is_string(), "js2Proxy 应返回字符串");
+    }
+
+#[cfg(test)]
+mod module_tests {
+    use super::*;
+
+    #[test]
+    fn resolve_relative_spec() {
+        let base = Some("https://example.com/js/entry.js");
+        assert_eq!(
+            resolve_module_spec(base, "./lib/util.js").as_deref(),
+            Some("https://example.com/js/lib/util.js")
+        );
+        assert_eq!(
+            resolve_module_spec(base, "../lib/a.js?x=1").as_deref(),
+            Some("https://example.com/lib/a.js")
+        );
+        assert_eq!(
+            resolve_module_spec(None, "https://x/y.js").as_deref(),
+            Some("https://x/y.js")
+        );
+        assert_eq!(
+            resolve_module_spec(None, "//cdn.example.com/a.js").as_deref(),
+            Some("https://cdn.example.com/a.js")
+        );
+        assert_eq!(
+            resolve_module_spec(base, "cat.js").as_deref(),
+            Some("lib:cat.js")
+        );
+        assert_eq!(
+            resolve_module_spec(base, "assets://js/lib/net.js").as_deref(),
+            Some("lib:net.js")
+        );
+    }
+
+    #[test]
+    fn rewrite_named_default_and_side_effect_imports() {
+        let code = "import { a, b as c } from './x.js';\nimport def from './y.js';\nimport * as ns from './z.js';\nimport './side.js';\nexport function home(){ return a + c + def + ns.v; }\nexport default { home };\n";
+        let mut children = Vec::new();
+        let out = rewrite_module_code(code, Some("https://e.com/p/entry.js"), &mut children);
+        assert!(out.contains("__req(\"https://e.com/p/x.js\")"), "{out}");
+        assert!(out.contains("var { a, b: c }"), "{out}");
+        assert!(out.contains("__def && __def.default"), "{out}");
+        assert!(out.contains("__req(\"https://e.com/p/z.js\")"), "{out}");
+        assert!(out.contains("__req(\"https://e.com/p/side.js\")"), "{out}");
+        assert!(!out.contains("import "), "{out}");
+        assert!(out.contains("function home()"), "{out}");
+        assert!(out.contains("module.exports.home = home;"), "{out}");
+        assert!(out.contains("module.exports.default = "), "{out}");
+        assert!(children.iter().any(|c| c == "https://e.com/p/x.js"));
+        assert!(children.iter().any(|c| c == "https://e.com/p/side.js"));
+    }
+
+    #[test]
+    fn rewrite_require_specifiers() {
+        let code = "const u = require('./lib/mylib.js');\nconst v = require(\"./lib/other.js\");\nconst b = require('./utils.js');\nmodule.exports = { u: u, v: v, b: b };";
+        let mut children = Vec::new();
+        let out = rewrite_module_code(code, Some("https://e.com/js/entry.js"), &mut children);
+        assert!(out.contains("__req(\"https://e.com/js/lib/mylib.js\")"), "{out}");
+        assert!(out.contains("__req(\"https://e.com/js/lib/other.js\")"), "{out}");
+        assert!(out.contains("__req(\"lib:utils.js\")"), "{out}");
+        assert!(children.iter().any(|c| c == "https://e.com/js/lib/mylib.js"));
+    }
+
+    #[test]
+    fn plain_script_skips_module_pipeline() {
+        assert!(!has_module_syntax("function home(){ return {class: []}; }"));
+        assert!(has_module_syntax("import { a } from './a.js';"));
+        assert!(has_module_syntax("const a = require('./a.js');"));
     }
 }

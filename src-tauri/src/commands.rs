@@ -837,38 +837,6 @@ fn collect_search(
         .collect())
 }
 
-/// Panyq：搜索前用隐藏 WebView 捕获页面运行时生成的 `sign`。
-///
-/// 该站的 `sign` 是页面脚本现算的（服务端渲染只会返回 Next.js 错误边界，
-/// 前端 chunk 里也没有生成点），所以只能让页面自己跑一遍、再拦截它发出的
-/// `/api/search?sign=` 请求。捕获失败时静默跳过，由 core 层回落
-/// `catvod.host.unsupported` 并给出可操作提示（ext 里写 sign / sign_command）。
-async fn prime_panyq_sign(
-    app: &tauri::AppHandle,
-    cfg: &vbox_core::model::TvConfig,
-    site: Option<&str>,
-    keyword: &str,
-) {
-    use vbox_core::spider::catvod::families::panyq;
-    let Some(site_key) = site.filter(|value| !value.trim().is_empty()) else {
-        return;
-    };
-    let Some(site_obj) = cfg.sites.iter().find(|item| item.key == site_key) else {
-        return;
-    };
-    if !panyq::host_capture_needed(site_obj) {
-        return;
-    }
-    let Ok(page_url) = panyq::host_page_url(site_obj, keyword, 1) else {
-        return;
-    };
-    if let Some(sign_url) =
-        crate::capture::capture_api_url_async(app, &page_url, "/api/search?sign=", 8_000).await
-    {
-        panyq::put_sign(&site_obj.key, &sign_url);
-    }
-}
-
 /// 取一页并返回 `(本页, 是否还有下一页)`；`page` 从 1 开始。
 fn slice_page<T: Clone>(items: &[T], page: usize, page_size: usize) -> (Vec<T>, bool) {
     let start = (page - 1).saturating_mul(page_size);
@@ -899,7 +867,6 @@ pub async fn search(
     let all = scope.as_deref() == Some("all");
     let threads = prefs.load().threads as usize;
     let cfg = config_snapshot(&state)?;
-    prime_panyq_sign(&app, &cfg, site.as_deref(), &keyword).await;
 
     run_blocking("搜索", move || {
         collect_search(&cfg, site.as_deref(), &keyword, all, threads)
@@ -958,7 +925,6 @@ pub async fn search_page(
     let hits = match cached {
         Some(hits) => hits,
         None => {
-            prime_panyq_sign(&app, &cfg, site.as_deref(), &keyword).await;
             let fetched = run_blocking("搜索", move || {
                 collect_search(&cfg, site.as_deref(), &keyword, all, threads)
             })
@@ -1177,6 +1143,37 @@ pub fn douban_home_cached(
     Some(home)
 }
 
+/// 豆瓣条目扩展（点播详情页）：主创照片 / 剧照 / 影视信息（失败返回空数据）。
+///
+/// 所有图片地址在这里拼成本机 `/img` 代理前缀，前端直接 <img src> 即可（豆瓣会校验 Referer）。
+#[tauri::command]
+pub async fn douban_detail(
+    state: tauri::State<'_, AppState>,
+    title: String,
+    year: Option<String>,
+) -> Result<vbox_core::douban::DoubanSubjectDetail, String> {
+    let image_proxy = state
+        .local_base
+        .lock()
+        .ok()
+        .and_then(|base| base.clone())
+        .map(|base| format!("{base}/img?url="));
+    let mut detail = run_blocking("豆瓣条目扩展", move || {
+        Ok::<_, String>(vbox_core::douban::subject_detail(&title, year.as_deref()))
+    })
+    .await?;
+    if let Some(prefix) = image_proxy {
+        for person in &mut detail.people {
+            if let Some(avatar) = person.avatar.take() {
+                person.avatar = Some(format!("{prefix}{}", vbox_core::proxy::encode_param(&avatar)));
+            }
+        }
+        for still in &mut detail.stills {
+            *still = format!("{prefix}{}", vbox_core::proxy::encode_param(still));
+        }
+    }
+    Ok(detail)
+}
 /// 媒体地址嗅探（WebView 抓包）；具体实现见 src-tauri/src/capture.rs
 ///
 /// 抓包的 300ms 轮询是阻塞代码，capture 内部已丢给 `spawn_blocking`；
@@ -1280,7 +1277,7 @@ pub async fn live_epg(
 /// `jvm_status`：jar 蜘蛛（JRE 车道）的运行时状态、宿主池统计与覆盖口径。
 #[tauri::command]
 pub fn jvm_status() -> serde_json::Value {
-    use vbox_core::spider::catvod::{jvm, registry};
+    use vbox_core::spider::catvod::jvm;
 
     let runtime = vbox_jvm::Runtime::locate();
     let pool = jvm::stats();
@@ -1289,22 +1286,6 @@ pub fn jvm_status() -> serde_json::Value {
         jvm::Mode::Fallback => "fallback",
         jvm::Mode::Off => "off",
     };
-
-    // 覆盖口径：带 jar 的站点里，能交给我们跑的（有 class、未加固）与加固壳各多少。
-    let mut capable_sites = 0u32;
-    let mut guarded_sites = 0u32;
-    let mut jar_apis = 0u32;
-    for profile in registry::profiles().apis.values() {
-        if profile.class.is_none() || profile.jars.is_empty() {
-            continue;
-        }
-        jar_apis += 1;
-        if profile.guarded {
-            guarded_sites += profile.sites;
-        } else {
-            capable_sites += profile.sites;
-        }
-    }
 
     serde_json::json!({
         "available": jvm::available(),
@@ -1329,12 +1310,7 @@ pub fn jvm_status() -> serde_json::Value {
             .take(20)
             .map(|m| serde_json::json!({ "class": m.class, "hits": m.hits }))
             .collect::<Vec<_>>(),
-        "coverage": {
-            "jarApis": jar_apis,
-            "capableSites": capable_sites,
-            "guardedSites": guarded_sites,
-            "totalSites": 612,
-        },
+
         // JRE 自愈（C 项）：告诉前端 java 是从哪来的、版本多少；缺失时前端给修复指引。
         "javaSource": runtime
             .as_ref()
@@ -1496,56 +1472,6 @@ pub async fn refresh_node_status() -> vbox_core::node::NodeStatus {
         Ok(status) => status,
         Err(_) => vbox_core::node::node_status(),
     }
-}
-
-/* ---------------- 站点 api 支持画像（REA 产物，供站点选择器联动） ---------------- */
-
-/// 单个 api 的 REA 画像摘要（前端站点选择器据此区分「原生实现 / 待移植 / 不支持」，
-/// 避免只按 type/api 前缀猜测导致把已原生实现的源误标「后续支持」）。
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SiteApiSupport {
-    pub api: String,
-    /// 已有原生实现（规则引擎 / 原生解析家族）
-    pub native: bool,
-    /// rulepack / script / unported / unsupported
-    pub strategy: String,
-    pub class: Option<String>,
-    pub jars: Vec<String>,
-    pub difficulty: Option<String>,
-    pub reason: Option<String>,
-    pub blocked_reason: Option<String>,
-    /// 阻塞原因的用户可读解释（待移植/不支持时展示）
-    pub blocked_hint: Option<String>,
-    /// 画像覆盖的站点数
-    pub sites: u32,
-}
-
-#[tauri::command]
-pub fn site_api_support() -> Vec<SiteApiSupport> {
-    use vbox_core::spider::catvod::registry;
-    let mut rows: Vec<SiteApiSupport> = registry::profiles()
-        .apis
-        .iter()
-        .map(|(api, profile)| SiteApiSupport {
-            api: api.clone(),
-            native: registry::is_native_ready(api),
-            strategy: profile.strategy.clone(),
-            class: profile.class.clone(),
-            jars: profile.jars.clone(),
-            difficulty: profile.difficulty.clone(),
-            reason: profile.reason.clone(),
-            blocked_reason: profile.blocked_reason.clone(),
-            blocked_hint: profile
-                .blocked_reason
-                .as_deref()
-                .map(registry::blocked_reason_hint)
-                .map(str::to_string),
-            sites: profile.sites,
-        })
-        .collect();
-    rows.sort_by(|a, b| a.api.cmp(&b.api));
-    rows
 }
 
 /* ---------------- 播放器（libmpv，后续阶段） ---------------- */

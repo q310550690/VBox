@@ -41,6 +41,7 @@ import FavoritesView from '@/views/favorites/index.vue'
 import HistoryView from '@/views/history/index.vue'
 import DownloadsView from '@/views/downloads/index.vue'
 import LogWindowView from '@/views/log-window/index.vue'
+import PlayerWindowView from '@/views/player-window/index.vue'
 import SettingsView from '@/views/settings/index.vue'
 
 const routes: RouteRecordRaw[] = [
@@ -170,6 +171,12 @@ const routes: RouteRecordRaw[] = [
     name: 'downloads',
     component: DownloadsView,
     meta: { title: '下载', nav: 'downloads' },
+  },
+  {
+    path: '/player-window',
+    name: 'player-window',
+    component: PlayerWindowView,
+    meta: { title: '播放器' },
   },
   {
     path: '/settings',

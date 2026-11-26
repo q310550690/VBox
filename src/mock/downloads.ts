@@ -3,7 +3,7 @@
 // 仅浏览器预览（demoMode）使用；桌面端走 Rust 下载引擎（src/api/core.ts）。
 import type { DownloadAction, DownloadStartPayload, DownloadTask } from '@/types'
 
-const STORAGE_KEY = 'vbox.downloads'
+const STORAGE_KEY = 'vbox.downloads.v2'
 
 const DEMO_TASKS: DownloadTask[] = [
   {
@@ -71,6 +71,46 @@ const DEMO_TASKS: DownloadTask[] = [
     sizeBytes: 980 * 1024 * 1024,
     error: '演示错误：连接被重置',
     createdAt: Date.now() - 1000 * 60 * 60 * 3,
+  },
+  {
+    id: 'dl-demo-6',
+    name: '山海之间',
+    epTitle: '第4集',
+    siteKey: 'demo_cms_qinghe',
+    line: 'hhm3u8',
+    cover: 'https://picsum.photos/seed/vbox-2-72/300/450',
+    status: 'downloading',
+    progress: 18,
+    speedBps: 5.2 * 1024 * 1024,
+    sizeBytes: 1.1 * 1024 * 1024 * 1024,
+    createdAt: Date.now() - 1000 * 60 * 5,
+  },
+  {
+    id: 'dl-demo-7',
+    name: '长安三万里',
+    epTitle: '正片',
+    siteKey: 'demo_cms_xingchen',
+    line: 'hhyun',
+    cover: 'https://picsum.photos/seed/vbox-1-53/300/450',
+    status: 'queued',
+    progress: 0,
+    sizeBytes: 2.8 * 1024 * 1024 * 1024,
+    createdAt: Date.now() - 1000 * 60 * 1,
+  },
+  {
+    id: 'dl-demo-8',
+    name: '灵笼',
+    epTitle: '第7集',
+    siteKey: 'demo_cms_haijiao',
+    line: 'hhm3u8',
+    cover: 'https://picsum.photos/seed/vbox-4-58/300/450',
+    status: 'completed',
+    progress: 100,
+    sizeBytes: 760 * 1024 * 1024,
+    downloadedBytes: 760 * 1024 * 1024,
+    filePath: 'C:\\Users\\Public\\VBox\\downloads\\灵笼\\第7集.mp4',
+    kind: 'file',
+    createdAt: Date.now() - 1000 * 60 * 60 * 12,
   },
 ]
 

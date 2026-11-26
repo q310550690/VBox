@@ -318,6 +318,17 @@ pub async fn sniff_async(
         }
     }
 
+    // 非 Windows 平台没有 WebView2 网络层抓包：直接走 HTTP 直提回退。
+    if !cfg!(windows) {
+        progress.emit_detail(
+            "sniff",
+            "start",
+            "非 Windows 平台：使用 HTTP 直提回退",
+            Some(shorten(url, 200)),
+        );
+        return sniff_http_fallback(url, headers, progress).await;
+    }
+
     let click_script = click.as_deref().and_then(|raw| plan_click(url, raw));
     let mut trace: Vec<String> = Vec::new();
     if click.is_some() && click_script.is_none() {
@@ -358,7 +369,13 @@ pub async fn sniff_async(
                 "创建隐藏 WebView 失败",
                 Some(e.to_string()),
             );
-            return Err(format!("创建隐藏 WebView 失败: {e}"));
+            progress.emit_detail(
+                "sniff",
+                "info",
+                "创建隐藏 WebView 失败，改用 HTTP 直提回退",
+                Some(e.to_string()),
+            );
+            return sniff_http_fallback(url, headers, progress).await;
         }
     };
     trace.push(format!("隐藏 WebView 已加载: {url}"));
@@ -804,9 +821,217 @@ fn unique_label() -> String {
     )
 }
 
+
+/// HTTP 直提回退用的浏览器 UA。
+const HTTP_SNIFF_UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
+/// 非 Windows（以及 WebView 建窗失败时）的 HTTP 直提回退。
+///
+/// 拉取播放页 HTML（最多再跟一层 iframe），从脚本/标签里提取 m3u8/mp4/flv 候选。
+/// 这是“轻量嗅探”：不执行页面 JS，因此只适合解析页把直链写在 HTML/JSON 里的站点；
+/// 需要执行 JS 才能算出直链的站点仍依赖 Windows 的 WebView2 抓包。
+async fn sniff_http_fallback(
+    url: &str,
+    headers: HashMap<String, String>,
+    progress: &ProgressSink,
+) -> Result<PlayResult, String> {
+    let page_url = url.to_string();
+    let ua = header_value(&headers, "user-agent")
+        .map(str::to_string)
+        .unwrap_or_else(|| HTTP_SNIFF_UA.to_string());
+    let referer = header_value(&headers, "referer").map(str::to_string);
+    let found = tauri::async_runtime::spawn_blocking(move || {
+        fetch_media_from_html(&page_url, &ua, referer.as_deref())
+    })
+    .await
+    .map_err(|e| format!("HTTP 直提任务失败: {e}"))?;
+
+    match found {
+        Some(media) => {
+            progress.emit_detail(
+                "sniff",
+                "ok",
+                "HTTP 直提命中媒体地址",
+                Some(shorten(&media, 180)),
+            );
+            Ok(PlayResult {
+                url: media.clone(),
+                headers,
+                subtitles: Vec::new(),
+                sniff: true,
+                parse_name: None,
+                jx_from: None,
+                trace: vec![
+                    "非 Windows / WebView 不可用：使用 HTTP 直提回退（不执行页面 JS）".into(),
+                    format!("命中: {media}"),
+                ],
+            })
+        }
+        None => {
+            progress.emit_detail(
+                "sniff",
+                "fail",
+                "HTTP 直提未找到媒体地址",
+                Some("页面可能需要执行 JS 才能拿到直链".to_string()),
+            );
+            Err(format!(
+                "HTTP 直提未找到媒体地址（页面可能需要执行 JS 才能拿到直链）: {url}"
+            ))
+        }
+    }
+}
+
+/// 拉取页面并提取媒体地址（最多跟一层 iframe）。
+fn fetch_media_from_html(page_url: &str, ua: &str, referer: Option<&str>) -> Option<String> {
+    let client = reqwest::blocking::Client::builder()
+        .timeout(Duration::from_secs(15))
+        .user_agent(ua)
+        .build()
+        .ok()?;
+    let mut queue: Vec<String> = vec![page_url.to_string()];
+    let mut visited: HashSet<String> = HashSet::new();
+    let mut candidates: Vec<String> = Vec::new();
+    while let Some(target) = queue.pop() {
+        if visited.len() >= 4 || !visited.insert(target.clone()) {
+            continue;
+        }
+        let mut request = client.get(&target);
+        if let Some(referer) = referer {
+            request = request.header(reqwest::header::REFERER, referer);
+        }
+        let Ok(response) = request.send() else {
+            continue;
+        };
+        let Ok(body) = response.text() else {
+            continue;
+        };
+        // JSON 里的 `\/` 与 HTML 实体先还原，再做扩展名扫描。
+        let normalized = body.replace("\\/", "/").replace("&amp;", "&");
+        // 只跟一层 iframe：解析页常见结构是 <iframe src="播放器页">。
+        let base: Option<tauri::Url> = target.parse().ok();
+        for src in extract_src_attrs(&normalized) {
+            if src.starts_with("data:") || src.starts_with("blob:") || src.starts_with("javascript:")
+            {
+                continue;
+            }
+            let absolute = match &base {
+                Some(base) => base.join(&src).ok().map(|u| u.to_string()),
+                None => None,
+            };
+            if let Some(absolute) = absolute {
+                if absolute.starts_with("http")
+                    && !visited.contains(&absolute)
+                    && queue.len() < 3
+                {
+                    queue.push(absolute);
+                }
+            }
+        }
+        candidates.extend(extract_media_urls(&normalized, &target));
+    }
+    candidates.sort_by_key(|candidate| media_priority(candidate).unwrap_or(9));
+    candidates.dedup();
+    candidates.into_iter().next()
+}
+
+/// 从 HTML/JS 文本里提取媒体 URL（m3u8/mp4/flv，含相对路径与协议相对路径）。
+fn extract_media_urls(text: &str, base: &str) -> Vec<String> {
+    let lower = text.to_ascii_lowercase();
+    let base_url: Option<tauri::Url> = base.parse().ok();
+    let bytes = text.as_bytes();
+    let mut out = Vec::new();
+    for ext in [".m3u8", ".mp4", ".flv"] {
+        let mut from = 0;
+        while let Some(pos) = lower[from..].find(ext) {
+            let end = from + pos + ext.len();
+            // 向右扩展到分隔符（保留 query 串）。
+            let mut right = end;
+            while right < bytes.len() && !is_url_delimiter(bytes[right]) {
+                right += 1;
+            }
+            // 向左回退到分隔符，得到完整 URL 片段。
+            let mut left = from + pos;
+            while left > 0 && !is_url_delimiter(bytes[left - 1]) {
+                left -= 1;
+            }
+            let mut candidate = text[left..right].trim_start_matches(['=', ':', '"', '\'']).to_string();
+            if candidate.starts_with("//") {
+                if let Some(base) = &base_url {
+                    candidate = format!("{}:{}", base.scheme(), candidate);
+                }
+            } else if !candidate.starts_with("http") {
+                if let Some(base) = &base_url {
+                    if let Ok(joined) = base.join(&candidate) {
+                        candidate = joined.to_string();
+                    }
+                }
+            }
+            if candidate.starts_with("http") {
+                out.push(candidate);
+            }
+            from = end;
+        }
+    }
+    out
+}
+
+/// 收集 `src="..."` / `src='...'` 属性值（用于跟一层 iframe）。
+fn extract_src_attrs(html: &str) -> Vec<String> {
+    let lower = html.to_ascii_lowercase();
+    let bytes = html.as_bytes();
+    let mut out = Vec::new();
+    let mut from = 0;
+    while let Some(pos) = lower[from..].find("src=") {
+        let mut index = from + pos + 4;
+        while index < bytes.len() && (bytes[index] == b' ' || bytes[index] == b'\t') {
+            index += 1;
+        }
+        if index < bytes.len() && (bytes[index] == b'"' || bytes[index] == b'\'') {
+            let quote = bytes[index];
+            index += 1;
+            let start = index;
+            while index < bytes.len() && bytes[index] != quote {
+                index += 1;
+            }
+            if index > start {
+                out.push(html[start..index].to_string());
+            }
+            from = index;
+        } else {
+            from = index;
+        }
+        if from >= lower.len() {
+            break;
+        }
+    }
+    out
+}
+
+fn is_url_delimiter(byte: u8) -> bool {
+    matches!(
+        byte,
+        b'"' | b'\'' | b' ' | b'\t' | b'\r' | b'\n' | b'<' | b'>' | b')' | b'}' | b']' | b',' | b';' | b'\\'
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn extract_media_urls_handles_absolute_relative_and_escaped() {
+        let html = r#"<script>var u = "https:\/\/cdn.example.com\/a\/index.m3u8?token=1";</script>
+        <div data-src="/live/b.mp4"></div><iframe src="//p.example.com/x"></iframe>"#;
+        let urls = extract_media_urls(&html.replace("\\/", "/"), "https://page.example.com/watch");
+        assert!(urls.iter().any(|u| u == "https://cdn.example.com/a/index.m3u8?token=1"));
+        assert!(urls.iter().any(|u| u == "https://page.example.com/live/b.mp4"));
+    }
+
+    #[test]
+    fn extract_src_attrs_collects_iframe_sources() {
+        let attrs = extract_src_attrs("<iframe src='https://a.example.com/p'></iframe><img src=x.png>");
+        assert_eq!(attrs, vec!["https://a.example.com/p".to_string()]);
+    }
 
     #[test]
     fn media_priority_filters_assets_and_ranks_m3u8() {

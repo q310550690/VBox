@@ -83,6 +83,13 @@ public final class BridgeARM32Emulator extends AndroidARMEmulator {
         }
 
         @Override protected boolean handleSyscall(Emulator<?> emulator, int number) {
+            if (number == 248 && "com.winbox.spider.payload".equals(emulator.getProcessName()) && Boolean.getBoolean("tvbox.native.interceptExit")) {
+                long lr = emulator.getBackend().reg_read(ArmConst.UC_ARM_REG_LR).longValue();
+                System.err.println("[native-bridge] 载荷 exit_group 被拦截（诊断模式，模拟返回调用方） lr=0x"
+                        + Long.toHexString(lr) + " pc=0x" + Long.toHexString(emulator.getBackend().reg_read(ArmConst.UC_ARM_REG_PC).longValue()));
+                emulator.getBackend().reg_write(ArmConst.UC_ARM_REG_PC, (int) (lr & ~1L));
+                return true;
+            }
             int result;
             if (number == 174) result = rtSigaction(emulator);
             else if (number == 175) result = rtSigprocmask(emulator);

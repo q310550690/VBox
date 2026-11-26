@@ -8,6 +8,8 @@ const props = defineProps<{
   items: Episode[]
   /** 当前集索引；未选中时为空 */
   activeEp?: number
+  /** 数字格：按钮内只显示集号（详情页左列偏窄，数字比集名更易扫读） */
+  compact?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -24,6 +26,11 @@ function episodeLabel(episode: Episode, index: number) {
 
 function handlePlay(episode: Episode, index: number) {
   emit('play', episode, index)
+}
+
+/** 按钮内文字：compact 模式只显示集号，完整集名走 title / aria-label */
+function chipText(episode: Episode, index: number) {
+  return props.compact ? String(index + 1) : episodeLabel(episode, index)
 }
 
 /** 当前集滚动到可视区；jsdom / 非必要环境不支持时静默跳过 */
@@ -52,7 +59,13 @@ onMounted(() => {
 </script>
 
 <template>
-  <div ref="gridRef" class="episode-grid" role="group" aria-label="选集">
+  <div
+    ref="gridRef"
+    class="episode-grid"
+    :class="{ 'episode-grid--compact': compact }"
+    role="group"
+    aria-label="选集"
+  >
     <button
       v-for="(episode, index) in items"
       :key="index"
@@ -60,10 +73,11 @@ onMounted(() => {
       class="ep-chip"
       :class="{ 'ep-chip--active': index === activeEp }"
       :aria-pressed="index === activeEp"
-      :title="episode.title || undefined"
+      :aria-label="episodeLabel(episode, index)"
+      :title="episodeLabel(episode, index)"
       @click="handlePlay(episode, index)"
     >
-      {{ episodeLabel(episode, index) }}
+      {{ chipText(episode, index) }}
     </button>
   </div>
 </template>
@@ -107,5 +121,17 @@ onMounted(() => {
   background: var(--accent);
   color: var(--text-on-accent);
   font-weight: 500;
+}
+
+/* 数字格（compact）：44px 方块，等宽铺满一行，完整集名走悬停 title */
+.episode-grid--compact {
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+}
+
+.episode-grid--compact .ep-chip {
+  height: 44px;
+  padding: 0;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
 }
 </style>

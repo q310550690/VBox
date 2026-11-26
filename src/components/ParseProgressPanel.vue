@@ -1,5 +1,5 @@
 <!-- 解析进度面板（详情页内联 / 其它场景悬浮）
-     - 数据全部来自 useParseProgress()：state / steps / elapsedMs / stage / errorMessage
+     - 数据全部来自 useParseProgress()：state / steps / elapsedMs / errorMessage
      - 默认 fixed 悬浮在内容区右下角；传 inline 后作为普通卡片嵌进父级 grid（详情页选集右侧 4 列）
      - 只用 styles/tokens.css 的变量，亮/暗主题自动适配
      - 事件只做展示：解析日志追加、自动滚底、最多保留 80 条（组合式函数内裁剪） -->
@@ -25,8 +25,6 @@ const props = defineProps<{
   steps: ParseStep[]
   /** 计时（毫秒） */
   elapsedMs: number
-  /** 当前宏观步骤：0=解析直链 1=抓包嗅探 2=完成/失败 */
-  stage: 0 | 1 | 2
   /** 失败原因 */
   errorMessage: string
 }>()
@@ -52,89 +50,10 @@ function goPanLogin() {
   void router.push({ path: '/cloud', query: { accounts: '1' } })
 }
 
-/* ---------------- 宏观步骤 ---------------- */
+/* ---------------- 状态 ---------------- */
 
-type StepVisual = 'waiting' | 'active' | 'done' | 'failed' | 'skipped'
-
-interface MacroStep {
-  key: 0 | 1 | 2
-  label: string
-  hint: string
-}
-
-const MACRO_STEPS: MacroStep[] = [
-  { key: 0, label: '解析直链', hint: '解析器 / 解析接口 / 超级解析' },
-  { key: 1, label: '抓包嗅探', hint: '隐藏 WebView 捕获媒体地址；不需要时显示「跳过」' },
-  { key: 2, label: '完成 / 失败', hint: '拿到播放地址或失败原因' },
-]
-
-const RESOLVE_PHASES = ['prepare', 'parser', 'request', 'super']
-
-const isTerminal = computed(() => props.state === 'success' || props.state === 'error')
 const isRunning = computed(() => props.state === 'running' || props.state === 'cancelling')
 const isCancelling = computed(() => props.state === 'cancelling')
-
-const sniffSteps = computed(() => props.steps.filter((s) => s.phase === 'sniff'))
-const sniffStarted = computed(() => sniffSteps.value.length > 0)
-const sniffOk = computed(() => sniffSteps.value.some((s) => s.status === 'ok'))
-const sniffFailed = computed(() => sniffSteps.value.some((s) => s.status === 'fail'))
-
-/** ① 解析直链：有 ok 即完成；error 且从未进入抓包 → 失败；有事件但未终态 → 进行中 */
-const resolveVisual = computed<StepVisual>(() => {
-  const related = props.steps.filter((s) => RESOLVE_PHASES.includes(s.phase))
-  if (related.some((s) => s.status === 'ok')) return 'done'
-  if (sniffStarted.value || props.state === 'success') return 'done'
-  if (props.state === 'error') return 'failed'
-  if (related.length > 0) return 'active'
-  // 还没有任何事件：等待后端返回（不伪造成功步骤）
-  return isRunning.value ? 'active' : 'waiting'
-})
-
-/** ② 抓包嗅探：未进入抓包就结束 → 跳过 */
-const sniffVisual = computed<StepVisual>(() => {
-  if (sniffFailed.value) return 'failed'
-  if (sniffOk.value) return 'done'
-  if (sniffStarted.value) return props.state === 'error' ? 'failed' : 'active'
-  if (isTerminal.value) return 'skipped'
-  return 'waiting'
-})
-
-/** ③ 完成 / 失败 */
-const doneVisual = computed<StepVisual>(() => {
-  if (props.state === 'success') return 'done'
-  if (props.state === 'error') return 'failed'
-  if (props.stage === 2) return 'active'
-  return 'waiting'
-})
-
-const visuals = computed<StepVisual[]>(() => [
-  resolveVisual.value,
-  sniffVisual.value,
-  doneVisual.value,
-])
-
-function visualText(visual: StepVisual): string {
-  switch (visual) {
-    case 'active':
-      return '进行中'
-    case 'done':
-      return '已完成'
-    case 'failed':
-      return '失败'
-    case 'skipped':
-      return '跳过'
-    default:
-      return '等待'
-  }
-}
-
-const VISUAL_ICONS: Record<StepVisual, SolarIconName> = {
-  waiting: 'minus',
-  skipped: 'minus',
-  active: 'clock-circle',
-  done: 'check-circle',
-  failed: 'close-circle',
-}
 
 /* ---------------- 日志 ---------------- */
 
@@ -260,25 +179,6 @@ function handleCancel() {
         </button>
       </header>
 
-      <!-- 三个宏观步骤 -->
-      <ol class="steps" :aria-label="`当前步骤：${MACRO_STEPS[stage]?.label ?? ''}`">
-        <li
-          v-for="(step, index) in MACRO_STEPS"
-          :key="step.key"
-          class="step"
-          :class="`is-${visuals[index]}`"
-          :title="step.hint"
-        >
-          <span class="step-dot">
-            <SolarIcon
-              :name="VISUAL_ICONS[visuals[index]]"
-              :size="13"
-            />
-          </span>
-          <span class="step-label">{{ step.label }}</span>
-          <span class="step-status">{{ visualText(visuals[index]) }}</span>
-        </li>
-      </ol>
 
       <!-- 解析日志：最多 6 行可见，自动滚到底部；复制按钮 sticky 在可视区右侧（表格 fixed 列手感） -->
       <div class="log-head">
@@ -373,7 +273,8 @@ function handleCancel() {
   max-width: none;
   max-height: none;
   min-height: 0;
-  box-shadow: none;
+  /* 需求：内联解析卡片也要有阴影（与其它卡片一致） */
+  box-shadow: var(--shadow-2);
 }
 
 /* 日志滚动区：flex 占满头部/步骤/操作之后的空间，内容多时内部滚动 */
@@ -440,113 +341,6 @@ function handleCancel() {
 .head-retry:hover {
   color: var(--accent);
   background: var(--accent-weak);
-}
-
-/* ---------------- 步骤条 ---------------- */
-
-.steps {
-  display: flex;
-  align-items: flex-start;
-  margin: 0;
-  padding: var(--space-1) 0;
-  list-style: none;
-}
-
-.step {
-  position: relative;
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  min-width: 0;
-  text-align: center;
-}
-
-/* 相邻步骤之间的连接线：从上一步圆心连到当前圆心 */
-.step + .step::before {
-  content: '';
-  position: absolute;
-  top: 10px;
-  right: 50%;
-  left: -50%;
-  height: 1px;
-  background: var(--border);
-}
-
-.step-dot {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: var(--surface-inset);
-  color: var(--text-faint);
-}
-
-.step-label {
-  font-size: 11.5px;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-.step-status {
-  font-size: 10.5px;
-  color: var(--text-faint);
-}
-
-.step.is-active .step-dot {
-  border-color: var(--accent);
-  background: var(--accent-weak);
-  color: var(--accent);
-}
-
-.step.is-active .step-label {
-  color: var(--text);
-}
-
-.step.is-active .step-status {
-  color: var(--accent);
-}
-
-.step.is-done .step-dot {
-  border-color: var(--success);
-  background: var(--success-weak);
-  color: var(--success);
-}
-
-.step.is-done .step-label {
-  color: var(--text-regular);
-}
-
-.step.is-done .step-status {
-  color: var(--success);
-}
-
-.step.is-failed .step-dot {
-  border-color: var(--danger);
-  background: var(--danger-weak);
-  color: var(--danger);
-}
-
-.step.is-failed .step-label {
-  color: var(--text-regular);
-}
-
-.step.is-failed .step-status {
-  color: var(--danger);
-}
-
-/* 跳过 / 等待：统一灰态，明确区别于成功 */
-.step.is-skipped .step-label,
-.step.is-skipped .step-status,
-.step.is-waiting .step-label,
-.step.is-waiting .step-status {
-  color: var(--text-faint);
 }
 
 /* ---------------- 日志 ---------------- */

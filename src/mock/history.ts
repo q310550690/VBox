@@ -4,7 +4,7 @@
 //   - 保留策略 retentionDays（0=永久）/ maxItems（0=不限），写入 / 改设置时自动裁剪
 import type { HistoryItem, HistorySettings } from '@/types'
 
-const STORAGE_KEY = 'vbox.history.demo.v2'
+const STORAGE_KEY = 'vbox.history.demo.v3'
 const SETTINGS_KEY = 'vbox.history.settings'
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -86,6 +86,78 @@ const DEMO_HISTORY: HistoryItem[] = [
     positionSec: 1980,
     durationSec: 2700,
     updatedAt: Date.now() - 1000 * 60 * 60 * 24 * 25,
+  },
+  {
+    siteKey: 'demo_cms_qinghe',
+    siteName: '演示 · 青禾影库',
+    id: 'demo-2-1-0-72',
+    name: '山海之间',
+    cover: 'https://picsum.photos/seed/vbox-2-72/300/450',
+    epIndex: 3,
+    epTitle: '第4集',
+    positionSec: 1080,
+    durationSec: 2640,
+    updatedAt: Date.now() - 1000 * 60 * 60 * 2,
+  },
+  {
+    siteKey: 'demo_cms_lanxi',
+    siteName: '演示 · 澜溪剧场',
+    id: 'demo-3-2-5-70',
+    name: '赛博旧梦',
+    cover: 'https://picsum.photos/seed/vbox-3-70/300/450',
+    epIndex: 8,
+    epTitle: '第9集',
+    positionSec: 2100,
+    durationSec: 3000,
+    updatedAt: Date.now() - 1000 * 60 * 60 * 9,
+  },
+  {
+    siteKey: 'demo_cms_muxi',
+    siteName: '演示 · 暮汐资源',
+    id: 'demo-1-1-12-13',
+    name: '光年之外',
+    cover: 'https://picsum.photos/seed/vbox-1-13/300/450',
+    epIndex: 0,
+    epTitle: '正片',
+    positionSec: 600,
+    durationSec: 7800,
+    updatedAt: Date.now() - 1000 * 60 * 60 * 20,
+  },
+  {
+    siteKey: 'demo_cms_haijiao',
+    siteName: '演示 · 海角影院',
+    id: 'demo-4-2-2-58',
+    name: '灵笼',
+    cover: 'https://picsum.photos/seed/vbox-4-58/300/450',
+    epIndex: 6,
+    epTitle: '第7集',
+    positionSec: 480,
+    durationSec: 1560,
+    updatedAt: Date.now() - 1000 * 60 * 60 * 46,
+  },
+  {
+    siteKey: 'demo_cms_xingchen',
+    siteName: '演示 · 星宸影视',
+    id: 'demo-1-3-4-53',
+    name: '长安三万里',
+    cover: 'https://picsum.photos/seed/vbox-1-53/300/450',
+    epIndex: 0,
+    epTitle: '正片',
+    positionSec: 3600,
+    durationSec: 10080,
+    updatedAt: Date.now() - 1000 * 60 * 60 * 24 * 4,
+  },
+  {
+    siteKey: 'demo_cms_cangshan',
+    siteName: '演示 · 苍山点播',
+    id: 'demo-3-1-9-79',
+    name: '中国奇谭',
+    cover: 'https://picsum.photos/seed/vbox-3-79/300/450',
+    epIndex: 2,
+    epTitle: '第3集',
+    positionSec: 300,
+    durationSec: 1500,
+    updatedAt: Date.now() - 1000 * 60 * 60 * 24 * 9,
   },
 ]
 

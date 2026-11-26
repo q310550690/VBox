@@ -1,6 +1,6 @@
 //! UC 网盘扫码登录（W14 补齐：与夸克同族 UOP CAS 协议）。
 //!
-//! 协议来源（`_rea/decompiled/5fc50e17-…/sources/com/github/catvod/spider/merge/m/C0661G.java:645-646`、
+//! 协议来源（`5fc50e17-…/sources/com/github/catvod/spider/merge/m/C0661G.java:645-646`、
 //! `FM/O/y.java:243-244`，2026-11-18 真站复核 `api.open.uc.cn` 可达）：
 //!
 //! 1. `GET https://api.open.uc.cn/cas/ajax/getTokenForQrcodeLogin?pr=ucpro&fr=pc&client_id=386&v=1.2&request_id=`

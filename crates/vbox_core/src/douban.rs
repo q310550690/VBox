@@ -1159,3 +1159,297 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
+
+
+/* ---------------- 豆瓣条目扩展（点播详情页：主创照片 / 剧照 / 影视信息） ---------------- */
+
+/// 豆瓣主创条目：`name` 为姓名，`role` 为身份/饰演角色，`avatar` 为头像地址。
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct DoubanPerson {
+    pub name: String,
+    pub role: Option<String>,
+    pub avatar: Option<String>,
+}
+
+/// 豆瓣条目元信息（点播详情页右侧「影视信息」用）。
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct DoubanSubjectMeta {
+    /// 豆瓣评分（一位小数）；无评分时为 None。
+    pub rating: Option<String>,
+    /// 评价人数。
+    pub rating_count: Option<u64>,
+    /// 类型标签（剧情 / 动画 / 奇幻 …）。
+    pub genres: Vec<String>,
+    /// 上映日期（取第一条）。
+    pub pubdate: Option<String>,
+    /// 片长 / 单集时长。
+    pub durations: Vec<String>,
+    /// 制片国家 / 地区。
+    pub countries: Vec<String>,
+    /// 语言。
+    pub languages: Vec<String>,
+}
+
+/// 点播详情页的豆瓣扩展数据：一次请求同时拿到主创、剧照和元信息。
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct DoubanSubjectDetail {
+    pub people: Vec<DoubanPerson>,
+    /// 剧照地址（最多 6 张，图片接口给的 normal 尺寸）。
+    pub stills: Vec<String>,
+    pub meta: DoubanSubjectMeta,
+}
+
+/// 按片名在豆瓣找条目，返回主创照片 / 剧照 / 影视信息。
+///
+/// 先 `subject_suggest` 搜索条目（优先年份精确匹配），再取条目详情与剧照列表；
+/// 任何一步失败都只丢弃对应字段，不影响详情页。
+pub fn subject_detail(title: &str, year: Option<&str>) -> DoubanSubjectDetail {
+    let title = title.trim();
+    if title.is_empty() {
+        return DoubanSubjectDetail::default();
+    }
+    let Ok(client) = build_client() else {
+        return DoubanSubjectDetail::default();
+    };
+    let Some((id, kind)) = resolve_subject(&client, title, year) else {
+        return DoubanSubjectDetail::default();
+    };
+
+    let mut detail = DoubanSubjectDetail::default();
+    if let Ok(resp) = client
+        .get(format!("{SUBJECT_API}/{kind}/{id}"))
+        .query(&[("ck", ""), ("for_mobile", "1")])
+        .send()
+    {
+        if let Ok(value) = resp.json::<Value>() {
+            detail.meta = parse_meta(&value);
+            // 条目详情里的 directors/actors 不带头像，主创优先走 celebrities 接口；
+            // 接口失败时退回条目详情里的名字（无照片，前端会隐藏头像列）。
+            detail.people = parse_people(&value);
+        }
+    }
+    let credits = fetch_credits(&client, &kind, &id);
+    if !credits.is_empty() {
+        detail.people = credits;
+    }
+    detail.stills = fetch_stills(&client, &kind, &id);
+    detail
+}
+
+/// 搜索豆瓣条目 id 与类型：优先年份精确匹配，其次取第一条 movie/tv。
+fn resolve_subject(
+    client: &reqwest::blocking::Client,
+    title: &str,
+    year: Option<&str>,
+) -> Option<(String, String)> {
+    let mut candidates: Vec<(String, String, Option<String>)> = Vec::new();
+    if let Ok(resp) = client
+        .get("https://movie.douban.com/j/subject_suggest")
+        .query(&[("q", title)])
+        .send()
+    {
+        if let Ok(value) = resp.json::<Value>() {
+            for item in value.as_array().into_iter().flatten() {
+                let id = item.get("id").and_then(Value::as_str).unwrap_or("");
+                let kind = item.get("type").and_then(Value::as_str).unwrap_or("");
+                if id.is_empty() || (kind != "movie" && kind != "tv") {
+                    continue;
+                }
+                let item_year = item.get("year").and_then(Value::as_str).map(str::to_string);
+                candidates.push((id.to_string(), kind.to_string(), item_year));
+            }
+        }
+    }
+    let picked = year
+        .and_then(|wanted| {
+            candidates
+                .iter()
+                .find(|(_, _, item_year)| item_year.as_deref() == Some(wanted))
+        })
+        .or_else(|| candidates.first())?;
+    Some((picked.0.clone(), picked.1.clone()))
+}
+
+/// 从条目详情解析主创（directors 最多 4 位 + celebrities 最多 12 位）。
+fn parse_people(value: &Value) -> Vec<DoubanPerson> {
+    let mut people = Vec::new();
+    for person in value
+        .get("directors")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .take(4)
+    {
+        if let Some(person) = parse_person(person, "导演") {
+            people.push(person);
+        }
+    }
+    for person in value
+        .get("celebrities")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .take(12)
+    {
+        if let Some(person) = parse_person(person, "演员") {
+            people.push(person);
+        }
+    }
+    people
+}
+
+/// 从条目详情解析元信息（评分 / 类型 / 上映 / 片长 / 国家地区 / 语言）。
+fn parse_meta(value: &Value) -> DoubanSubjectMeta {
+    let rating_value = value
+        .get("rating")
+        .and_then(|rating| rating.get("value"))
+        .and_then(Value::as_f64);
+    let rating = rating_value.map(|v| format!("{v:.1}"));
+    let rating_count = value
+        .get("rating")
+        .and_then(|rating| rating.get("count"))
+        .and_then(Value::as_u64);
+    let pubdate = string_list(value.get("pubdate")).into_iter().next();
+    DoubanSubjectMeta {
+        rating,
+        rating_count,
+        genres: string_list(value.get("genres")),
+        pubdate,
+        durations: string_list(value.get("durations")),
+        countries: string_list(value.get("countries")),
+        languages: string_list(value.get("languages")),
+    }
+}
+
+/// 主创照片：`/rexxar/api/v2/{kind}/{id}/celebrities`，导演最多 4 位 + 演员最多 8 位。
+///
+/// 条目详情接口（不带 /celebrities）返回的 directors/actors 只有姓名、没有头像，
+/// 主创头像列必须用这个接口；失败时返回空列表，由调用方退回纯文本主创信息。
+fn fetch_credits(
+    client: &reqwest::blocking::Client,
+    kind: &str,
+    id: &str,
+) -> Vec<DoubanPerson> {
+    let Ok(resp) = client
+        .get(format!("{SUBJECT_API}/{kind}/{id}/celebrities"))
+        .query(&[("ck", ""), ("for_mobile", "1")])
+        .send()
+    else {
+        return Vec::new();
+    };
+    let Ok(value) = resp.json::<Value>() else {
+        return Vec::new();
+    };
+    let mut people = Vec::new();
+    for person in value
+        .get("directors")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .take(4)
+    {
+        if let Some(person) = parse_person(person, "导演") {
+            people.push(person);
+        }
+    }
+    for person in value
+        .get("actors")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .take(8)
+    {
+        if let Some(person) = parse_person(person, "演员") {
+            people.push(person);
+        }
+    }
+    people
+}
+
+/// 剧照列表：`/rexxar/api/v2/{kind}/{id}/photos`，优先 normal 尺寸，最多 6 张。
+fn fetch_stills(client: &reqwest::blocking::Client, kind: &str, id: &str) -> Vec<String> {
+    let Ok(resp) = client
+        .get(format!("{SUBJECT_API}/{kind}/{id}/photos"))
+        .query(&[("start", "0"), ("count", "6")])
+        .send()
+    else {
+        return Vec::new();
+    };
+    let Ok(value) = resp.json::<Value>() else {
+        return Vec::new();
+    };
+    value
+        .get("photos")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|photo| {
+            let image = photo.get("image")?;
+            image
+                .get("normal")
+                .or_else(|| image.get("large"))
+                .or_else(|| image.get("small"))
+                .and_then(|size| size.get("url"))
+                .and_then(Value::as_str)
+                .map(str::to_string)
+        })
+        .take(6)
+        .collect()
+}
+
+/// 把 JSON 数组字段转成字符串列表（数组项不是字符串时忽略）。
+fn string_list(value: Option<&Value>) -> Vec<String> {
+    value
+        .and_then(Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(Value::as_str)
+                .map(str::to_string)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn parse_person(value: &Value, fallback_role: &str) -> Option<DoubanPerson> {
+    let name = value.get("name").and_then(Value::as_str)?.trim().to_string();
+    if name.is_empty() {
+        return None;
+    }
+    let avatar = value
+        .get("avatar")
+        .and_then(|avatar| {
+            avatar
+                .get("large")
+                .or_else(|| avatar.get("normal"))
+                .or_else(|| avatar.get("small"))
+                .and_then(Value::as_str)
+        })
+        .map(str::to_string);
+    let role = value
+        .get("roles")
+        .and_then(Value::as_array)
+        .map(|roles| {
+            roles
+                .iter()
+                .filter_map(Value::as_str)
+                .collect::<Vec<_>>()
+                .join("、")
+        })
+        .filter(|text| !text.is_empty())
+        .or_else(|| {
+            value
+                .get("character")
+                .and_then(Value::as_str)
+                .map(str::to_string)
+        })
+        .unwrap_or_else(|| fallback_role.to_string());
+    Some(DoubanPerson {
+        name,
+        role: Some(role),
+        avatar,
+    })
+}

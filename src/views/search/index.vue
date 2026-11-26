@@ -9,6 +9,7 @@ import { computed, nextTick, onActivated, onDeactivated, onMounted, ref, watch }
 import { useRoute, useRouter } from 'vue-router'
 import type { ScrollbarInstance } from 'element-plus'
 import SolarIcon from '@/components/SolarIcon.vue'
+import BlurBackdrop from '@/components/BlurBackdrop.vue'
 import SearchInput from './components/SearchInput.vue'
 import KeywordHistory from './components/KeywordHistory.vue'
 import HotSearch from './components/HotSearch.vue'
@@ -94,6 +95,9 @@ const resultItems = computed<VideoItem[]>(() => {
       siteName: siteNameByKey.value.get(groupKey) ?? groupKey,
     }))
 })
+
+/** 整页模糊背景的封面：取当前结果第一条（无结果 / 无封面时回退页面底色） */
+const backdropCover = computed(() => resultItems.value[0]?.cover ?? null)
 
 /** 当前可见结果对应的原始命中（点击卡片时按 id 反查站点） */
 const visibleHits = computed<{ groupKey: string; hit: SearchHit }[]>(() => {
@@ -375,6 +379,8 @@ function goBack() {
 </script>
 
 <template>
+  <!-- 整页模糊封面背景：铺满内容区，页面内容浮在其上 -->
+  <BlurBackdrop :cover="backdropCover" />
   <div class="page search-page">
     <!-- 顶部：左（搜索输入框 + 搜索历史） / 右（热搜条目，跨两行） -->
     <section class="search-top">
@@ -538,6 +544,8 @@ function goBack() {
 <style scoped>
 /* 页面固定一屏：顶部搜索区 + 下方结果区各自内部滚动（内容区外层 el-scrollbar 不再滚动） */
 .search-page {
+  position: relative;
+  z-index: 1;
   height: calc(100vh - var(--titlebar-h));
   box-sizing: border-box;
   overflow: hidden;
@@ -624,12 +632,12 @@ function goBack() {
 }
 
 .site-item:hover {
-  background: var(--surface-3);
+  background-color: var(--fill-1);
   color: var(--text);
 }
 
 .site-item.active {
-  background: var(--accent-weak);
+  background-color: var(--surface-inset);
   color: var(--accent);
   font-weight: 600;
 }

@@ -1,9 +1,9 @@
 //! 迅雷 / PikPak 共用网盘协议基座（W10.3）。
 //!
 //! 协议来源：
-//! - `_rea/decompiled/dffec63f-pg/deobf/com/github/catvod/parser/merge/d1.java`（迅雷 `d1` 基类）
-//! - `_rea/decompiled/dffec63f-pg/deobf/com/github/catvod/parser/merge/A/C0032l0.java`（PikPak 覆写 base）
-//! - `_rea/tmp/w10-analysis.md`（端点/字段速查表）
+//! - `dffec63f-pg/deobf/com/github/catvod/parser/merge/d1.java`（迅雷 `d1` 基类）
+//! - `dffec63f-pg/deobf/com/github/catvod/parser/merge/A/C0032l0.java`（PikPak 覆写 base）
+//! - `w10-analysis.md`（端点/字段速查表）
 //!
 //! 两家是**同一套 drive 协议**，只换 base 与认证：
 //! - 迅雷：`api-pan.xunlei.com/drive/v1/`，登录 `xluser-ssl.xunlei.com/v1/`（账号 + 可选 captcha）

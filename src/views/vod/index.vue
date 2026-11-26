@@ -70,27 +70,24 @@ const isHome = computed(() => category.value === '')
 const siteKey = computed(() => config.activeSiteKey('vod'))
 const site = computed(() => (siteKey.value ? config.siteByKey(siteKey.value) : undefined))
 const siteType = computed(() => site.value?.type ?? -1)
-/** 当前站点的能力信息：type3 jar/Python 在桌面端需后续支持，由 store 统一判定 */
+/** 当前站点的能力信息（本机可用性由 store 统一判定） */
 const siteSupport = computed(() =>
   config.sourceTabs.find((tab) => tab.key === siteKey.value),
 )
 const siteUnsupported = computed(() => Boolean(site.value) && siteSupport.value?.supported === false)
 /** 本机不可用时的错误态标题 / 说明（区分 jar、Python、其它类型） */
 const unsupportedTitle = computed(() =>
-  siteSupport.value?.level === 'jar' || siteSupport.value?.level === 'python'
+  siteSupport.value?.level === 'python'
     ? '该源需要后续支持'
     : '该源类型暂未适配',
 )
 const unsupportedMessage = computed(() => {
   const tab = siteSupport.value
   if (!tab) return ''
-  if (tab.level === 'jar') {
-    return '该线路为 Android jar 源，桌面端后续支持（需 Android Host），请切换线路'
-  }
   if (tab.level === 'python') {
     return '该站点使用 Python spider，后续支持（需系统 Python 运行时），可先切换其它站点'
   }
-  return `${tab.reason ?? `暂未适配（type=${siteType.value}）`}；本机已支持 XML / 苹果CMS / HTTP 远程接口 / JS spider / 原生规则引擎（XYQHiker、XBPQ）/ Python（需系统 Python）`
+  return `${tab.reason ?? `暂未适配（type=${siteType.value}）`}；本机已支持 XML / 苹果CMS / HTTP 远程接口 / JS spider / 原生规则引擎（XYQHiker、XBPQ）/ Python（需系统 Python）/ JVM 兼容层（需 JRE）`
 })
 
 /** 初始化中（配置尚未读取完成） */
@@ -429,16 +426,15 @@ function onSiteHealthBlocked(site: SourceTabItem) {
   )
 }
 
-/** 站点徽标文案：按 REA 画像给出「待移植 / 需 Python / 不支持 / 待评估」。 */
+/** 站点徽标文案：按能力判定给出「需 Python / 不支持 / 待评估」。 */
 function siteBadge(site: SourceTabItem): string {
   if (site.supported) return ''
-  if (site.level === 'jar') return '待移植'
   if (site.level === 'python') return '需 Python'
   if (site.level === 'unsupported') return '不支持'
   return '待评估'
 }
 
-/** 站点按钮 tooltip：本机可用给能力范围，不可用给 REA 画像原因（避免省略号看不到全文）。 */
+/** 站点按钮 tooltip：本机可用给能力范围，不可用给具体原因（避免省略号看不到全文）。 */
 function siteTitle(site: SourceTabItem): string {
   if (!site.supported) return `${site.name} · ${site.reason ?? '暂不可用'}`
   return site.note ? `${site.name} · ${site.note}` : site.name
@@ -691,10 +687,10 @@ onActivated(() => {
         </button>
       </div>
 
-      <!-- 能力说明：本机源优先；不可用源按 REA 画像标注原因（待移植 / 需 Python / 不支持） -->
+      <!-- 能力说明：本机源优先；不可用源标注具体原因（需 Python / 不支持） -->
       <p class="dlg-hint">
-        支持情况与 REA 站点画像联动：本机可用的源排在前面（XML / 苹果CMS / HTTP 远程接口 / JS spider /
-        原生规则引擎 / 原生解析家族 / Python，需系统 Python）；画像判定为待移植的源会标注具体原因，
+        支持情况按本机能力判定：本机可用的源排在前面（XML / 苹果CMS / HTTP 远程接口 / JS spider /
+        原生规则引擎 / Python（需系统 Python）/ jar（JVM 兼容层，需 JRE））；不可用的源会标注具体原因，
         鼠标悬停可查看完整说明。
       </p>
 
@@ -785,7 +781,11 @@ onActivated(() => {
           name="info-circle"
           size="1em"
         />
-        <span>演示数据：当前为浏览器预览模式，内容来自 mock 适配层</span>
+        <span>{{
+          config.demoInApp
+            ? '演示数据：当前为 Tauri mock 模式，内容来自 mock 适配层'
+            : '演示数据：当前为浏览器预览模式，内容来自 mock 适配层'
+        }}</span>
       </div>
 
       <!-- 首页：豆瓣热播（轮播 + 继续观看侧栏 + 豆瓣分类 + 卡片网格） -->
@@ -850,7 +850,7 @@ onActivated(() => {
           @action="goSettings"
         />
 
-        <!-- ⑥ 源需要后续支持（jar / Python）或类型暂未适配 -->
+        <!-- ⑥ 源需要 Python 运行时或类型暂未适配 -->
         <ErrorState
           v-else-if="siteUnsupported"
           :message="unsupportedMessage"
@@ -946,7 +946,7 @@ onActivated(() => {
 }
 
 .site-picker:hover {
-  background: var(--surface-2);
+  background: var(--fill-1);
   color: var(--text);
 }
 
@@ -1086,7 +1086,7 @@ onActivated(() => {
 
 .site-item.is-disabled:hover {
   border-color: var(--border);
-  background: var(--surface-2);
+  background: var(--fill-1);
 }
 
 .site-item-name {

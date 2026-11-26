@@ -24,11 +24,6 @@ function onAcrylicChange(val: string | number | boolean) {
   ui.setAcrylic(Boolean(val))
 }
 
-/** 全局背景亚克力（依赖「侧边与标题栏」） */
-function onAcrylicContentChange(val: string | number | boolean) {
-  ui.setAcrylicContent(Boolean(val))
-}
-
 /** 恢复默认外观：主题模式 / 配色 / 亚克力开关 */
 function onResetAppearance() {
   ui.resetAppearance()
@@ -66,13 +61,8 @@ function onResetAppearance() {
       <span class="field-label">亚克力效果</span>
       <div class="field-grid">
         <div class="field-control">
-          <el-switch :model-value="ui.acrylic" aria-label="侧边与标题栏" @change="onAcrylicChange" />
-          <span class="switch-label">侧边与标题栏</span>
-        </div>
-        <div class="field-control">
-          <el-switch :model-value="ui.acrylicContent" aria-label="全局背景" :disabled="!ui.acrylic"
-            @change="onAcrylicContentChange" />
-          <span class="switch-label">全局背景</span>
+          <el-switch :model-value="ui.acrylic" aria-label="启用亚克力效果" @change="onAcrylicChange" />
+          <span class="switch-label">启用亚克力效果</span>
         </div>
       </div>
     </div>

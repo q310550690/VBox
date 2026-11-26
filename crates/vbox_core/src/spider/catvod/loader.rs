@@ -29,6 +29,87 @@ fn jar_error(
     CatvodError::new(class, site, detail).with_jar(spec.raw.clone())
 }
 
+/// 抓 jar 时的浏览器 UA：部分 CDN/对象存储对 okhttp 默认 UA 直接 403。
+const JAR_BROWSER_UA: &str =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
+/// 取 URL 的 `scheme://host[:port]` 作为 Referer（很多防盗链只校验同源 Referer）。
+fn jar_origin(url: &str) -> Option<String> {
+    let (scheme, rest) = url.split_once("://")?;
+    let host_end = rest.find(['/', '?', '#']).unwrap_or(rest.len());
+    if host_end == 0 {
+        return None;
+    }
+    Some(format!("{scheme}://{}", &rest[..host_end]))
+}
+
+/// 下载 jar 的网络请求，带两级回退：
+/// 1. 原样（沿用配置 UA/超时）；
+/// 2. 补 `Referer: <jar 源站 origin>` + `Accept: */*`（防盗链常见要求）；
+/// 3. 再换浏览器 UA（部分 CDN 对 okhttp UA 返回 403）。
+/// 只在 401/403/5xx 或网络错误时重试，404 等确定性错误直接返回。
+fn fetch_jar(
+    client: &reqwest::blocking::Client,
+    spec: &JarSpec,
+    site: &crate::model::Site,
+) -> Result<reqwest::blocking::Response> {
+    use reqwest::header::{ACCEPT, REFERER, USER_AGENT};
+    let origin = jar_origin(&spec.url);
+    let mut last: Option<CoreError> = None;
+    for attempt in 0..3u8 {
+        let mut req = client.get(&spec.url);
+        if attempt >= 1 {
+            req = req.header(ACCEPT, "*/*");
+            if let Some(o) = &origin {
+                req = req.header(REFERER, o.as_str());
+            }
+        }
+        if attempt >= 2 {
+            req = req.header(USER_AGENT, JAR_BROWSER_UA);
+        }
+        match req.send() {
+            Ok(resp) => {
+                let status = resp.status();
+                if status.is_success() {
+                    return Ok(resp);
+                }
+                let err = jar_error(
+                    ErrorClass::JarFetch,
+                    site,
+                    spec,
+                    format!("下载 jar HTTP {}: {}", status, spec.url),
+                )
+                .into_core();
+                let retryable = status == reqwest::StatusCode::UNAUTHORIZED
+                    || status == reqwest::StatusCode::FORBIDDEN
+                    || status.is_server_error();
+                if !retryable || attempt >= 2 {
+                    return Err(err);
+                }
+                tracing::warn!(jar = %spec.url, %status, "jar 下载失败，换 Referer/UA 重试");
+                last = Some(err);
+            }
+            Err(e) => {
+                let err = jar_error(
+                    ErrorClass::JarFetch,
+                    site,
+                    spec,
+                    format!("下载 jar 失败 {}: {e}", spec.url),
+                )
+                .into_core();
+                if attempt >= 2 {
+                    return Err(err);
+                }
+                tracing::warn!(jar = %spec.url, "jar 下载网络错误，重试: {e}");
+                last = Some(err);
+            }
+        }
+    }
+    Err(last.unwrap_or_else(|| {
+        jar_error(ErrorClass::JarFetch, site, spec, "下载 jar 失败（重试耗尽）").into_core()
+    }))
+}
+
 /// ZIP 本地文件头魔数（jar 一定是 zip）。
 const ZIP_MAGIC: &[u8] = b"PK\x03\x04";
 /// 默认 TTL：无 md5 的 jar 视为 3 天有效（对接 catvod 行为）。
@@ -245,16 +326,7 @@ impl JarStore {
             )
             .into_core()
         })?;
-        let resp = client.get(&spec.url).send().map_err(|e| {
-            jar_error(ErrorClass::JarFetch, site, spec, format!("下载 jar 失败 {}: {e}", spec.url),
-            )
-            .into_core()
-        })?;
-        if !resp.status().is_success() {
-            return Err(jar_error(ErrorClass::JarFetch, site, spec, format!("下载 jar HTTP {}: {}", resp.status(), spec.url),
-            )
-            .into_core());
-        }
+        let resp = fetch_jar(client, spec, site)?;
         // 多读 1 字节用于识别超限：截断后缓存会让后续 dex 解析莫名失败，
         // 而无 md5 的 jar 无法靠摘要发现截断。
         let mut buf = Vec::with_capacity(1 << 20);

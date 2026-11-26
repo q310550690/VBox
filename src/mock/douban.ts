@@ -2,7 +2,14 @@
 // 约定：mock 数据只在 src/api 门面里使用；页面会展示「演示数据」标识。
 // 真实桌面端由后端 douban_home 命令抓取豆瓣：热门电影 / 热门剧集 / 热门综艺 / 热门动漫 /
 // TOP250 / 影院热映 / 即将上映 / 纪录片，并为本机图片代理注入 imageProxy。
-import type { DoubanCollection, DoubanHome, DoubanItem } from '@/types'
+import type {
+  DoubanCollection,
+  DoubanHome,
+  DoubanItem,
+  DoubanPerson,
+  DoubanSubjectDetail,
+  DoubanSubjectMeta,
+} from '@/types'
 
 interface CollectionSeed {
   key: string
@@ -118,8 +125,8 @@ const INTROS = [
 
 /** 轮播：热门电影前 5 + 热门剧集前 5，补剧情简介 */
 function makeCarousel(collections: DoubanCollection[]): DoubanItem[] {
-  const movies = collections.find((c) => c.key === 'movie_hot_gaia')?.items.slice(0, 5) ?? []
-  const tvs = collections.find((c) => c.key === 'tv_hot')?.items.slice(0, 5) ?? []
+  const movies = collections.find((c) => c.key === 'movie_hot_gaia')?.items.slice(0, 6) ?? []
+  const tvs = collections.find((c) => c.key === 'tv_hot')?.items.slice(0, 6) ?? []
   return [...movies, ...tvs].map((item, index) => ({
     ...item,
     intro: INTROS[index % INTROS.length],
@@ -131,7 +138,7 @@ export function mockDoubanHome(_force = false): DoubanHome {
   const collections = COLLECTION_SEEDS.map((seed): DoubanCollection => ({
     key: seed.key,
     name: seed.name,
-    items: Array.from({ length: 18 }, (_, index) => makeItem(seed, index)),
+    items: Array.from({ length: 30 }, (_, index) => makeItem(seed, index)),
   }))
   return {
     carousel: makeCarousel(collections),
@@ -139,5 +146,99 @@ export function mockDoubanHome(_force = false): DoubanHome {
     fetchedAt: Date.now(),
     cacheHit: false,
     imageProxy: null,
+  }
+}
+
+/* ---------------- 豆瓣主创（演员照片）演示数据 ---------------- */
+// 桌面端由 Rust `douban_people` 实时抓取豆瓣；浏览器预览用此处演示数据展示演员照片行。
+// 头像使用公开人像占位服务（pravatar），断网时组件会退回首字圆形占位。
+
+const PEOPLE: Array<{ name: string; role: string }> = [
+  { name: '张译', role: '演员' },
+  { name: '周迅', role: '演员' },
+  { name: '黄渤', role: '演员' },
+  { name: '秦海璐', role: '演员' },
+  { name: '雷佳音', role: '演员' },
+  { name: '倪妮', role: '演员' },
+  { name: '易烊千玺', role: '演员' },
+  { name: '张子枫', role: '演员' },
+  { name: '王传君', role: '演员' },
+  { name: '章宇', role: '演员' },
+  { name: '沈腾', role: '演员' },
+  { name: '马丽', role: '演员' },
+  { name: '吴京', role: '演员' },
+  { name: '段奕宏', role: '演员' },
+  { name: '廖凡', role: '演员' },
+  { name: '桂纶镁', role: '演员' },
+  { name: '胡歌', role: '演员' },
+  { name: '刘亦菲', role: '演员' },
+  { name: '陈凯歌', role: '导演' },
+  { name: '贾樟柯', role: '导演' },
+  { name: '郭帆', role: '导演' },
+  { name: '宁浩', role: '导演' },
+  { name: '文牧野', role: '导演' },
+  { name: '娄烨', role: '导演' },
+]
+
+function hashText(text: string): number {
+  let h = 0
+  for (let i = 0; i < text.length; i += 1) h = (h * 31 + text.charCodeAt(i)) % 100000
+  return h
+}
+
+/** 浏览器预览：按片名稳定生成 12 位主创（2 位导演 + 10 位演员），带真人头像地址 */
+export function mockDoubanPeople(title: string, year?: string | null): DoubanPerson[] {
+  const base = hashText(`${title}|${year ?? ''}`)
+  const list: DoubanPerson[] = []
+  const used = new Set<number>()
+  let cursor = base % PEOPLE.length
+  while (list.length < 12) {
+    if (!used.has(cursor)) {
+      used.add(cursor)
+      const person = PEOPLE[cursor]
+      list.push({
+        name: person.name,
+        role: person.role,
+        avatar: `https://i.pravatar.cc/160?img=${(base + list.length * 17) % 70 + 1}`,
+      })
+    }
+    cursor = (cursor + 1) % PEOPLE.length
+  }
+  return list
+}
+
+/** 浏览器预览：按片名稳定生成剧照（picsum 16:9，最多 4 张） */
+export function mockDoubanStills(title: string, year?: string | null, count = 4): string[] {
+  const base = hashText(`${title}|${year ?? ''}`)
+  return Array.from(
+    { length: count },
+    (_, i) => `https://picsum.photos/seed/vbox-still-${base}-${i}/640/360`,
+  )
+}
+
+const MOCK_GENRES = ['剧情', '动画', '奇幻', '动作', '喜剧', '悬疑']
+const MOCK_REGIONS = ['中国大陆', '中国香港', '日本', '美国', '韩国']
+
+/** 浏览器预览：按片名稳定生成影视信息（评分 / 类型 / 上映 / 片长 / 地区 / 语言） */
+export function mockDoubanMeta(title: string, year?: string | null): DoubanSubjectMeta {
+  const base = hashText(`${title}|${year ?? ''}`)
+  const y = Number(year ?? '') || 2015 + (base % 12)
+  return {
+    rating: (6.8 + (base % 30) / 10).toFixed(1),
+    ratingCount: 12_000 + (base % 98_000),
+    genres: [MOCK_GENRES[base % MOCK_GENRES.length], MOCK_GENRES[(base + 2) % MOCK_GENRES.length]],
+    pubdate: `${y}-${String((base % 12) + 1).padStart(2, '0')}-${String((base % 28) + 1).padStart(2, '0')}`,
+    durations: [`${100 + (base % 40)}分钟`],
+    countries: [MOCK_REGIONS[base % MOCK_REGIONS.length]],
+    languages: ['汉语普通话'],
+  }
+}
+
+/** 浏览器预览：详情页豆瓣扩展数据（主创 + 剧照 + 影视信息） */
+export function mockDoubanDetail(title: string, year?: string | null): DoubanSubjectDetail {
+  return {
+    people: mockDoubanPeople(title, year),
+    stills: mockDoubanStills(title, year),
+    meta: mockDoubanMeta(title, year),
   }
 }

@@ -328,7 +328,10 @@ pub fn mix_url(url: &str, ext: &str) -> String {
 /// 对齐 `DefaultConfig.checkReplaceProxy`：`proxy://` → 本地 9978 代理地址
 pub fn check_replace_proxy(url: &str) -> String {
     match url.strip_prefix("proxy://") {
-        Some(rest) => format!("http://127.0.0.1:{LOCAL_PROXY_PORT}/proxy?{rest}"),
+        Some(rest) => match crate::proxy::local_base() {
+            Some(base) => format!("{base}/proxy?{rest}"),
+            None => format!("http://127.0.0.1:{LOCAL_PROXY_PORT}/proxy?{rest}"),
+        },
         None => url.to_string(),
     }
 }

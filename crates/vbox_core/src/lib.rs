@@ -11,6 +11,7 @@
 // ---- 基础层 ----
 pub mod cloudplay; // 云盘分享 → 播放直链（W14 P3：搜索结果播放链路） // 云盘聚合搜索（W14：Telegram / PanSou 多源聚合）
 pub mod cloudsearch;
+pub mod danmaku; // 弹幕获取（B 站 / 通用）与 ASS 生成
 pub mod crypto; // 配置解密（2423 / ;pk; / Base64 包装）
 pub mod drive; // 云盘只读管理（W14 P2：个人网盘列目录 / 下载直链）
 pub mod error; // 统一错误类型
@@ -27,6 +28,7 @@ pub mod url_norm; // 订阅地址归一化 / 相对路径修正 / URL 编码
 pub mod config; // 订阅加载、线路合集、缓存
 pub mod html_rule;
 pub mod parse; // parses 解析链
+pub mod proxy; // 本地代理桥（/proxy?do=js / do=live 的 JS 侧）
 pub mod search; // 跨源搜索 / 单源搜索
 pub mod source; // 按 kind 分发（type0/1/3/4）
 pub mod sources; // 各类型源的具体实现（cms/xml/spider/remote） // Jsoup 风格 pdfh/pdfa/pd/pdfla 规则引擎

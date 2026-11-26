@@ -279,7 +279,7 @@ defineExpose({ updateArrows })
 }
 
 .status-tab:hover {
-  background: var(--surface-2);
+  background: var(--fill-1);
   color: var(--text);
 }
 

@@ -332,6 +332,12 @@ export interface PlayerState {
   frameDrops: number
   /** 解码器丢帧数（排障参考） */
   decoderFrameDrops: number
+  /** 视频色彩原色（mpv video-params/primaries，如 bt.709 / bt.2020；空串 = 未知） */
+  videoPrimaries: string
+  /** 视频传输函数（mpv video-params/gamma，如 bt.1886 / pq / hlg；空串 = 未知） */
+  videoGamma: string
+  /** HDR 信号峰值（mpv video-params/sig-peak，SDR 约 1.0；0 = 未知） */
+  videoSigPeak: number
   /** 可选音轨（来自 mpv track-list） */
   audioTracks: PlayerTrack[]
   /** 可选字幕轨（来自 mpv track-list） */
@@ -767,45 +773,27 @@ export interface ToastMessage {
   id: number
   text: string
   level: ToastLevel
+  /** 点击后常显（暂停自动关闭），需用户手动点关闭 */
+  pinned?: boolean
 }
 
 export interface UiPersist {
   mode: ThemeMode
   hue: string
   sidebarCollapsed?: boolean
-  /** 侧边与标题栏亚克力（默认开启） */
+  /** 亚克力效果（侧边、标题栏与全局背景统一开关，默认开启） */
   acrylic?: boolean
-  /** 全局背景亚克力（依赖侧边与标题栏开启，默认关闭） */
-  acrylicContent?: boolean
 }
 
 /* ---------------- 源 tab ---------------- */
 
-/** 源的本机支持级别：local=本机可加载；python=Python 运行时未就绪；jar=需 Android Host（后续）；unsupported=其它 */
-export type SiteSupportLevel = 'local' | 'python' | 'jar' | 'unsupported'
+/** 源的本机支持级别：local=本机可加载（含 JVM 兼容层）；python=Python 运行时未就绪；unsupported=其它 */
+export type SiteSupportLevel = 'local' | 'python' | 'unsupported'
 
-/** 站点 api 的 REA 画像摘要（后端 site_api_support 返回，用于站点选择器联动） */
-export interface SiteApiSupport {
-  api: string
-  /** 已有原生实现（规则引擎 / 原生解析家族） */
-  native: boolean
-  /** rulepack / script / unported / unsupported */
-  strategy: string
-  class?: string | null
-  jars: string[]
-  difficulty?: string | null
-  reason?: string | null
-  blockedReason?: string | null
-  /** 阻塞原因的用户可读解释 */
-  blockedHint?: string | null
-  sites: number
-}
-
-/** 一条线路 / 一个站点集合的源能力统计（设置页展示“本机可用 / jar”） */
+/** 一条线路 / 一个站点集合的源能力统计（设置页展示“本机可用 / 未适配”） */
 export interface SiteStats {
   total: number
   local: number
-  jar: number
   python: number
   unsupported: number
 }
@@ -814,9 +802,9 @@ export interface SourceTabItem {
   key: string
   name: string
   type: number
-  /** 本机是否可加载（Python 未就绪 / jar 均为 false） */
+  /** 本机是否可加载（Python 未就绪等为 false） */
   supported: boolean
-  /** 本机不可用时的原因文案（统一“后续支持 / 暂未适配”措辞） */
+  /** 本机不可用时的原因文案（统一“暂未适配”措辞） */
   reason?: string
   /** 支持但需要提示的能力范围（例：type3 仅 js spider 子集） */
   note?: string
@@ -855,14 +843,7 @@ export interface JvmPoolStats {
   sessions: number
 }
 
-export interface JvmCoverage {
-  jarApis: number
-  capableSites: number
-  guardedSites: number
-  totalSites: number
-}
-
-/** jar 蜘蛛（JRE 车道）的运行时状态。 */
+  /** jar 蜘蛛（JRE 车道）的运行时状态。 */
 export interface JvmStatus {
   available: boolean
   mode: 'primary' | 'fallback' | 'off'
@@ -870,7 +851,6 @@ export interface JvmStatus {
   java?: string | null
   cacheDir: string
   pool: JvmPoolStats
-  coverage: JvmCoverage
   /** 运行期累计的缺类（ClassNotFoundException），按命中次数排序 */
   missingClasses: JvmMissingClass[]
   /** 实际使用的 java 来自哪里：bundled / VBOX_JVM_JRE_ZIP / VBOX_JAVA_HOME / JAVA_HOME / PATH */
@@ -1148,4 +1128,31 @@ export interface PanLoginProvider {
   protocol: boolean
   /** 有网页登录兜底（open_web_login） */
   webLogin: boolean
+}
+
+/** 豆瓣主创（演员/导演）条目：点播详情页「演员真实照片」用 */
+export interface DoubanPerson {
+  name: string
+  role?: string | null
+  avatar?: string | null
+}
+
+/** 豆瓣条目元信息：详情页「影视信息」用 */
+export interface DoubanSubjectMeta {
+  /** 豆瓣评分（一位小数） */
+  rating?: string | null
+  /** 评价人数 */
+  ratingCount?: number | null
+  genres: string[]
+  pubdate?: string | null
+  durations: string[]
+  countries: string[]
+  languages: string[]
+}
+
+/** 详情页豆瓣扩展数据：主创照片 / 剧照 / 影视信息（一次请求返回） */
+export interface DoubanSubjectDetail {
+  people: DoubanPerson[]
+  stills: string[]
+  meta: DoubanSubjectMeta
 }

@@ -1,6 +1,6 @@
 //! 阿里云盘（Aliyun Drive / Alipan）分享协议客户端（W9.3）。
 //!
-//! 协议来源：`_rea/decompiled/0f047745-FxzHm/deobf/com/github/catvod/parser/merge/A/E.java`
+//! 协议来源：`0f047745-FxzHm/deobf/com/github/catvod/parser/merge/A/E.java`
 //! （2105 行，AliYun 引擎；含扫码登录与转存）与 `com/github/catvod/spider/Ali.java`
 //! （221 行，薄封装：分享链接正则 → 引擎 → `vod_play_url`）。
 //!

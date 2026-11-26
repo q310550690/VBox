@@ -615,3 +615,174 @@ function category(tid, pg) { return {list: []}; }
     assert_eq!(cats[1].type_name, "https://a.com/z.html");
     assert_eq!(cats[2].type_id, "v1-def-timer");
 }
+
+/* ============================================================
+ * async / Promise 入口
+ * ============================================================ */
+
+#[test]
+fn async_home_with_await_req() {
+    let mock = MockServer::start(|req| {
+        if req.path.starts_with("/home") {
+            MockReply::json(r#"{"class":[{"type_id":"1","type_name":"异步"}]}"#)
+        } else {
+            MockReply { status: 404, content_type: "text/plain", body: "not found".into() }
+        }
+    });
+    let base = mock.base.clone();
+    let script = format!(
+        r#"
+async function home() {{
+    const r = await req("{base}/home", {{}});
+    return JSON.parse(r.content);
+}}
+function category(tid, pg) {{ return {{list: []}}; }}
+"#
+    );
+    let site = test_site(&inline(&script));
+    let cats = js::categories(&site, &empty_cfg()).expect("async home() 分类");
+    assert_eq!(cats.len(), 1);
+    assert_eq!(cats[0].type_id, "1");
+    assert_eq!(cats[0].type_name, "异步");
+}
+
+#[test]
+fn async_entry_promise_object() {
+    let script = r#"
+function __jsEvalReturn() {
+    return Promise.resolve({
+        home: function () { return {class: [{type_id: "9", type_name: "Promise入口"}]}; },
+        category: function (tid, pg) { return {list: []}; }
+    });
+}
+"#;
+    let site = test_site(&inline(script));
+    let cats = js::categories(&site, &empty_cfg()).expect("Promise 入口对象");
+    assert_eq!(cats.len(), 1);
+    assert_eq!(cats[0].type_id, "9");
+}
+
+#[test]
+fn async_rejection_becomes_error() {
+    let script = r#"
+async function home() { throw new Error("boom"); }
+function category(tid, pg) { return {list: []}; }
+"#;
+    let site = test_site(&inline(script));
+    let err = js::categories(&site, &empty_cfg()).expect_err("拒绝的 Promise 应报错");
+    let text = format!("{err}");
+    assert!(text.contains("boom") || text.contains("Promise"), "实际错误: {text}");
+}
+
+/* ============================================================
+ * ES module / CommonJS 模块加载
+ * ============================================================ */
+
+#[test]
+fn esm_relative_import_and_named_export() {
+    let mock = MockServer::start(|req| match req.path.as_str() {
+        "/esm/entry.js" => MockReply::js(
+            r#"
+import { title, types } from "./lib/meta.js";
+
+function home() {
+    return { class: types.map(function (t) { return { type_id: t, type_name: title + ":" + t }; }) };
+}
+function category(tid, pg) { return { list: [] }; }
+"#,
+        ),
+        "/esm/lib/meta.js" => MockReply::js(
+            r#"export const title = "ESM标题";
+export const types = ["电影", "剧集"];
+export default { title: title, types: types };"#,
+        ),
+        _ => MockReply {
+            status: 404,
+            content_type: "text/plain",
+            body: "404".into(),
+        },
+    });
+    let site = test_site(&format!("{}/esm/entry.js", mock.base));
+    let cats = js::categories(&site, &empty_cfg()).expect("ESM 入口分类");
+    assert_eq!(cats.len(), 2);
+    assert_eq!(cats[0].type_id, "电影");
+    assert_eq!(cats[0].type_name, "ESM标题:电影");
+    assert_eq!(cats[1].type_name, "ESM标题:剧集");
+    assert!(
+        mock.captured().iter().any(|c| c.path == "/esm/lib/meta.js"),
+        "依赖模块应被请求: {:?}",
+        mock.captured().iter().map(|c| c.path.clone()).collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn cjs_require_relative_module() {
+    let mock = MockServer::start(|req| match req.path.as_str() {
+        "/cjs/entry.js" => MockReply::js(
+            r#"const lib = require("./lib/util.js");
+function home() { return { class: lib.classes() }; }
+function category(tid, pg) { return { list: [] }; }"#,
+        ),
+        "/cjs/lib/util.js" => MockReply::js(
+            r#"module.exports = { classes: function () { return [{ type_id: "c1", type_name: "CJS" }]; } };"#,
+        ),
+        _ => MockReply {
+            status: 404,
+            content_type: "text/plain",
+            body: "404".into(),
+        },
+    });
+    let site = test_site(&format!("{}/cjs/entry.js", mock.base));
+    let cats = js::categories(&site, &empty_cfg()).expect("CJS require 分类");
+    assert_eq!(cats.len(), 1);
+    assert_eq!(cats[0].type_id, "c1");
+    assert_eq!(cats[0].type_name, "CJS");
+}
+
+#[test]
+fn entry_module_exports_maps_to_js_spider() {
+    let mock = MockServer::start(|req| match req.path.as_str() {
+        "/mod/entry.js" => MockReply::js(
+            r#"const meta = require("./lib/meta.js");
+module.exports = {
+    home: function () { return { class: [{ type_id: "m1", type_name: meta.name }] }; },
+    category: function () { return { list: [] }; }
+};"#,
+        ),
+        "/mod/lib/meta.js" => MockReply::js(r#"module.exports = { name: "模块导出" };"#),
+        _ => MockReply {
+            status: 404,
+            content_type: "text/plain",
+            body: "404".into(),
+        },
+    });
+    let site = test_site(&format!("{}/mod/entry.js", mock.base));
+    let cats = js::categories(&site, &empty_cfg()).expect("module.exports 入口");
+    assert_eq!(cats.len(), 1);
+    assert_eq!(cats[0].type_id, "m1");
+    assert_eq!(cats[0].type_name, "模块导出");
+}
+
+#[test]
+fn builtin_cat_js_named_exports() {
+    let mock = MockServer::start(|req| match req.path.as_str() {
+        "/cat/entry.js" => MockReply::js(
+            r#"
+import { load, text } from "cat.js";
+function home() {
+    return { class: [{ type_id: typeof load, type_name: typeof text }] };
+}
+function category(tid, pg) { return { list: [] }; }
+"#,
+        ),
+        _ => MockReply {
+            status: 404,
+            content_type: "text/plain",
+            body: "404".into(),
+        },
+    });
+    let site = test_site(&format!("{}/cat/entry.js", mock.base));
+    let cats = js::categories(&site, &empty_cfg()).expect("cat.js 内置 lib 导入");
+    assert_eq!(cats.len(), 1);
+    assert_eq!(cats[0].type_id, "function");
+}

@@ -13,8 +13,10 @@ const router = useRouter()
 const ui = useUiStore()
 const config = useConfigStore()
 
-/** 独立日志窗口：不套主布局（无侧栏 / 标题栏） */
-const standalone = computed(() => route.name === 'log-window')
+/** 独立窗口（日志 / 播放器）：不套主布局（无侧栏 / 标题栏） */
+const standalone = computed(
+  () => route.name === 'log-window' || route.name === 'player-window',
+)
 
 const MEDIA_EXT = new Set([
   'mp4', 'm4v', 'mkv', 'webm', 'mov', 'avi', 'flv', 'wmv',

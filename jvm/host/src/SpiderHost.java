@@ -173,7 +173,7 @@ public class SpiderHost {
           Object sp = SpiderPool.acquire(env, cls, args);
           SpiderPool.release(cls, args, sp, false);
         } catch (Throwable t0) {
-          err = unwrap(t0).getClass().getName() + ": " + unwrap(t0).getMessage();
+          err = errData(t0);
           errCode = classify(t0);
         }
         writeEnvelope(realOut, gson, reqId, err.isEmpty(), err, errCode);
@@ -197,7 +197,7 @@ public class SpiderHost {
           } catch (Throwable t0) {
             Throwable cause = unwrap(t0);
             errCode = classify(cause);
-            data = cause.getClass().getName() + ": " + cause.getMessage();
+            data = errData(t0);
             StackTraceElement[] st = cause.getStackTrace();
             for (int i = 0; i < Math.min(4, st.length); i++) System.err.println("    at " + st[i]);
           } finally {
@@ -411,6 +411,29 @@ public class SpiderHost {
     Throwable c = t;
     while (c.getCause() != null) c = c.getCause();
     return c;
+  }
+
+  /** P1：异常链 + 前 6 帧栈拼进错误明细，回传 Rust（定位宿主内才看得到的 new/NoSuch/NPE 等错误）。 */
+  private static String errData(Throwable t) {
+    Throwable c = unwrap(t);
+    StringBuilder sb = new StringBuilder();
+    sb.append(c.getClass().getName());
+    if (c.getMessage() != null) sb.append(": ").append(c.getMessage());
+    int frames = 0;
+    for (StackTraceElement e : c.getStackTrace()) {
+      String s = e.toString();
+      if (s.startsWith("java.lang.reflect.") || s.startsWith("jdk.internal.reflect.")) continue;
+      sb.append("\n    at ").append(s);
+      if (++frames >= 6) break;
+    }
+    Throwable cause = c.getCause();
+    for (int depth = 0; cause != null && cause != c && depth < 3; depth++) {
+      sb.append("\n  caused by ").append(cause.getClass().getName());
+      if (cause.getMessage() != null) sb.append(": ").append(cause.getMessage());
+      cause = cause.getCause();
+    }
+    if (sb.length() > 1400) sb.setLength(1400);
+    return sb.toString();
   }
 
   /** 运行环境（classloader + Application 单例 + 初始化后的 Init 钩子状态）。 */

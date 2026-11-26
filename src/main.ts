@@ -27,8 +27,18 @@ app.use(ElementPlus, { locale: zhCn })
 app.use(router)
 app.mount('#app')
 
-// 窗口以 `visible: false` 创建：等首帧绘制完成后再显示，避免 WebView2 首帧之前的白屏。
-// 浏览器预览没有 Tauri 运行时，直接跳过；Rust 侧另有 8 秒兜底显示。
+// 窗口创建时即显示（tauri.conf.json 的 visible: true），由 index.html 里的内联启动占位
+// 保证「立刻有画面」；挂载完成后的首帧把占位淡出。浏览器预览同样适用。
+const bootSplash = document.getElementById('boot-splash')
+if (bootSplash) {
+  const dismissSplash = () => {
+    bootSplash.classList.add('boot-splash--hide')
+    window.setTimeout(() => bootSplash.remove(), 220)
+  }
+  requestAnimationFrame(() => requestAnimationFrame(dismissSplash))
+}
+
+// 兜底：若窗口仍以隐藏方式创建（自定义配置/旧二进制），挂载后主动 show。
 if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
   let shown = false
   const reveal = () => {

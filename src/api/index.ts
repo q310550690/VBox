@@ -56,6 +56,7 @@ import type {
   VideoItem,
 } from '@/types'
 import {
+  DEMO_CATEGORIES,
   DEMO_CONFIG,
   DEMO_ENABLED,
   DEMO_SITES,
@@ -69,7 +70,7 @@ import {
   mockResolve,
 } from '@/mock/sites'
 import { mockEpg, mockLiveChannels, mockLiveGroups } from '@/mock/live'
-import { mockDoubanHome } from '@/mock/douban'
+import { mockDoubanHome, mockDoubanDetail } from '@/mock/douban'
 import {
   clearHistory,
   loadHistory,
@@ -95,8 +96,26 @@ import {
 /** 是否运行在 Tauri 窗口内（浏览器预览为 false） */
 export const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
 
-/** 浏览器预览模式：订阅/点播/搜索能力使用演示数据（页面需展示标识） */
-export const demoMode = !isTauri
+/**
+ * 桌面端是否显式要求 mock：
+ * - `VITE_DEMO=1 pnpm tauri dev` / `pnpm tauri:mock`（推荐，启动时注入）
+ * - 或 localhost 调试窗口里 `localStorage.setItem('vbox.demo', '1')` 后刷新
+ */
+function demoRequested(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    if (import.meta.env.VITE_DEMO === '1') return true
+    return window.localStorage.getItem('vbox.demo') === '1'
+  } catch {
+    return false
+  }
+}
+
+/** 演示模式：浏览器预览恒开启；Tauri 桌面端需显式开启（VITE_DEMO / localStorage） */
+export const demoMode = !isTauri || demoRequested()
+
+/** Tauri 窗口内的演示模式（桌面端 mock） */
+export const demoInApp = demoMode && isTauri
 
 /** 尚未由后端提供、当前只能 mock 的能力（页面据此显示「待接入 · 演示数据」） */
 export const MOCK_CAPABILITIES = {
@@ -157,8 +176,8 @@ function demoSearch(keyword: string, scope: SearchScope, site?: string): SearchH
     scope === 'all' ? DEMO_SITES : DEMO_SITES.filter((s) => s.key === site)
   const hits: SearchHit[] = []
   for (const target of targets) {
-    for (const category of ['1', '2', '3', '4']) {
-      for (let page = 1; page <= 3; page += 1) {
+    for (const category of DEMO_CATEGORIES.map((c) => c.type_id)) {
+      for (let page = 1; page <= 6; page += 1) {
         for (const item of mockListVideos(target.key, category, page)) {
           if (item.name.toLowerCase().includes(kw)) {
             hits.push({ ...item, siteKey: target.key, siteName: target.name })
@@ -167,7 +186,7 @@ function demoSearch(keyword: string, scope: SearchScope, site?: string): SearchH
       }
     }
   }
-  return hits.slice(0, 60)
+  return hits.slice(0, 120)
 }
 
 /* ---------------- 订阅管理 ---------------- */
@@ -543,6 +562,9 @@ export const PLAYER_IDLE_STATE: Readonly<PlayerState> = Object.freeze({
   displayFps: 0,
   frameDrops: 0,
   decoderFrameDrops: 0,
+  videoPrimaries: '',
+  videoGamma: '',
+  videoSigPeak: 0,
   audioTracks: [],
   subtitleTracks: [],
   activeAudioId: 'no',
@@ -561,49 +583,49 @@ export async function playerOpen(
   headers?: Record<string, string>,
   startSec?: number,
 ): Promise<void> {
-  if (demoMode) return
+  if (!isTauri) return
   await core.playerOpen({ url, headers, startSec })
 }
 
 export async function playerClose(): Promise<void> {
-  if (demoMode) return
+  if (!isTauri) return
   await core.playerClose()
 }
 
 export async function playerPlay(): Promise<void> {
-  if (demoMode) return
+  if (!isTauri) return
   await core.playerPlay()
 }
 
 export async function playerPause(): Promise<void> {
-  if (demoMode) return
+  if (!isTauri) return
   await core.playerPause()
 }
 
 /** 切换播放/暂停；demo 返回 false（未暂停） */
 export async function playerTogglePause(): Promise<boolean> {
-  if (demoMode) return false
+  if (!isTauri) return false
   return core.playerTogglePause()
 }
 
 export async function playerSeek(sec: number): Promise<void> {
-  if (demoMode) return
+  if (!isTauri) return
   await core.playerSeek(sec)
 }
 
 /** 音量 0-100 */
 export async function playerSetVolume(volume: number): Promise<void> {
-  if (demoMode) return
+  if (!isTauri) return
   await core.playerSetVolume(volume)
 }
 
 export async function playerSetMute(muted: boolean): Promise<void> {
-  if (demoMode) return
+  if (!isTauri) return
   await core.playerSetMute(muted)
 }
 
 export async function playerSetRate(rate: number): Promise<void> {
-  if (demoMode) return
+  if (!isTauri) return
   await core.playerSetRate(rate)
 }
 
@@ -626,6 +648,11 @@ export async function playerAddSubtitle(path: string): Promise<void> {
 }
 
 /** 原生「选择字幕文件」对话框；取消 / 演示模式返回 null */
+export async function danmakuFetch(url: string, title?: string): Promise<string | null> {
+  if (demoMode) return null
+  return core.danmakuFetch(url, title)
+}
+
 export async function playerPickSubtitle(): Promise<string | null> {
   if (demoMode) return null
   return core.playerPickSubtitle()
@@ -902,7 +929,7 @@ export async function playerSetVisible(visible: boolean): Promise<void> {
 
 /** 读取播放器状态；demo / 后端未就绪时返回空闲状态 */
 export async function playerState(): Promise<PlayerState> {
-  if (demoMode) return playerIdleState()
+  if (!isTauri) return playerIdleState()
   try {
     return await core.playerState()
   } catch {
@@ -1084,12 +1111,6 @@ export async function sourceHealthList(): Promise<SourceHealth[]> {
   return core.sourceHealthList()
 }
 
-/** 站点 api 支持画像（REA 产物）；demo 返回空数组 */
-export async function siteApiSupport(): Promise<import('@/types').SiteApiSupport[]> {
-  if (demoMode) return []
-  return core.siteApiSupport()
-}
-
 /** 记录一次源请求结果（前端记录解析/搜索等失败） */
 export async function sourceHealthRecord(
   kind: string,
@@ -1246,3 +1267,52 @@ export * from './pan'
 
 export * from './cloud'
 export * from './drive'
+
+/* ---------------- 独立播放器窗口 ---------------- */
+
+export interface PlayerWindowRequest {
+  url: string
+  headers?: Record<string, string>
+  startSec?: number
+  title?: string
+  /** 剧名（顶部信息条 + 选集面板标题） */
+  seriesName?: string
+  /** 当前集文案（如「第 3 集」） */
+  episodeLabel?: string
+  /** 当前线路全部选集（窗口内选集面板直接使用） */
+  episodes?: { title: string; url: string }[]
+  /** 当前集序号（与 episodes 对应，-1 = 未选中） */
+  activeEpisode?: number
+  /** 封面地址（idle 态背景） */
+  cover?: string
+  /** 单片「播放时自动保存」开关当前状态 */
+  autoSave?: boolean
+}
+
+/** 在独立窗口播放视频（Rust 负责建窗/切换渲染目标；浏览器预览 no-op） */
+export async function playerWindowOpen(request: PlayerWindowRequest): Promise<void> {
+  if (!isTauri) return
+  await core.playerWindowOpen(request)
+}
+
+/** 独立播放器窗口页面加载后取走待播请求 */
+export async function playerWindowTake(): Promise<PlayerWindowRequest | null> {
+  if (!isTauri) return null
+  return core.playerWindowTake()
+}
+
+/** 关闭独立播放器窗口 */
+export async function playerWindowClose(): Promise<void> {
+  if (!isTauri) return
+  await core.playerWindowClose()
+}
+
+/* ---------------- 豆瓣条目扩展（主创 / 剧照 / 影视信息） ---------------- */
+
+export async function doubanDetail(
+  title: string,
+  year?: string | null,
+): Promise<import('@/types').DoubanSubjectDetail> {
+  if (demoMode) return mockDoubanDetail(title, year)
+  return core.doubanDetail(title, year)
+}

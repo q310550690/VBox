@@ -187,6 +187,9 @@ public final class NativeBridge {
         return soSize;
     }
 
+    /** 壳（awdm）通过 setenv 传出的环境变量（payload 模拟器里 getenv 用）。 */
+    private static final Map<String, String> SHELL_ENV = new java.util.concurrent.ConcurrentHashMap<>();
+
     public static Map<String, Map<String, Boolean>> plan() {
         return PLAN;
     }
@@ -215,10 +218,13 @@ public final class NativeBridge {
         soName = so.getName();
         soSize = so.length();
         archBits = detectArchBits(so);
+        // 32 位壳如果导入 setenv（env 桥要 hook 它抓壳传出的校验值），shell 模拟器必须用 Unicorn2：
+        // dynarmic 后端的 hook_add_new 直接抛 UnsupportedOperationException（实测）。
+        boolean shellNeedsEnvHook = envBridgeEnabled() && archBits == 32 && soImports(so, "setenv");
 
         if (archBits == 32) {
             emulator = new BridgeARM32Emulator("com.winbox.spider", rootfs,
-                    java.util.Collections.singletonList(backendFactory()));
+                    java.util.Collections.singletonList(shellNeedsEnvHook ? unicornShellFactory() : backendFactory()));
         } else {
             AndroidEmulatorBuilder builder = AndroidEmulatorBuilder.for64Bit();
             builder.setProcessName("com.winbox.spider");
@@ -266,6 +272,9 @@ public final class NativeBridge {
 
         DalvikModule dm = vm.loadLibrary(so, true);
         module = dm.getModule();
+        if (envBridgeEnabled()) {
+            hookSetenv(emulator, "shell");
+        }
         dm.callJNI_OnLoad(emulator);
         outerSoDigest = java.security.MessageDigest.getInstance("SHA-256")
                 .digest(java.nio.file.Files.readAllBytes(so.toPath()));
@@ -360,6 +369,52 @@ public final class NativeBridge {
         } else {
             System.err.println("[native-bridge] 模拟后端: Unicorn2（-Dtvbox.native.backend=unicorn2 强制）");
         }
+        return new Unicorn2Factory(true);
+    }
+
+    /** 粗略检查 ELF 的字符串表里是否有该导入符号（setenv/getenv 等小写名不会误中长名，NN 前后是 NUL）。 */
+    private static boolean soImports(File so, String symbol) {
+        try {
+            byte[] data = readAll(new java.io.FileInputStream(so));
+            byte[] pat = ("\u0000" + symbol + "\u0000").getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+            outer:
+            for (int i = 0; i + pat.length <= data.length; i++) {
+                for (int j = 0; j < pat.length; j++) {
+                    if (data[i + j] != pat[j]) continue outer;
+                }
+                return true;
+            }
+        } catch (Throwable ignored) {
+        }
+        return false;
+    }
+
+    /** 32 位壳模拟器（仅在需要 setenv hook 时使用）：Unicorn2 支持 hook_add_new。 */
+    private static BackendFactory unicornShellFactory() {
+        if ("dynarmic".equalsIgnoreCase(System.getProperty("tvbox.native.backend", ""))) {
+            System.err.println("[native-bridge] 警告：壳导入 setenv，但 -Dtvbox.native.backend=dynarmic 强制了 dynarmic；env 桥将不可用");
+        }
+        System.err.println("[native-bridge] 模拟后端: Unicorn2（壳导入 setenv，需 hook 捕获环境变量）");
+        return new Unicorn2Factory(true);
+    }
+
+    /**
+     * payload 模拟器后端：env 桥要写 PC 寄存器，而 dynarmic 的 reg_write(PC) 会抛
+     * `DynarmicException`（实测 regId=11），所以 payload 侧默认 **Unicorn2**。
+     * `-Dtvbox.native.payload.backend=dynarmic` 可强制覆盖（此时 env 桥对 getenv 的拦截会失败并放行原实现）。
+     */
+    private static BackendFactory payloadBackendFactory() {
+        String forced = System.getProperty("tvbox.native.payload.backend", "");
+        if ("dynarmic".equalsIgnoreCase(forced)) {
+            try {
+                Class<?> f = Class.forName("com.github.unidbg.arm.backend.DynarmicFactory");
+                System.err.println("[native-bridge] 载荷模拟器后端: dynarmic（-Dtvbox.native.payload.backend 强制）");
+                return (BackendFactory) f.getConstructor(boolean.class).newInstance(true);
+            } catch (Throwable t) {
+                System.err.println("[native-bridge] 载荷 dynarmic 不可用，回退 Unicorn2: " + t);
+            }
+        }
+        System.err.println("[native-bridge] 载荷模拟器后端: Unicorn2（env 桥需要写 PC 寄存器）");
         return new Unicorn2Factory(true);
     }
 
@@ -734,6 +789,80 @@ public final class NativeBridge {
      * 方法级同步：多只载荷类可能在不同线程同时 `<clinit>`（某第三方源：LoadNiMa 与 MyCrypto 各一个线程），
      *   而 unidbg 的模拟器/VM **不是线程安全的** —— 装载必须串行（与 LOCK 无关，不会形成锁顺序问题）。
      */
+    /** 载荷 .so 的 JNI_OnLoad 容错：awenc 等加固库在 unidbg 里返回 0（unidbg 视为非法 JNI 版本），
+     *  但其 RegisterNatives 往往已在返回前执行；仅吞掉「Illegal JNI version」异常，其余照抛。 */
+    private static void callJniOnLoadLenient(DalvikModule dm, AndroidEmulator emu, String label) {
+        try {
+            dm.callJNI_OnLoad(emu);
+        } catch (IllegalStateException e) {
+            String msg = String.valueOf(e.getMessage());
+            if (!msg.contains("Illegal JNI version")) throw e;
+            System.err.println("[native-bridge] 载荷 JNI_OnLoad 返回非法版本（" + label + " → " + msg
+                    + "），按容错继续（已执行的 RegisterNatives 仍可用）");
+        }
+    }
+
+    /** 调试：`-Dtvbox.native.tracePayload=1` 时把载荷 .so 在 JNI_OnLoad 期间执行的指令写入 trace 文件。 */
+    private static com.github.unidbg.TraceHook maybeTracePayload(DalvikModule dm, AndroidEmulator emu, File landed) {
+        System.err.println("[native-bridge] maybeTracePayload enter: " + landed.getName());
+        if (!Boolean.getBoolean("tvbox.native.tracePayload")) return null;
+        System.err.println("[native-bridge] 载荷追踪开启: " + landed.getName());
+        try {
+            final java.io.PrintStream out = new java.io.PrintStream(
+                    new java.io.FileOutputStream(new File(payloadSoDir(), landed.getName() + ".trace"), true), true, "UTF-8");
+            com.github.unidbg.Module m = dm.getModule();
+            return emu.traceCode(m.base, m.base + m.size, new com.github.unidbg.listener.TraceCodeListener() {
+                @Override
+                public void onInstruction(com.github.unidbg.Emulator<?> e2, long address, capstone.api.Instruction insn) {
+                    out.println(Long.toHexString(address) + " " + insn.getMnemonic() + " " + insn.getOpStr());
+                    long off = address - m.base;
+                    if (off == 0x183f2cL || off == 0x183f42L || off == 0x183f8eL || off == 0x183fc6L
+                            || off == 0x0e0330L || off == 0x0e0336L || off == 0x0e2e2aL || off == 0x0e13f8L || off == 0x0e13fcL || off == 0x0e1400L
+                            || off == 0x0e3f1cL || off == 0x0e3f3aL || off == 0x0e3f3eL || off == 0x0e43acL) {
+                        StringBuilder sb = new StringBuilder("[trace-reg] off=0x");
+                        sb.append(Long.toHexString(off));
+                        int[] regs = {unicorn.ArmConst.UC_ARM_REG_R0,
+                                unicorn.ArmConst.UC_ARM_REG_R1,
+                                unicorn.ArmConst.UC_ARM_REG_R2,
+                                unicorn.ArmConst.UC_ARM_REG_R3,
+                                unicorn.ArmConst.UC_ARM_REG_R4,
+                                unicorn.ArmConst.UC_ARM_REG_R5,
+                                unicorn.ArmConst.UC_ARM_REG_R6,
+                                unicorn.ArmConst.UC_ARM_REG_R7,
+                                unicorn.ArmConst.UC_ARM_REG_LR};
+                        String[] names = {"r0","r1","r2","r3","r4","r5","r6","r7","lr"};
+                        try {
+                            for (int i = 0; i < regs.length; i++) {
+                                Number v = e2.getBackend().reg_read(regs[i]);
+                                sb.append(' ').append(names[i]).append("=0x").append(Long.toHexString(v.longValue() & 0xffffffffL));
+                            }
+                        } catch (Throwable t) {
+                            sb.append(" regdump失败:").append(t);
+                        }
+                        if (off == 0x0e13f8L || off == 0x0e13fcL) {
+                            try {
+                                long sp = e2.getBackend().reg_read(unicorn.ArmConst.UC_ARM_REG_R0).longValue() & 0xffffffffL;
+                                String str = e2.getMemory().pointer(sp).getString(0);
+                                sb.append(" str=").append(str);
+                            } catch (Throwable t) { sb.append(" str读取失败:").append(t.getMessage()); }
+                        }
+                        if (off == 0x0e0330L) {
+                            try {
+                                long namePtr = e2.getBackend().reg_read(unicorn.ArmConst.UC_ARM_REG_R1).longValue() & 0xffffffffL;
+                                String cls = e2.getMemory().pointer(namePtr).getString(0);
+                                sb.append(" name=").append(cls);
+                            } catch (Throwable t) { sb.append(" name读取失败:").append(t); }
+                        }
+                        System.err.println(sb);
+                    }
+                }
+            });
+        } catch (Throwable t) {
+            System.err.println("[native-bridge] 载荷追踪开启失败: " + t);
+            return null;
+        }
+    }
+
     private static synchronized void payloadLoad(String path) throws Exception {
         String key = path == null ? "" : path.trim();
         if (key.isEmpty() || PAYLOAD_LIBS.containsKey(key)) return;
@@ -767,8 +896,9 @@ public final class NativeBridge {
         if (bits == 64) {
             ensureInit(); // 64 位载荷与壳共用模拟器（惰性：这里才真的要模拟器）
             File landed = landSo(new File(payloadSoDir(), src.getName()), data);
-            DalvikModule dm = vm.loadLibrary(landed, true);
-            dm.callJNI_OnLoad(emulator);
+             DalvikModule dm = vm.loadLibrary(landed, true);
+            if (envBridgeEnabled()) installEnvBridge(emulator);
+            callJniOnLoadLenient(dm, emulator, landed.getName());
             payloadInShell = true;
             PAYLOAD_LIBS.put(key, landed.getName() + " (" + data.length + "B, 64 位)");
             System.err.println("[native-bridge] 载荷库已装入壳模拟器: " + landed.getName() + " (" + data.length + "B)");
@@ -777,7 +907,22 @@ public final class NativeBridge {
         ensurePayloadVm();
         File landed = landSo(new File(payloadSoDir(), src.getName()), data);
         DalvikModule dm = payloadVm.loadLibrary(landed, true);
-        dm.callJNI_OnLoad(payloadEmulator);
+        if (envBridgeEnabled()) {
+            installEnvBridge(payloadEmulator);
+        }
+        if (Boolean.getBoolean("tvbox.native.patchExit")) {
+            long patchAddr = dm.getModule().base + 0x0e3f3aL;
+            payloadEmulator.getMemory().pointer(patchAddr).setInt(0L, 0xBF00BF00);
+            System.err.println("[native-bridge] 诊断：已 NOP kill 调用点 0x" + Long.toHexString(patchAddr)
+                    + " (module base=0x" + Long.toHexString(dm.getModule().base) + ")");
+        }
+        System.err.println("[native-bridge] trace debug: prop=" + System.getProperty("tvbox.native.tracePayload") + " landed=" + landed.getName());
+        com.github.unidbg.TraceHook trace = maybeTracePayload(dm, payloadEmulator, landed);
+        try {
+            callJniOnLoadLenient(dm, payloadEmulator, landed.getName());
+        } finally {
+            if (trace != null) trace.stopTrace();
+        }
         PAYLOAD_LIBS.put(key, landed.getName() + " (" + data.length + "B, 32 位)");
         System.err.println("[native-bridge] 载荷库已装入 32 位模拟器: " + landed.getName() + " (" + data.length + "B)");
     }
@@ -809,7 +954,7 @@ public final class NativeBridge {
         rootfs.mkdirs();
 
         payloadEmulator = new BridgeARM32Emulator("com.winbox.spider.payload", rootfs,
-                java.util.Collections.singletonList(backendFactory()));
+                java.util.Collections.singletonList(payloadBackendFactory()));
         if (emulator == null) PosixFile.setRootfs(payloadEmulator.getFileSystem().getRootDir());
         payloadEmulator.getMemory().setLibraryResolver(new AndroidResolver(23));
         payloadEmulator.getSyscallHandler().setEnableThreadDispatcher(true);
@@ -1096,4 +1241,115 @@ public final class NativeBridge {
         }
         return sb.toString();
     }
+
+    /** env 桥默认开启；`-Dtvbox.native.envBridge=false` 关闭（诊断/对照用）。 */
+    private static boolean envBridgeEnabled() {
+        return !"false".equalsIgnoreCase(System.getProperty("tvbox.native.envBridge", ""));
+    }
+
+    private static boolean envTrace() {
+        return Boolean.getBoolean("tvbox.native.envTrace")
+                || Boolean.getBoolean("tvbox.native.traceSetenv")
+                || Boolean.getBoolean("tvbox.native.fakeGetenv");
+    }
+
+    private static final java.util.Set<AndroidEmulator> ENV_BRIDGED =
+            java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+    private static final Map<AndroidEmulator, com.github.unidbg.pointer.UnidbgPointer> ENV_SCRATCH =
+            new java.util.IdentityHashMap<>();
+
+    /**
+     * payload 模拟器的 getenv 桥：壳（另一个模拟器进程）里 `setenv` 的值注入到 payload 模拟器。
+     *
+     * <p>根因（某加固壳）：外层 .so 的 JNI_OnLoad 调 `setenv("wcnmwcnm", …)` 传校验值，内层载荷 .so 的
+     * JNI_OnLoad 用 `getenv("wcnmwcnm")` 校验；但两个模拟器进程的 libc 环境互相独立 → getenv 恒 NULL →
+     * 内层判定被调试/被篡改 → 直接 `exit_group(0)` 自毁（unidbg 侧表现为 Illegal JNI version: 0x0）。
+     * 这里在 payload libc 的 getenv 入口装 hook：只拦截 SHELL_ENV 里记录过的变量名，其余放行原实现。
+     */
+    private static void installEnvBridge(AndroidEmulator emu) {
+        if (ENV_BRIDGED.contains(emu)) return;
+        try {
+            Module libc = emu.getMemory().findModule("libc.so");
+            if (libc == null) {
+                System.err.println("[native-bridge] env 桥：payload libc.so 未找到（跳过）");
+                return;
+            }
+            com.github.unidbg.Symbol getenvSym = libc.findSymbolByName("getenv", false);
+            if (getenvSym == null) {
+                System.err.println("[native-bridge] env 桥：payload libc getenv 未找到（跳过）");
+                return;
+            }
+            final long addr = getenvSym.getAddress() & ~1L;
+            // 模拟器运行中不能 malloc，先在装载期分配一块暂存区
+            com.github.unidbg.memory.MemoryBlock scratch = emu.getMemory().malloc(0x1000, false);
+            final com.github.unidbg.pointer.UnidbgPointer envScratch = scratch.getPointer();
+            emu.getBackend().hook_add_new(new com.github.unidbg.arm.backend.CodeHook() {
+                @Override
+                public void hook(com.github.unidbg.arm.backend.Backend backend, long a, int size, Object user) {
+                    try {
+                        long namePtr = backend.reg_read(unicorn.ArmConst.UC_ARM_REG_R0).longValue() & 0xffffffffL;
+                        if (namePtr == 0) return; // 未知调用，放行原实现
+                        String name = emu.getMemory().pointer(namePtr).getString(0);
+                        String val = SHELL_ENV.get(name);
+                        if (val == null) return; // 非壳传入的变量：放行原 getenv
+                        byte[] bytes = (val + "\u0000").getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                        if (bytes.length > 0x1000) return;
+                        envScratch.write(0, bytes, 0, bytes.length);
+                        long lr = backend.reg_read(unicorn.ArmConst.UC_ARM_REG_LR).longValue();
+                        backend.reg_write(unicorn.ArmConst.UC_ARM_REG_R0, (int) envScratch.peer);
+                        // 保留 Thumb 位；去掉低位会以 ARM 指令集解码返回点（实测 strlt 乱码）
+                        backend.reg_write(unicorn.ArmConst.UC_ARM_REG_PC, (int) lr);
+                        if (envTrace()) {
+                            System.err.println("[native-bridge] env 桥: getenv(" + name + ") = " + val
+                                    + " → 0x" + Long.toHexString(envScratch.peer));
+                        }
+                    } catch (Throwable t) {
+                        if (envTrace()) System.err.println("[native-bridge] env 桥 getenv hook 异常: " + t);
+                    }
+                }
+                @Override public void onAttach(com.github.unidbg.arm.backend.UnHook unhook) {}
+                @Override public void detach() {}
+            }, addr, addr, null);
+            ENV_BRIDGED.add(emu);
+            ENV_SCRATCH.put(emu, envScratch);
+            System.err.println("[native-bridge] env 桥已启用（getenv ← shell setenv，共 "
+                    + SHELL_ENV.size() + " 项）");
+        } catch (Throwable t) {
+            System.err.println("[native-bridge] env 桥安装失败（不影响无 setenv 校验的壳）: " + t);
+        }
+    }
+
+    private static void hookSetenv(AndroidEmulator emu, String label) {
+        try {
+            Module libc = emu.getMemory().findModule("libc.so");
+            if (libc == null) { System.err.println("[native-bridge] env 桥: setenv hook 未找到 libc.so (" + label + ")"); return; }
+            com.github.unidbg.Symbol setenvSym = libc.findSymbolByName("setenv", false);
+            if (setenvSym == null) { System.err.println("[native-bridge] env 桥: setenv 符号未找到 (" + label + ")"); return; }
+            final long addr = setenvSym.getAddress() & ~1L;
+            emu.getBackend().hook_add_new(new com.github.unidbg.arm.backend.CodeHook() {
+                @Override
+                public void hook(com.github.unidbg.arm.backend.Backend backend, long a, int size, Object user) {
+                    try {
+                        long namePtr = backend.reg_read(unicorn.ArmConst.UC_ARM_REG_R0).longValue() & 0xffffffffL;
+                        long valPtr = backend.reg_read(unicorn.ArmConst.UC_ARM_REG_R1).longValue() & 0xffffffffL;
+                        String name = namePtr == 0 ? "<null>" : emu.getMemory().pointer(namePtr).getString(0);
+                        String val = valPtr == 0 ? "<null>" : emu.getMemory().pointer(valPtr).getString(0);
+                        SHELL_ENV.put(name, val);
+                        if (envTrace()) {
+                            System.err.println("[native-bridge] env 桥: setenv(" + name + ", " + val + ") [" + label + "]");
+                        }
+                    } catch (Throwable t) {
+                        System.err.println("[native-bridge] env 桥 setenv hook 异常: " + t);
+                    }
+                }
+                @Override public void onAttach(com.github.unidbg.arm.backend.UnHook unhook) {}
+                @Override public void detach() {}
+            }, addr, addr, null);
+            if (envTrace()) System.err.println("[native-bridge] env 桥: setenv hook @" + Long.toHexString(addr) + " [" + label + "]");
+        } catch (Throwable t) {
+            System.err.println("[native-bridge] env 桥 setenv hook 安装失败: " + t);
+        }
+    }
+
+
 }

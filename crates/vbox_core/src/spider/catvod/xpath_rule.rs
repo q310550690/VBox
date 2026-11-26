@@ -1,10 +1,8 @@
 //! TVBox 标准 XPath 规则引擎（`csp_XPath` 家族）。
 //!
-//! 来源（REA 反编译证据）：
-//! * 类：`com.github.catvod.spider.XPath`，`_rea/decompiled/0f047745-FxzHm/deobf/
-//!   com/github/catvod/spider/XPath.java`（262 行）。
-//! * `detailContent` 被 jadx 跳过（922 指令）→ 用 `--show-bad-code` 恢复到
-//!   `_rea/tmp/r138/XPath.bad.java`（698 行）后逐字段还原（见 `families/xpath.rs` 文档）。
+//! 来源（jar 反编译证据，样本见 `jvm/samples/`，反编译产物归档于仓库外）：
+//! * 类：`com.github.catvod.spider.XPath`（262 行）。
+//! * `detailContent` 曾被反编译器跳过（922 指令）→ 用 `--show-bad-code` 恢复后逐字段还原。
 //! * 规则模型：`com.github.catvod.parser.merge.O.a`，JSON 键名固定（`homeUrl` /
 //!   `cateNode` / `cateUrl` / `dtUrl` / `playUrl` / `searchUrl` …），每个选择器
 //!   键 `X` 可另带 `XR` 正则键做二次提取（`matcher.group(1).trim()`，失败回退原串）。

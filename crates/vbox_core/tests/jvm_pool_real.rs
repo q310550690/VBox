@@ -1,6 +1,6 @@
 //! P2：真实 JRE + 真实样本下的宿主池复用与回收（默认 `--ignored`，需要本机样本与 JRE）。
 //!
-//! 样本放在 `jvm/samples/`（不入库，见 .gitignore）；`_rea` 目录已退役。
+//! 样本放在 `jvm/samples/`（不入库，见 .gitignore）。
 //!
 //! 跑法：`cargo test -p vbox_core --test jvm_pool_real -- --ignored --nocapture`
 

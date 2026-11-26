@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "VBox 主窗口基础权限",
-  "windows": ["main"],
+  "description": "VBox 主窗口 / 独立播放器窗口 / 日志窗口基础权限",
+  "windows": ["main", "player-window", "log-window"],
   "permissions": [
     "core:default",
     "core:app:default",

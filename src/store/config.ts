@@ -2,7 +2,7 @@
 import { defineStore } from 'pinia'
 import * as api from '@/api'
 import { useUiStore } from '@/store/ui'
-import { classifySite, setSiteApiSupport, siteStats as computeSiteStats } from '@/utils/siteSupport'
+import { classifySite, siteStats as computeSiteStats } from '@/utils/siteSupport'
 import type {
   ConfigInspection,
   ConfigKind,
@@ -94,6 +94,7 @@ export const useConfigStore = defineStore('config', {
     error: '',
     /** 浏览器预览模式：所有内容为演示数据（页面须标注） */
     demoMode: api.demoMode,
+    demoInApp: api.demoInApp,
   }),
 
   getters: {
@@ -252,7 +253,6 @@ export const useConfigStore = defineStore('config', {
         this.initialized = true
         void this.ensureAddressGroups()
         void this.loadHealth()
-        void this.loadApiSupport()
         try {
           this.refreshMinutes = (await api.subscriptionPrefs()).refreshMinutes
         } catch {
@@ -539,18 +539,6 @@ export const useConfigStore = defineStore('config', {
         this.healthLoaded = true
       } catch {
         // 源健康度读取失败不影响主流程
-      }
-    },
-
-    /**
-     * 读取站点 api 的 REA 画像（原生实现 / 待移植 / 不支持）。
-     * 站点选择器与线路统计据此显示真实支持情况；失败时保留启发式判定。
-     */
-    async loadApiSupport() {
-      try {
-        setSiteApiSupport(await api.siteApiSupport())
-      } catch {
-        // 画像读取失败不影响主流程（classifySite 会回退到启发式判断）
       }
     },
 

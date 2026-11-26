@@ -83,7 +83,7 @@ function onSelect(group: LiveGroup) {
 }
 
 .group-item:hover {
-  background: var(--surface-2);
+  background: var(--fill-1);
   color: var(--text);
 }
 
